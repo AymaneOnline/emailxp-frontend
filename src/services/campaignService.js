@@ -67,6 +67,16 @@ const getCampaignOpenStats = async (campaignId) => {
     return response.data; // This will return { campaignId, totalOpens, uniqueOpens }
 };
 
+// --- NEW FUNCTION FOR CLICK TRACKING: Get Click Stats for a specific campaign ---
+const getCampaignClickStats = async (campaignId) => {
+    // The endpoint is /api/campaigns/:campaignId/clicks
+    // Make sure your backend exposes this endpoint to provide click statistics.
+    const response = await axios.get(API_URL + campaignId + '/clicks', getAuthHeader());
+    // This function is expected to return data in a similar format to opens:
+    // e.g., { campaignId: "someId", totalClicks: 15, uniqueClicks: 10 }
+    return response.data;
+};
+
 
 const campaignService = {
     getCampaigns,
@@ -75,7 +85,8 @@ const campaignService = {
     updateCampaign,
     deleteCampaign,
     sendCampaign,
-    getCampaignOpenStats, // <--- IMPORTANT: EXPORT THE NEW FUNCTION
+    getCampaignOpenStats,
+    getCampaignClickStats, // <--- IMPORTANT: EXPORT THE NEW CLICK STATS FUNCTION
 };
 
 export default campaignService;
