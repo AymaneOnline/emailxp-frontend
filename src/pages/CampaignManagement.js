@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
 import { useNavigate } from 'react-router-dom';
@@ -20,11 +20,8 @@ function CampaignManagement() {
     const [successMessage, setSuccessMessage] = useState(null); // New state for success messages
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    // Memoize fetchData using useCallback
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -35,6 +32,7 @@ function CampaignManagement() {
             setCampaigns(campaignsData);
             setLists(listsData);
             if (listsData.length > 0) {
+                // Use a functional update for setNewCampaignData to ensure latest state
                 setNewCampaignData(prev => ({ ...prev, list: listsData[0]._id }));
             }
         } catch (err) {
@@ -47,7 +45,11 @@ function CampaignManagement() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]); // Dependencies: only navigate, as state setters are stable
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

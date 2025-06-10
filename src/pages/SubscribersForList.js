@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import listService from '../services/listService';
+import listService from '../services/listService'; // This is correct, uses listService
 
 function SubscribersForList() {
     const { listId } = useParams(); // Get listId from URL
@@ -12,17 +12,15 @@ function SubscribersForList() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchListDataAndSubscribers();
-    }, [listId]); // Re-fetch if listId changes
-
-    const fetchListDataAndSubscribers = async () => {
+    // Memoize fetchListDataAndSubscribers using useCallback
+    const fetchListDataAndSubscribers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const listData = await listService.getListById(listId);
             setListName(listData.name); // Set list name for display
 
+            // This line already uses listService, which is correctly imported.
             const data = await listService.getSubscribers(listId);
             setSubscribers(data);
         } catch (err) {
@@ -36,7 +34,11 @@ function SubscribersForList() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [listId, navigate]); // Dependencies for useCallback: listId and navigate
+
+    useEffect(() => {
+        fetchListDataAndSubscribers();
+    }, [fetchListDataAndSubscribers]); // Dependency for useEffect: the memoized function
 
     const handleAddSubscriber = async (e) => {
         e.preventDefault();

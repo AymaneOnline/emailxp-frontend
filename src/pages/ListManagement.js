@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import listService from '../services/listService';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,11 +10,8 @@ function ListManagement() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchLists();
-    }, []);
-
-    const fetchLists = async () => {
+    // Memoize fetchLists using useCallback
+    const fetchLists = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -23,15 +20,18 @@ function ListManagement() {
         } catch (err) {
             console.error('Error fetching lists:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to fetch lists. Please login again.');
-            // If it's an authorization error, redirect to login
             if (err.response && err.response.status === 401) {
-                localStorage.removeItem('user'); // Clear invalid token
+                localStorage.removeItem('user');
                 navigate('/login');
             }
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]); // Dependencies: only navigate, as state setters are stable
+
+    useEffect(() => {
+        fetchLists();
+    }, [fetchLists]);
 
     const handleCreateList = async (e) => {
         e.preventDefault();
