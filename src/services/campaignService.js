@@ -62,21 +62,22 @@ const sendCampaign = async (campaignId) => {
 
 // --- NEW FUNCTION: Get Open Stats for a specific campaign ---
 const getCampaignOpenStats = async (campaignId) => {
-    // The endpoint is /api/campaigns/:campaignId/opens
+    console.log(`[FE Service Debug] getCampaignOpenStats received ID: '${campaignId}', type: ${typeof campaignId}`); // ADD THIS LINE
     const response = await axios.get(API_URL + campaignId + '/opens', getAuthHeader());
-    return response.data; // This will return { campaignId, totalOpens, uniqueOpens }
+    return response.data;
 };
 
 // --- NEW FUNCTION FOR CLICK TRACKING: Get Click Stats for a specific campaign ---
 const getCampaignClickStats = async (campaignId) => {
-    // The endpoint is /api/campaigns/:campaignId/clicks
-    // Make sure your backend exposes this endpoint to provide click statistics.
+    console.log(`[FE Service Debug] getCampaignClickStats received ID: '${campaignId}', type: ${typeof campaignId}`); // ADD THIS LINE
+    if (!campaignId) { // Optional: Add a client-side error check here to prevent bad requests
+        console.error("[FE Service Debug] getCampaignClickStats was called with an undefined/null/empty ID!");
+        // You could throw an error here to prevent the request from even being sent
+        // throw new Error("Campaign ID is required for click stats.");
+    }
     const response = await axios.get(API_URL + campaignId + '/clicks', getAuthHeader());
-    // This function is expected to return data in a similar format to opens:
-    // e.g., { campaignId: "someId", totalClicks: 15, uniqueClicks: 10 }
     return response.data;
 };
-
 
 const campaignService = {
     getCampaigns,

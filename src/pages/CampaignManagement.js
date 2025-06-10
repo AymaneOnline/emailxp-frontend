@@ -26,7 +26,7 @@ function CampaignManagement() {
     const [campaignClickStats, setCampaignClickStats] = useState({});
     const navigate = useNavigate();
 
-    const fetchData = useCallback(async () => {
+const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -35,7 +35,6 @@ function CampaignManagement() {
                 listService.getLists()
             ]);
 
-            // --- Diagnostic Log 1 ---
             console.log('[FE Debug] Raw campaignsData received:', campaignsData);
             setCampaigns(campaignsData);
             setLists(listsData);
@@ -44,27 +43,24 @@ function CampaignManagement() {
                 setNewCampaignData(prev => ({ ...prev, list: listsData[0]._id }));
             }
 
-            // Fetch Open Stats for each campaign
-            const openStatsPromises = campaignsData.map(campaign => {
-                // --- Diagnostic Log 2 ---
+            // Filter out any campaigns that don't have a valid _id before making requests
+            const validCampaigns = campaignsData.filter(campaign => 
+                campaign && campaign._id && typeof campaign._id === 'string' && campaign._id.length === 24
+            );
+
+            // Fetch Open Stats for each valid campaign
+            const openStatsPromises = validCampaigns.map(campaign => {
                 console.log(`[FE Debug] Preparing Open Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
-                if (!campaign._id || typeof campaign._id !== 'string' || campaign._id.length !== 24) {
-                    console.warn(`[FE Debug] SUSPICIOUS ID for Open Stats: "${campaign.name}" has ID "${campaign._id}" (Expected 24-char string)`);
-                }
                 return campaignService.getCampaignOpenStats(campaign._id);
             });
-            // Fetch Click Stats for each campaign
-            const clickStatsPromises = campaignsData.map(campaign => {
-                // --- Diagnostic Log 3 ---
+            
+            // Fetch Click Stats for each valid campaign
+            const clickStatsPromises = validCampaigns.map(campaign => {
                 console.log(`[FE Debug] Preparing Click Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
-                if (!campaign._id || typeof campaign._id !== 'string' || campaign._id.length !== 24) {
-                    console.warn(`[FE Debug] SUSPICIOUS ID for Click Stats: "${campaign.name}" has ID "${campaign._id}" (Expected 24-char string)`);
-                }
                 return campaignService.getCampaignClickStats(campaign._id);
             });
 
             const allOpenStats = await Promise.all(openStatsPromises);
-            // --- TYPO FIX APPLIED HERE ---
             const allClickStatsResults = await Promise.all(clickStatsPromises);
 
             // Convert array of open stats into an object/map for easy lookup by campaignId
@@ -75,7 +71,6 @@ function CampaignManagement() {
             setCampaignOpenStats(openStatsMap);
 
             // Convert array of click stats into an object/map for easy lookup by campaignId
-            // --- Using the corrected variable 'allClickStatsResults' here ---
             const clickStatsMap = allClickStatsResults.reduce((acc, currentStat) => {
                 acc[currentStat.campaignId] = currentStat;
                 return acc;
@@ -83,7 +78,6 @@ function CampaignManagement() {
             setCampaignClickStats(clickStatsMap);
 
         } catch (err) {
-            // --- Diagnostic Log 4: More detailed error logging ---
             console.error('[FE Debug] Error fetching data:', err.response?.data || err.message, err);
             setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
