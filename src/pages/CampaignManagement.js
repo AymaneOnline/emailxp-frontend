@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import campaignService from '../services/campaignService';
+import campaignService from '../services/campaignService'; // Make sure this is updated from the previous step
 import listService from '../services/listService';
 import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
@@ -17,7 +17,10 @@ function CampaignManagement() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [successMessage, setSuccessMessage] = useState(null); // New state for success messages
+    const [successMessage, setSuccessMessage] = useState(null);
+    // --- NEW STATE: To store open statistics, indexed by campaignId ---
+    const [campaignOpenStats, setCampaignOpenStats] = useState({});
+    // --- END NEW STATE ---
     const navigate = useNavigate();
 
     // Memoize fetchData using useCallback
@@ -29,15 +32,31 @@ function CampaignManagement() {
                 campaignService.getCampaigns(),
                 listService.getLists()
             ]);
+
             setCampaigns(campaignsData);
             setLists(listsData);
+
             if (listsData.length > 0) {
-                // Use a functional update for setNewCampaignData to ensure latest state
                 setNewCampaignData(prev => ({ ...prev, list: listsData[0]._id }));
             }
+
+            // --- MODIFIED: Fetch Open Stats for each campaign after fetching campaigns ---
+            const statsPromises = campaignsData.map(campaign =>
+                campaignService.getCampaignOpenStats(campaign._id)
+            );
+            const allStats = await Promise.all(statsPromises);
+
+            // Convert array of stats into an object/map for easy lookup by campaignId
+            const statsMap = allStats.reduce((acc, currentStat) => {
+                acc[currentStat.campaignId] = currentStat;
+                return acc;
+            }, {});
+            setCampaignOpenStats(statsMap);
+            // --- END MODIFIED ---
+
         } catch (err) {
-            console.error('Error fetching campaigns or lists:', err.response?.data || err.message);
-            setError(err.response?.data?.message || 'Failed to fetch campaigns or lists. Please login again.');
+            console.error('Error fetching data:', err.response?.data || err.message);
+            setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
                 navigate('/login');
@@ -63,7 +82,7 @@ function CampaignManagement() {
     const handleCreateCampaign = async (e) => {
         e.preventDefault();
         setError(null);
-        setSuccessMessage(null); // Clear previous messages
+        setSuccessMessage(null);
         if (!newCampaignData.name || !newCampaignData.subject || !newCampaignData.htmlContent || !newCampaignData.list) {
             alert('Please fill in all required fields (Name, Subject, HTML Content, and select a List).');
             return;
@@ -78,7 +97,7 @@ function CampaignManagement() {
                 list: lists.length > 0 ? lists[0]._id : '',
             });
             setSuccessMessage('Campaign created successfully!');
-            fetchData();
+            await fetchData(); // Re-fetch all data, including new campaign and its stats
         } catch (err) {
             console.error('Error creating campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to create campaign.');
@@ -88,11 +107,11 @@ function CampaignManagement() {
     const handleDeleteCampaign = async (campaignId) => {
         if (window.confirm('Are you sure you want to delete this campaign?')) {
             setError(null);
-            setSuccessMessage(null); // Clear previous messages
+            setSuccessMessage(null);
             try {
                 await campaignService.deleteCampaign(campaignId);
                 setSuccessMessage('Campaign deleted successfully!');
-                fetchData();
+                await fetchData(); // Re-fetch all data
             } catch (err) {
                 console.error('Error deleting campaign:', err.response?.data || err.message);
                 setError(err.response?.data?.message || 'Failed to delete campaign.');
@@ -100,7 +119,6 @@ function CampaignManagement() {
         }
     };
 
-    // --- NEW FUNCTION: Handle Send Campaign ---
     const handleSendCampaign = async (campaignId, campaignName, listName, subscriberCount) => {
         if (subscriberCount === 0) {
             alert(`The list "${listName}" has no subscribers. Please add subscribers to the list before sending this campaign.`);
@@ -111,17 +129,16 @@ function CampaignManagement() {
         }
 
         setError(null);
-        setSuccessMessage(null); // Clear previous messages
+        setSuccessMessage(null);
         try {
             const response = await campaignService.sendCampaign(campaignId);
-            setSuccessMessage(`Campaign "${campaignName}" sending initiated! Check subscriber emails. (Total: ${response.totalSubscribers})`);
-            fetchData(); // Re-fetch to update campaign status (e.g., to 'sending' or 'sent')
+            setSuccessMessage(`Campaign "${campaignName}" sending initiated! Total: ${response.totalSubscribers} subscribers. (Updates will appear shortly)`);
+            await fetchData(); // Re-fetch to update campaign status and potentially new open stats
         } catch (err) {
             console.error('Error sending campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to send campaign.');
         }
     };
-    // --- END NEW FUNCTION ---
 
 
     if (loading) {
@@ -133,7 +150,7 @@ function CampaignManagement() {
             <h2>Email Campaigns</h2>
 
             {error && <p style={{ color: 'red', marginBottom: '15px' }}>Error: {error}</p>}
-            {successMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{successMessage}</p>} {/* Display success messages */}
+            {successMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{successMessage}</p>}
 
             <form onSubmit={handleCreateCampaign} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
                 <h3>Create New Campaign</h3>
@@ -204,57 +221,56 @@ function CampaignManagement() {
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Subject</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Target List</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Opens (Total/Unique)</th> {/* --- NEW COLUMN HEADER --- */}
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Created At</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {campaigns.map((campaign) => (
-                            <tr key={campaign._id}>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.name}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.subject}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {/* Get the list name directly from populated campaign.list.name */}
-                                    {campaign.list ? campaign.list.name : 'N/A'}
-                                </td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.status}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(campaign.createdAt).toLocaleDateString()}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    {/* <button style={{ marginRight: '10px', padding: '5px 10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button> */}
-                                    <button
-                                        onClick={() => handleDeleteCampaign(campaign._id)}
-                                        style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px' }}
-                                    >
-                                        Delete
-                                    </button>
-                                    {/* NEW SEND BUTTON */}
-                                    {campaign.status === 'draft' || campaign.status === 'paused' ? (
+                        {campaigns.map((campaign) => {
+                            // --- NEW: Get stats for the current campaign, with fallback to 0 ---
+                            const stats = campaignOpenStats[campaign._id] || { totalOpens: 0, uniqueOpens: 0 };
+                            // --- END NEW ---
+                            return (
+                                <tr key={campaign._id}>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.name}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.subject}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                        {campaign.list ? campaign.list.name : 'N/A'}
+                                    </td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.status}</td>
+                                    {/* --- NEW COLUMN: Display Open Stats --- */}
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                        {stats.totalOpens}/{stats.uniqueOpens}
+                                    </td>
+                                    {/* --- END NEW COLUMN --- */}
+                                    <td style={{ border: '1px<seg_15>solid #ddd', padding: '8px' }}>{new Date(campaign.createdAt).toLocaleDateString()}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                         <button
-                                            onClick={() => {
-                                                console.log("--- Send button clicked for campaign:", campaign.name, "---");
-                                                console.log("Campaign's list ID:", campaign.list?._id);
-                                                console.log("All lists in state:", lists);
-
-                                                const targetList = lists.find(l => l._id === (campaign.list && campaign.list._id));
-                                                console.log("Found targetList:", targetList);
-
-                                                const subscriberCount = targetList?.subscribers?.length || 0;
-                                                console.log("Calculated subscriberCount:", subscriberCount);
-
-                                                const listName = campaign.list?.name || 'Unknown List';
-
-                                                handleSendCampaign(campaign._id, campaign.name, listName, subscriberCount);
-                                            }}
-                                            style={{ padding: '5px 10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            onClick={() => handleDeleteCampaign(campaign._id)}
+                                            style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px' }}
                                         >
-                                            Send
+                                            Delete
                                         </button>
-                                    ) : (
-                                        <span style={{ color: '#6c757d', marginLeft: '10px' }}>{campaign.status}</span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
+                                        {campaign.status === 'draft' || campaign.status === 'paused' ? (
+                                            <button
+                                                onClick={() => {
+                                                    const targetList = lists.find(l => l._id === (campaign.list && campaign.list._id));
+                                                    const subscriberCount = targetList?.subscribers?.length || 0;
+                                                    const listName = campaign.list?.name || 'Unknown List';
+                                                    handleSendCampaign(campaign._id, campaign.name, listName, subscriberCount);
+                                                }}
+                                                style={{ padding: '5px 10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            >
+                                                Send
+                                            </button>
+                                        ) : (
+                                            <span style={{ color: '#6c757d', marginLeft: '10px' }}>{campaign.status}</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             )}

@@ -1,5 +1,8 @@
+// In emailxp/frontend/src/services/campaignService.js
+
 import axios from 'axios';
 
+// Ensure this URL is correct for your deployed backend
 const API_URL = 'https://emailxp-backend-production.up.railway.app/api/campaigns/';
 
 // Helper to get auth header (same as in listService, can be refactored into a utils file later)
@@ -12,6 +15,9 @@ const getAuthHeader = () => {
             },
         };
     } else {
+        // If no user/token, return an empty object for headers.
+        // Axios will then send the request without an Authorization header,
+        // which will likely result in a 401 error from the backend, as expected.
         return {};
     }
 };
@@ -50,10 +56,15 @@ const deleteCampaign = async (campaignId) => {
 
 // --- New Function: Send a campaign ---
 const sendCampaign = async (campaignId) => {
-    // Send a POST request to the /:id/send endpoint.
-    // The request body can be empty as the ID is in the URL.
     const response = await axios.post(API_URL + campaignId + '/send', {}, getAuthHeader());
     return response.data;
+};
+
+// --- NEW FUNCTION: Get Open Stats for a specific campaign ---
+const getCampaignOpenStats = async (campaignId) => {
+    // The endpoint is /api/campaigns/:campaignId/opens
+    const response = await axios.get(API_URL + campaignId + '/opens', getAuthHeader());
+    return response.data; // This will return { campaignId, totalOpens, uniqueOpens }
 };
 
 
@@ -63,7 +74,8 @@ const campaignService = {
     getCampaignById,
     updateCampaign,
     deleteCampaign,
-    sendCampaign, // <--- EXPORT THE NEW FUNCTION
+    sendCampaign,
+    getCampaignOpenStats, // <--- IMPORTANT: EXPORT THE NEW FUNCTION
 };
 
 export default campaignService;
