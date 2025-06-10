@@ -1,5 +1,7 @@
+// src/pages/CampaignManagement.js
+
 import React, { useState, useEffect, useCallback } from 'react';
-import campaignService from '../services/campaignService'; // Make sure this is updated from the previous step
+import campaignService from '../services/campaignService';
 import listService from '../services/listService';
 import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
@@ -18,12 +20,12 @@ function CampaignManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    // --- NEW STATE: To store open statistics, indexed by campaignId ---
+    // State to store open statistics, indexed by campaignId
     const [campaignOpenStats, setCampaignOpenStats] = useState({});
-    // --- END NEW STATE ---
+    // New state to store click statistics, indexed by campaignId
+    const [campaignClickStats, setCampaignClickStats] = useState({});
     const navigate = useNavigate();
 
-    // Memoize fetchData using useCallback
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -40,19 +42,31 @@ function CampaignManagement() {
                 setNewCampaignData(prev => ({ ...prev, list: listsData[0]._id }));
             }
 
-            // --- MODIFIED: Fetch Open Stats for each campaign after fetching campaigns ---
-            const statsPromises = campaignsData.map(campaign =>
+            // Fetch Open Stats for each campaign
+            const openStatsPromises = campaignsData.map(campaign =>
                 campaignService.getCampaignOpenStats(campaign._id)
             );
-            const allStats = await Promise.all(statsPromises);
+            // Fetch Click Stats for each campaign
+            const clickStatsPromises = campaignsData.map(campaign =>
+                campaignService.getCampaignClickStats(campaign._id)
+            );
 
-            // Convert array of stats into an object/map for easy lookup by campaignId
-            const statsMap = allStats.reduce((acc, currentStat) => {
+            const allOpenStats = await Promise.all(openStatsPromises);
+            const allClickStats = await Promise.all(clickStatsPromises);
+
+            // Convert array of open stats into an object/map for easy lookup by campaignId
+            const openStatsMap = allOpenStats.reduce((acc, currentStat) => {
                 acc[currentStat.campaignId] = currentStat;
                 return acc;
             }, {});
-            setCampaignOpenStats(statsMap);
-            // --- END MODIFIED ---
+            setCampaignOpenStats(openStatsMap);
+
+            // Convert array of click stats into an object/map for easy lookup by campaignId
+            const clickStatsMap = allClickStats.reduce((acc, currentStat) => {
+                acc[currentStat.campaignId] = currentStat;
+                return acc;
+            }, {});
+            setCampaignClickStats(clickStatsMap);
 
         } catch (err) {
             console.error('Error fetching data:', err.response?.data || err.message);
@@ -64,7 +78,7 @@ function CampaignManagement() {
         } finally {
             setLoading(false);
         }
-    }, [navigate]); // Dependencies: only navigate, as state setters are stable
+    }, [navigate]);
 
     useEffect(() => {
         fetchData();
@@ -97,7 +111,7 @@ function CampaignManagement() {
                 list: lists.length > 0 ? lists[0]._id : '',
             });
             setSuccessMessage('Campaign created successfully!');
-            await fetchData(); // Re-fetch all data, including new campaign and its stats
+            await fetchData();
         } catch (err) {
             console.error('Error creating campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to create campaign.');
@@ -111,7 +125,7 @@ function CampaignManagement() {
             try {
                 await campaignService.deleteCampaign(campaignId);
                 setSuccessMessage('Campaign deleted successfully!');
-                await fetchData(); // Re-fetch all data
+                await fetchData();
             } catch (err) {
                 console.error('Error deleting campaign:', err.response?.data || err.message);
                 setError(err.response?.data?.message || 'Failed to delete campaign.');
@@ -133,7 +147,7 @@ function CampaignManagement() {
         try {
             const response = await campaignService.sendCampaign(campaignId);
             setSuccessMessage(`Campaign "${campaignName}" sending initiated! Total: ${response.totalSubscribers} subscribers. (Updates will appear shortly)`);
-            await fetchData(); // Re-fetch to update campaign status and potentially new open stats
+            await fetchData();
         } catch (err) {
             console.error('Error sending campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to send campaign.');
@@ -221,16 +235,19 @@ function CampaignManagement() {
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Subject</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Target List</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Opens (Total/Unique)</th> {/* --- NEW COLUMN HEADER --- */}
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Opens (Total/Unique)</th>
+                            {/* New column header for Click Stats */}
+                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Clicks (Total/Unique)</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Created At</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {campaigns.map((campaign) => {
-                            // --- NEW: Get stats for the current campaign, with fallback to 0 ---
-                            const stats = campaignOpenStats[campaign._id] || { totalOpens: 0, uniqueOpens: 0 };
-                            // --- END NEW ---
+                            // Get open stats for the current campaign, with fallback to 0
+                            const openStats = campaignOpenStats[campaign._id] || { totalOpens: 0, uniqueOpens: 0 };
+                            // Get click stats for the current campaign, with fallback to 0
+                            const clickStats = campaignClickStats[campaign._id] || { totalClicks: 0, uniqueClicks: 0 };
                             return (
                                 <tr key={campaign._id}>
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.name}</td>
@@ -239,12 +256,15 @@ function CampaignManagement() {
                                         {campaign.list ? campaign.list.name : 'N/A'}
                                     </td>
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.status}</td>
-                                    {/* --- NEW COLUMN: Display Open Stats --- */}
+                                    {/* Display Open Stats */}
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                        {stats.totalOpens}/{stats.uniqueOpens}
+                                        {openStats.totalOpens}/{openStats.uniqueOpens}
                                     </td>
-                                    {/* --- END NEW COLUMN --- */}
-                                    <td style={{ border: '1px<seg_15>solid #ddd', padding: '8px' }}>{new Date(campaign.createdAt).toLocaleDateString()}</td>
+                                    {/* Display Click Stats */}
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                        {clickStats.totalClicks}/{clickStats.uniqueClicks}
+                                    </td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(campaign.createdAt).toLocaleDateString()}</td>
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                         <button
                                             onClick={() => handleDeleteCampaign(campaign._id)}
