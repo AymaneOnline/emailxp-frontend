@@ -35,6 +35,8 @@ function CampaignManagement() {
                 listService.getLists()
             ]);
 
+            // --- Diagnostic Log 1 ---
+            console.log('[FE Debug] Raw campaignsData received:', campaignsData);
             setCampaigns(campaignsData);
             setLists(listsData);
 
@@ -43,16 +45,27 @@ function CampaignManagement() {
             }
 
             // Fetch Open Stats for each campaign
-            const openStatsPromises = campaignsData.map(campaign =>
-                campaignService.getCampaignOpenStats(campaign._id)
-            );
+            const openStatsPromises = campaignsData.map(campaign => {
+                // --- Diagnostic Log 2 ---
+                console.log(`[FE Debug] Preparing Open Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
+                if (!campaign._id || typeof campaign._id !== 'string' || campaign._id.length !== 24) {
+                    console.warn(`[FE Debug] SUSPICIOUS ID for Open Stats: "${campaign.name}" has ID "${campaign._id}" (Expected 24-char string)`);
+                }
+                return campaignService.getCampaignOpenStats(campaign._id);
+            });
             // Fetch Click Stats for each campaign
-            const clickStatsPromises = campaignsData.map(campaign =>
-                campaignService.getCampaignClickStats(campaign._id)
-            );
+            const clickStatsPromises = campaignsData.map(campaign => {
+                // --- Diagnostic Log 3 ---
+                console.log(`[FE Debug] Preparing Click Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
+                if (!campaign._id || typeof campaign._id !== 'string' || campaign._id.length !== 24) {
+                    console.warn(`[FE Debug] SUSPICIOUS ID for Click Stats: "${campaign.name}" has ID "${campaign._id}" (Expected 24-char string)`);
+                }
+                return campaignService.getCampaignClickStats(campaign._id);
+            });
 
             const allOpenStats = await Promise.all(openStatsPromises);
-            const allClickStats = await Promise.all(clickStatsPromises);
+            // --- TYPO FIX APPLIED HERE ---
+            const allClickStatsResults = await Promise.all(clickStatsPromises);
 
             // Convert array of open stats into an object/map for easy lookup by campaignId
             const openStatsMap = allOpenStats.reduce((acc, currentStat) => {
@@ -62,14 +75,16 @@ function CampaignManagement() {
             setCampaignOpenStats(openStatsMap);
 
             // Convert array of click stats into an object/map for easy lookup by campaignId
-            const clickStatsMap = allClickStats.reduce((acc, currentStat) => {
+            // --- Using the corrected variable 'allClickStatsResults' here ---
+            const clickStatsMap = allClickStatsResults.reduce((acc, currentStat) => {
                 acc[currentStat.campaignId] = currentStat;
                 return acc;
             }, {});
             setCampaignClickStats(clickStatsMap);
 
         } catch (err) {
-            console.error('Error fetching data:', err.response?.data || err.message);
+            // --- Diagnostic Log 4: More detailed error logging ---
+            console.error('[FE Debug] Error fetching data:', err.response?.data || err.message, err);
             setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
@@ -236,7 +251,6 @@ function CampaignManagement() {
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Target List</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Opens (Total/Unique)</th>
-                            {/* New column header for Click Stats */}
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Clicks (Total/Unique)</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Created At</th>
                             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
@@ -244,9 +258,7 @@ function CampaignManagement() {
                     </thead>
                     <tbody>
                         {campaigns.map((campaign) => {
-                            // Get open stats for the current campaign, with fallback to 0
                             const openStats = campaignOpenStats[campaign._id] || { totalOpens: 0, uniqueOpens: 0 };
-                            // Get click stats for the current campaign, with fallback to 0
                             const clickStats = campaignClickStats[campaign._id] || { totalClicks: 0, uniqueClicks: 0 };
                             return (
                                 <tr key={campaign._id}>
@@ -256,11 +268,9 @@ function CampaignManagement() {
                                         {campaign.list ? campaign.list.name : 'N/A'}
                                     </td>
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.status}</td>
-                                    {/* Display Open Stats */}
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                         {openStats.totalOpens}/{openStats.uniqueOpens}
                                     </td>
-                                    {/* Display Click Stats */}
                                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                         {clickStats.totalClicks}/{clickStats.uniqueClicks}
                                     </td>
