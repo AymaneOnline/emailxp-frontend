@@ -7,7 +7,8 @@ import SubscribersForList from './pages/SubscribersForList';
 import CampaignManagement from './pages/CampaignManagement';
 import TemplateManagement from './pages/TemplateManagement';
 import TemplateForm from './pages/TemplateForm';
-import TemplateView from './pages/TemplateView'; // <--- NEW: Import TemplateView
+import TemplateView from './pages/TemplateView';
+import CampaignForm from './pages/CampaignForm'; // <--- NEW: Import CampaignForm
 import './App.css';
 
 function App() {
@@ -114,7 +115,46 @@ function App() {
                     />
                     <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/:listId/subscribers" element={user ? <SubscribersForList /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view subscribers.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/campaigns" element={user ? <CampaignManagement /> : <div style={{ textAlign: 'center', marginTop: '50px'}}><p>You need to be logged in to view your campaigns.</p><Link to="/login">Go to Login</Link></div>} />
+
+                    {/* Campaign Routes */}
+                    <Route
+                        path="/campaigns"
+                        element={
+                            user ? (
+                                <CampaignManagement />
+                            ) : (
+                                <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your campaigns.</p><Link to="/login">Go to Login</Link></div>
+                            )
+                        }
+                    />
+                    {/* <--- NEW: Route for creating a new campaign */}
+                    <Route
+                        path="/campaigns/new"
+                        element={
+                            user ? (
+                                <CampaignForm />
+                            ) : (
+                                <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                                    <p>You need to be logged in to create a campaign.</p>
+                                    <Link to="/login">Go to Login</Link>
+                                </div>
+                            )
+                        }
+                    />
+                    {/* <--- NEW: Route for editing an existing campaign */}
+                    <Route
+                        path="/campaigns/edit/:id"
+                        element={
+                            user ? (
+                                <CampaignForm />
+                            ) : (
+                                <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                                    <p>You need to be logged in to edit a campaign.</p>
+                                    <Link to="/login">Go to Login</Link>
+                                </div>
+                            )
+                        }
+                    />
 
                     {/* Template Routes */}
                     <Route
@@ -156,18 +196,16 @@ function App() {
                             )
                         }
                     />
-                    {/* <--- NEW: Route for viewing a single template */}
                     <Route
-                        path="/templates/:id" // This route matches when an ID is present, and it's not /edit/:id
+                        path="/templates/:id"
                         element={
                             user ? (
                                 <TemplateView />
                             ) : (
-                                <div style={{textAlign: 'center', marginTop: '50px'}}><p>You need to be logged in to view this template.</p><Link to="/login">Go to Login</Link></div>
+                                <div style={{ textAlign: 'center', marginTop: '50px'}}><p>You need to be logged in to view this template.</p><Link to="/login">Go to Login</Link></div>
                             )
                         }
                     />
-                    {/* END NEW */}
                 </Routes>
             </main>
         </div>

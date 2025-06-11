@@ -15,9 +15,6 @@ const getAuthHeader = () => {
             },
         };
     } else {
-        // If no user/token, return an empty object for headers.
-        // Axios will then send the request without an Authorization header,
-        // which will likely result in a 401 error from the backend, as expected.
         return {};
     }
 };
@@ -68,7 +65,7 @@ const getCampaignOpenStats = async (campaignId) => {
 
 // --- NEW FUNCTION FOR CLICK TRACKING: Get Click Stats for a specific campaign ---
 const getCampaignClickStats = async (campaignId) => {
-    if (!campaignId) { // Optional: Add a client-side error check here to prevent bad requests
+    if (!campaignId) {
         // You could throw an error here to prevent the request from even being sent
         // throw new Error("Campaign ID is required for click stats.");
     }
@@ -84,7 +81,7 @@ const campaignService = {
     deleteCampaign,
     sendCampaign,
     getCampaignOpenStats,
-    getCampaignClickStats, // <--- IMPORTANT: EXPORT THE NEW CLICK STATS FUNCTION
+    getCampaignClickStats,
 };
 
 export default campaignService;
