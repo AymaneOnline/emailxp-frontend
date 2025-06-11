@@ -35,7 +35,6 @@ const fetchData = useCallback(async () => {
                 listService.getLists()
             ]);
 
-            console.log('[FE Debug] Raw campaignsData received:', campaignsData);
             setCampaigns(campaignsData);
             setLists(listsData);
 
@@ -50,13 +49,11 @@ const fetchData = useCallback(async () => {
 
             // Fetch Open Stats for each valid campaign
             const openStatsPromises = validCampaigns.map(campaign => {
-                console.log(`[FE Debug] Preparing Open Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
                 return campaignService.getCampaignOpenStats(campaign._id);
             });
             
             // Fetch Click Stats for each valid campaign
             const clickStatsPromises = validCampaigns.map(campaign => {
-                console.log(`[FE Debug] Preparing Click Stats request for Campaign Name: "${campaign.name}", ID: "${campaign._id}"`);
                 return campaignService.getCampaignClickStats(campaign._id);
             });
 
@@ -78,7 +75,6 @@ const fetchData = useCallback(async () => {
             setCampaignClickStats(clickStatsMap);
 
         } catch (err) {
-            console.error('[FE Debug] Error fetching data:', err.response?.data || err.message, err);
             setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
