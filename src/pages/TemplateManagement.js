@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import templateService from '../services/templateService';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link /* Removed: , useNavigate */ } from 'react-router-dom'; // <--- REMOVED useNavigate here
 
 const TemplateManagement = () => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const navigate = useNavigate();
+    // Removed: const navigate = useNavigate(); // <--- REMOVED this line
 
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -63,8 +63,8 @@ const TemplateManagement = () => {
     }
 
     return (
-        <div className="main-content-container"> {/* Applying global container style */}
-            <h2 className="section-header">Email Templates</h2> {/* Applying global header style */}
+        <div className="main-content-container">
+            <h2 className="section-header">Email Templates</h2>
             <Link to="/templates/new" className="btn btn-primary create-template-btn margin-bottom-large">
                 Create New Template
             </Link>
@@ -72,13 +72,13 @@ const TemplateManagement = () => {
             {templates.length === 0 ? (
                 <p className="text-center text-muted margin-top-large">No templates found. Create one!</p>
             ) : (
-                <ul className="template-list"> {/* New class for the template list */}
+                <ul className="template-list">
                     {templates.map((template) => (
-                        <li key={template._id} className="template-item"> {/* New class for each template item */}
-                            <h3 className="template-name">{template.name}</h3> {/* New class for template name */}
-                            <p className="template-subject">Subject: {template.subject}</p> {/* New class for subject */}
-                            <p className="template-date">Created: {new Date(template.createdAt).toLocaleDateString()}</p> {/* New class for date */}
-                            <div className="button-group"> {/* New class for button group */}
+                        <li key={template._id} className="template-item">
+                            <h3 className="template-name">{template.name}</h3>
+                            <p className="template-subject">Subject: {template.subject}</p>
+                            <p className="template-date">Created: {new Date(template.createdAt).toLocaleDateString()}</p>
+                            <div className="button-group">
                                 <Link to={`/templates/${template._id}`} className="btn btn-secondary">View</Link>
                                 <Link to={`/templates/edit/${template._id}`} className="btn btn-secondary">Edit</Link>
                                 <button
