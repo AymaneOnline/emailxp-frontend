@@ -1,16 +1,13 @@
-// src/pages/CampaignManagement.js
+// emailxp/frontend/src/pages/CampaignManagement.js
 
 import React, { useState, useEffect, useCallback } from 'react';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
-import { useNavigate, Link } from 'react-router-dom'; // NEW: Import Link
-// Removed: ReactQuill, 'react-quill/dist/quill.snow.css' as form is now external
-// Removed: CampaignForm import, as it's now rendered via Routes in App.js
-// Removed: templateService import, as CampaignManagement no longer passes templates directly to form
+import { useNavigate, Link } from 'react-router-dom';
 
 function CampaignManagement() {
     const [campaigns, setCampaigns] = useState([]);
-    const [lists, setLists] = useState([]); // Still need lists for displaying list names in table
+    const [lists, setLists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
@@ -22,7 +19,6 @@ function CampaignManagement() {
         setLoading(true);
         setError(null);
         try {
-            // Fetch all campaigns and lists concurrently
             const [campaignsData, listsData] = await Promise.all([
                 campaignService.getCampaigns(),
                 listService.getLists()
@@ -31,25 +27,35 @@ function CampaignManagement() {
             setCampaigns(campaignsData);
             setLists(listsData);
 
-            // Refresh stats for all campaigns
             const validCampaigns = campaignsData.filter(campaign =>
                 campaign && campaign._id && typeof campaign._id === 'string' && campaign._id.length === 24
             );
 
-            const openStatsPromises = validCampaigns.map(campaign => campaignService.getCampaignOpenStats(campaign._id));
-            const clickStatsPromises = validCampaigns.map(campaign => campaignService.getCampaignClickStats(campaign._id));
+            // Fetching stats for all campaigns concurrently
+            const openStatsPromises = validCampaigns.map(campaign =>
+                campaignService.getCampaignOpenStats(campaign._id)
+            );
+            const clickStatsPromises = validCampaigns.map(campaign =>
+                campaignService.getCampaignClickStats(campaign._id)
+            );
 
             const allOpenStats = await Promise.all(openStatsPromises);
             const allClickStatsResults = await Promise.all(clickStatsPromises);
 
             const openStatsMap = allOpenStats.reduce((acc, currentStat) => {
-                acc[currentStat.campaignId] = currentStat;
+                // Ensure currentStat and campaignId exist before assigning
+                if (currentStat && currentStat.campaignId) {
+                    acc[currentStat.campaignId] = currentStat;
+                }
                 return acc;
             }, {});
             setCampaignOpenStats(openStatsMap);
 
             const clickStatsMap = allClickStatsResults.reduce((acc, currentStat) => {
-                acc[currentStat.campaignId] = currentStat;
+                // Ensure currentStat and campaignId exist before assigning
+                if (currentStat && currentStat.campaignId) {
+                    acc[currentStat.campaignId] = currentStat;
+                }
                 return acc;
             }, {});
             setCampaignClickStats(clickStatsMap);
@@ -70,9 +76,6 @@ function CampaignManagement() {
         fetchData();
     }, [fetchData]);
 
-    // Removed: handleFormSuccess and handleFormError as CampaignForm handles its own navigation now
-    // Removed: newCampaignData, handleInputChange, handleQuillChange, handleCreateCampaign, editingCampaign, handleEditCampaign, handleCancelEdit
-
     const handleDeleteCampaign = async (campaignId) => {
         if (window.confirm('Are you sure you want to delete this campaign? This action will also delete all associated open and click events.')) {
             setError(null);
@@ -80,7 +83,7 @@ function CampaignManagement() {
             try {
                 await campaignService.deleteCampaign(campaignId);
                 setSuccessMessage('Campaign deleted successfully!');
-                fetchData(); // Refresh data after deletion
+                fetchData();
             } catch (err) {
                 console.error('Error deleting campaign:', err.response?.data || err.message);
                 setError(err.response?.data?.message || 'Failed to delete campaign.');
@@ -88,12 +91,16 @@ function CampaignManagement() {
         }
     };
 
-    const handleSendCampaign = async (campaignId, campaignName, listName, subscriberCount) => {
+    const handleSendCampaign = async (campaignId, campaignName, listId) => {
+        const targetList = lists.find(l => l._id === listId);
+        const subscriberCount = targetList?.subscribers?.length || 0;
+
         if (subscriberCount === 0) {
-            alert(`The list "${listName}" has no subscribers. Please add subscribers to the list before sending this campaign.`);
+            alert(`The list "${targetList?.name || 'Unknown List'}" has no subscribers. Please add subscribers to the list before sending this campaign.`);
             return;
         }
-        if (!window.confirm(`Are you sure you want to send "${campaignName}" to ${listName} (${subscriberCount} subscribers)? This action cannot be undone.`)) {
+
+        if (!window.confirm(`Are you sure you want to send "${campaignName}" to ${targetList?.name || 'Unknown List'} (${subscriberCount} subscribers)? This action cannot be undone.`)) {
             return;
         }
 
@@ -111,70 +118,43 @@ function CampaignManagement() {
 
     if (loading) {
         return (
-            <div style={{
-                textAlign: 'center',
-                marginTop: '50px',
-                fontSize: '1.2em',
-                color: '#555',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '200px'
-            }}>
-                <div className="spinner" style={{
-                    border: '4px solid rgba(0, 0, 0, 0.1)',
-                    borderLeftColor: '#007bff',
-                    borderRadius: '50%',
-                    width: '30px',
-                    height: '30px',
-                    animation: 'spin 1s linear infinite',
-                    marginBottom: '15px'
-                }}></div>
+            <div className="loading-container">
+                <div className="spinner"></div>
                 <p>Loading campaigns and statistics...</p>
-                <style>{`
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                `}</style>
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '20px auto', border: '1px solid #eee', borderRadius: '8px', boxShadow: '2px 2px 5px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="main-content-container"> {/* Replaced inline style */}
+            <h2 className="section-header"> {/* Replaced inline style */}
                 Email Campaigns
-                <Link to="/campaigns/new" style={{ padding: '8px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', textDecoration: 'none' }}>
+                <Link to="/campaigns/new" className="btn btn-primary"> {/* Replaced inline style */}
                     Create New Campaign
                 </Link>
             </h2>
 
-            {error && <p style={{ color: 'red', marginBottom: '15px' }}>Error: {error}</p>}
-            {successMessage && <p style={{ color: 'green', marginBottom: '15px' }}>{successMessage}</p>}
-
-            {/* REMOVED: The CampaignForm component was here */}
-            {/* REMOVED: The Cancel Edit button was here */}
+            {error && <p className="error-message">{error}</p>} {/* Replaced inline style */}
+            {successMessage && <p className="success-message">{successMessage}</p>} {/* Replaced inline style */}
 
             {campaigns.length === 0 ? (
-                <p style={{ textAlign: 'center', marginTop: '30px', fontSize: '1.1em', color: '#666' }}>
+                <p className="no-data-message"> {/* Replaced inline style */}
                     You don't have any email campaigns yet. Click "Create New Campaign" to get started!
                 </p>
             ) : (
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                <div className="table-responsive"> {/* Replaced inline style */}
+                    <table className="data-table"> {/* Replaced inline style */}
                         <thead>
-                            <tr style={{ backgroundColor: '#f2f2f2' }}>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Campaign Name</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Subject</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Target List</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Opens (Total/Unique)</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Clicks (Total/Unique)</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Created At</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Scheduled At</th>
-                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
+                            <tr> {/* Replaced inline style */}
+                                <th>Campaign Name</th> {/* Replaced inline style */}
+                                <th>Subject</th>
+                                <th>Target List</th>
+                                <th>Status</th>
+                                <th>Opens (Total/Unique)</th>
+                                <th>Clicks (Total/Unique)</th>
+                                <th>Created At</th>
+                                <th>Scheduled At</th>
+                                <th className="actions-column">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -183,51 +163,60 @@ function CampaignManagement() {
                                 const clickStats = campaignClickStats[campaign._id] || { totalClicks: 0, uniqueClicks: 0 };
 
                                 const targetList = lists.find(l => l._id === (campaign.list?._id || campaign.list));
-                                const subscriberCount = targetList?.subscribers?.length || 0;
+                                const listIdForSend = campaign.list?._id || campaign.list;
 
                                 return (
                                     <tr key={campaign._id}>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.name}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.subject}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                            {campaign.list ? campaign.list.name : 'N/A'}
+                                        <td>
+                                            <Link to={`/campaigns/${campaign._id}`} className="link-primary"> {/* Replaced inline style */}
+                                                {campaign.name}
+                                            </Link>
                                         </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{campaign.status}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                            Total: <strong>{openStats.totalOpens}</strong><br/>
+                                        <td>{campaign.subject}</td>
+                                        <td>
+                                            {targetList ? `${targetList.name} (${targetList.subscribers?.length || 0} subscribers)` : 'N/A'}
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge status-${campaign.status.toLowerCase()}`}>
+                                                {campaign.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            Total: <strong>{openStats.totalOpens}</strong><br />
                                             Unique: <strong>{openStats.uniqueOpens}</strong>
                                         </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                            Total: <strong>{clickStats.totalClicks}</strong><br/>
+                                        <td>
+                                            Total: <strong>{clickStats.totalClicks}</strong><br />
                                             Unique: <strong>{clickStats.uniqueClicks}</strong>
                                         </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(campaign.createdAt).toLocaleDateString()}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                        <td>{new Date(campaign.createdAt).toLocaleDateString()}</td>
+                                        <td>
                                             {campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleString() : 'N/A'}
                                         </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px', whiteSpace: 'nowrap' }}>
-                                            {/* NEW: Link to edit page instead of calling handleEditCampaign */}
+                                        <td className="action-buttons-cell"> {/* Replaced inline style */}
                                             <Link
                                                 to={`/campaigns/edit/${campaign._id}`}
-                                                style={{ padding: '5px 10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px', textDecoration: 'none' }}
+                                                className="btn btn-sm btn-info"
                                             >
                                                 Edit
                                             </Link>
                                             <button
                                                 onClick={() => handleDeleteCampaign(campaign._id)}
-                                                style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px' }}
+                                                className="btn btn-sm btn-danger margin-left-sm"
                                             >
                                                 Delete
                                             </button>
                                             {campaign.status === 'draft' ? (
                                                 <button
-                                                    onClick={() => handleSendCampaign(campaign._id, campaign.name, campaign.list?.name || 'Unknown List', subscriberCount)}
-                                                    style={{ padding: '5px 10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                                    onClick={() => handleSendCampaign(campaign._id, campaign.name, listIdForSend)}
+                                                    className="btn btn-sm btn-success margin-left-sm"
                                                 >
                                                     Send Now
                                                 </button>
                                             ) : (
-                                                <span style={{ color: '#6c757d', marginLeft: '10px', fontWeight: 'bold' }}>{campaign.status.toUpperCase()}</span>
+                                                <span className={`status-badge status-${campaign.status.toLowerCase()} margin-left-sm`}>
+                                                    {campaign.status.toUpperCase()}
+                                                </span>
                                             )}
                                         </td>
                                     </tr>

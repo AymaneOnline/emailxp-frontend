@@ -8,8 +8,9 @@ import CampaignManagement from './pages/CampaignManagement';
 import TemplateManagement from './pages/TemplateManagement';
 import TemplateForm from './pages/TemplateForm';
 import TemplateView from './pages/TemplateView';
-import CampaignForm from './pages/CampaignForm'; // <--- NEW: Import CampaignForm
-import './App.css';
+import CampaignForm from './pages/CampaignForm';     // Imported for new campaign routes
+import CampaignDetails from './pages/CampaignDetails'; // Imported for campaign details view
+import './App.css'; // Ensure your global stylesheet is imported here
 
 function App() {
     const [backendMessage, setBackendMessage] = useState('');
@@ -127,7 +128,7 @@ function App() {
                             )
                         }
                     />
-                    {/* <--- NEW: Route for creating a new campaign */}
+                    {/* Route for creating a new campaign */}
                     <Route
                         path="/campaigns/new"
                         element={
@@ -141,7 +142,7 @@ function App() {
                             )
                         }
                     />
-                    {/* <--- NEW: Route for editing an existing campaign */}
+                    {/* Route for editing an existing campaign */}
                     <Route
                         path="/campaigns/edit/:id"
                         element={
@@ -155,6 +156,21 @@ function App() {
                             )
                         }
                     />
+                    {/* Route for viewing campaign details/analytics */}
+                    <Route
+                        path="/campaigns/:id"
+                        element={
+                            user ? (
+                                <CampaignDetails />
+                            ) : (
+                                <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                                    <p>You need to be logged in to view campaign details.</p>
+                                    <Link to="/login">Go to Login</Link>
+                                </div>
+                            )
+                        }
+                    />
+
 
                     {/* Template Routes */}
                     <Route

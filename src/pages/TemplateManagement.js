@@ -1,10 +1,10 @@
 // emailxp/frontend/src/pages/TemplateManagement.js
 
 import React, { useState, useEffect } from 'react';
-import templateService from '../services/templateService'; // Path remains correct: ../services
+import templateService from '../services/templateService';
 import { Link, useNavigate } from 'react-router-dom';
 
-const TemplateManagement = () => { // <--- Component name changed here
+const TemplateManagement = () => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -28,12 +28,14 @@ const TemplateManagement = () => { // <--- Component name changed here
     }, []);
 
     const handleDelete = async (id) => {
+        // IMPORTANT: Replace window.confirm() with a custom modal/message box in a production app.
         if (window.confirm('Are you sure you want to delete this template?')) {
             try {
                 setLoading(true);
                 await templateService.deleteTemplate(id);
                 setTemplates(templates.filter(template => template._id !== id));
                 setLoading(false);
+                // IMPORTANT: Replace alert() with a custom notification system in a production app.
                 alert('Template deleted successfully!');
             } catch (err) {
                 console.error('Error deleting template:', err);
@@ -44,33 +46,44 @@ const TemplateManagement = () => { // <--- Component name changed here
     };
 
     if (loading) {
-        return <div>Loading templates...</div>;
+        return (
+            <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading templates...</p>
+            </div>
+        );
     }
 
     if (error) {
-        return <div style={{ color: 'red' }}>Error: {error}</div>;
+        return (
+            <div className="error-container">
+                <p className="text-red">Error: {error}</p>
+            </div>
+        );
     }
 
     return (
-        <div style={styles.container}>
-            <h2 style={styles.heading}>Email Templates</h2>
-            <Link to="/templates/new" style={styles.createButton}>Create New Template</Link>
+        <div className="main-content-container"> {/* Applying global container style */}
+            <h2 className="section-header">Email Templates</h2> {/* Applying global header style */}
+            <Link to="/templates/new" className="btn btn-primary create-template-btn margin-bottom-large">
+                Create New Template
+            </Link>
 
             {templates.length === 0 ? (
-                <p>No templates found. Create one!</p>
+                <p className="text-center text-muted margin-top-large">No templates found. Create one!</p>
             ) : (
-                <ul style={styles.templateList}>
+                <ul className="template-list"> {/* New class for the template list */}
                     {templates.map((template) => (
-                        <li key={template._id} style={styles.templateItem}>
-                            <h3 style={styles.templateName}>{template.name}</h3>
-                            <p style={styles.templateSubject}>Subject: {template.subject}</p>
-                            <p style={styles.templateDate}>Created: {new Date(template.createdAt).toLocaleDateString()}</p>
-                            <div style={styles.buttonGroup}>
-                                <Link to={`/templates/${template._id}`} style={styles.actionButton}>View</Link>
-                                <Link to={`/templates/edit/${template._id}`} style={styles.actionButton}>Edit</Link>
+                        <li key={template._id} className="template-item"> {/* New class for each template item */}
+                            <h3 className="template-name">{template.name}</h3> {/* New class for template name */}
+                            <p className="template-subject">Subject: {template.subject}</p> {/* New class for subject */}
+                            <p className="template-date">Created: {new Date(template.createdAt).toLocaleDateString()}</p> {/* New class for date */}
+                            <div className="button-group"> {/* New class for button group */}
+                                <Link to={`/templates/${template._id}`} className="btn btn-secondary">View</Link>
+                                <Link to={`/templates/edit/${template._id}`} className="btn btn-secondary">Edit</Link>
                                 <button
                                     onClick={() => handleDelete(template._id)}
-                                    style={{ ...styles.actionButton, ...styles.deleteButton }}
+                                    className="btn btn-danger"
                                 >
                                     Delete
                                 </button>
@@ -83,90 +96,4 @@ const TemplateManagement = () => { // <--- Component name changed here
     );
 };
 
-const styles = {
-    container: {
-        padding: '20px',
-        maxWidth: '900px',
-        margin: '20px auto',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    },
-    heading: {
-        textAlign: 'center',
-        color: '#333',
-        marginBottom: '25px',
-    },
-    createButton: {
-        display: 'block',
-        width: '200px',
-        padding: '10px 15px',
-        margin: '0 auto 30px auto',
-        backgroundColor: '#007bff',
-        color: 'white',
-        textDecoration: 'none',
-        borderRadius: '5px',
-        textAlign: 'center',
-        fontSize: '1em',
-        transition: 'background-color 0.2s',
-    },
-    createButtonHover: {
-        backgroundColor: '#0056b3',
-    },
-    templateList: {
-        listStyle: 'none',
-        padding: '0',
-    },
-    templateItem: {
-        backgroundColor: 'white',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        padding: '15px',
-        marginBottom: '15px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-    },
-    templateName: {
-        margin: '0',
-        color: '#007bff',
-        fontSize: '1.4em',
-    },
-    templateSubject: {
-        margin: '0',
-        color: '#555',
-        fontSize: '0.9em',
-    },
-    templateDate: {
-        margin: '0',
-        color: '#777',
-        fontSize: '0.8em',
-    },
-    buttonGroup: {
-        marginTop: '10px',
-        display: 'flex',
-        gap: '10px',
-    },
-    actionButton: {
-        padding: '8px 15px',
-        border: 'none',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        textDecoration: 'none',
-        color: 'white',
-        backgroundColor: '#6c757d', // Grey for general actions
-        fontSize: '0.9em',
-        transition: 'background-color 0.2s',
-    },
-    actionButtonHover: {
-        backgroundColor: '#5a6268',
-    },
-    deleteButton: {
-        backgroundColor: '#dc3545', // Red for delete
-    },
-    deleteButtonHover: {
-        backgroundColor: '#c82333',
-    },
-};
-
-export default TemplateManagement; // <--- Export name also changed here
+export default TemplateManagement;

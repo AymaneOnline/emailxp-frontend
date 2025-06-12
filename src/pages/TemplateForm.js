@@ -107,171 +107,86 @@ const TemplateForm = () => {
     ];
 
     if (loading && id) { // Only show loading when fetching existing template
-        return <div>Loading template data...</div>;
+        return (
+            <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading template data...</p>
+            </div>
+        );
     }
 
     return (
-        <div style={styles.container}>
-            <h2 style={styles.heading}>{id ? 'Edit Template' : 'Create New Template'}</h2>
+        <div className="main-content-container"> {/* Replaced styles.container */}
+            <h2 className="section-header">{id ? 'Edit Template' : 'Create New Template'}</h2> {/* Replaced styles.heading */}
 
-            {error && <p style={styles.errorMessage}>{error}</p>}
-            {success && <p style={styles.successMessage}>{success}</p>}
+            {error && <p className="error-message">{error}</p>} {/* New error message class */}
+            {success && <p className="success-message">{success}</p>} {/* New success message class */}
 
-            <form onSubmit={handleSubmit} style={styles.form}>
-                <div style={styles.formGroup}>
-                    <label htmlFor="name" style={styles.label}>Template Name:</label>
+            <form onSubmit={handleSubmit} className="form-card"> {/* Replaced styles.form with form-card */}
+                <div className="form-group"> {/* Replaced styles.formGroup */}
+                    <label htmlFor="name" className="form-label">Template Name:</label> {/* Replaced styles.label */}
                     <input
                         type="text"
                         id="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
-                        style={styles.input}
+                        className="form-input"
                     />
                 </div>
 
-                <div style={styles.formGroup}>
-                    <label htmlFor="subject" style={styles.label}>Subject:</label>
+                <div className="form-group"> {/* Replaced styles.formGroup */}
+                    <label htmlFor="subject" className="form-label">Subject:</label> {/* Replaced styles.label */}
                     <input
                         type="text"
                         id="subject"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         required
-                        style={styles.input}
+                        className="form-input"
                     />
                 </div>
 
-                <div style={styles.formGroup}>
-                    <label style={styles.label}>HTML Content:</label>
+                <div className="form-group"> {/* Replaced styles.formGroup */}
+                    <label className="form-label">HTML Content:</label> {/* Replaced styles.label */}
                     <ReactQuill
                         theme="snow" // 'snow' is a clean theme
                         value={htmlContent}
                         onChange={setHtmlContent}
                         modules={modules}
                         formats={formats}
-                        style={styles.quillEditor}
+                        className="quill-editor"
                     />
                 </div>
 
-                <div style={styles.formGroup}>
-                    <label htmlFor="plainTextContent" style={styles.label}>Plain Text Content (Optional):</label>
+                <div className="form-group"> {/* Replaced styles.formGroup */}
+                    <label htmlFor="plainTextContent" className="form-label margin-top-large">Plain Text Content (Optional):</label> {/* Replaced styles.label */}
                     <textarea
                         id="plainTextContent"
                         value={plainTextContent}
                         onChange={(e) => setPlainTextContent(e.target.value)}
                         rows="5"
-                        style={styles.textarea}
+                        className="form-textarea"
                         placeholder="Automatically generated from HTML content if left empty, or provide custom plain text."
                     ></textarea>
                 </div>
 
-                <button type="submit" disabled={loading} style={styles.submitButton}>
-                    {loading ? 'Saving...' : (id ? 'Update Template' : 'Create Template')}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => navigate('/templates')}
-                    disabled={loading}
-                    style={{...styles.submitButton, ...styles.cancelButton}}
-                >
-                    Cancel
-                </button>
+                <div className="button-group-form"> {/* New class for the form buttons */}
+                    <button type="submit" disabled={loading} className="btn btn-primary">
+                        {loading ? 'Saving...' : (id ? 'Update Template' : 'Create Template')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/templates')}
+                        disabled={loading}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </form>
         </div>
     );
-};
-
-const styles = {
-    container: {
-        padding: '20px',
-        maxWidth: '800px',
-        margin: '20px auto',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    },
-    heading: {
-        textAlign: 'center',
-        color: '#333',
-        marginBottom: '25px',
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-    },
-    formGroup: {
-        marginBottom: '15px',
-    },
-    label: {
-        display: 'block',
-        marginBottom: '8px',
-        fontWeight: 'bold',
-        color: '#555',
-    },
-    input: {
-        width: '100%',
-        padding: '10px',
-        border: '1px solid #ddd',
-        borderRadius: '5px',
-        fontSize: '1em',
-        boxSizing: 'border-box', // Include padding in width
-    },
-    textarea: {
-        width: '100%',
-        padding: '10px',
-        border: '1px solid #ddd',
-        borderRadius: '5px',
-        fontSize: '1em',
-        minHeight: '100px',
-        boxSizing: 'border-box',
-    },
-    quillEditor: {
-        height: '250px', // Adjust height as needed
-        marginBottom: '50px', // Make space for Quill toolbar below
-    },
-    submitButton: {
-        padding: '12px 20px',
-        backgroundColor: '#007bff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '5px',
-        fontSize: '1.1em',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        alignSelf: 'center', // Center the button
-        width: 'fit-content',
-        marginTop: '20px',
-    },
-    submitButtonHover: {
-        backgroundColor: '#0056b3',
-    },
-    cancelButton: {
-        backgroundColor: '#6c757d', // Grey for cancel
-        marginLeft: '10px',
-    },
-    cancelButtonHover: {
-        backgroundColor: '#5a6268',
-    },
-    errorMessage: {
-        color: 'red',
-        backgroundColor: '#ffe0e0',
-        border: '1px solid red',
-        padding: '10px',
-        borderRadius: '5px',
-        marginBottom: '15px',
-        textAlign: 'center',
-    },
-    successMessage: {
-        color: 'green',
-        backgroundColor: '#e0ffe0',
-        border: '1px solid green',
-        padding: '10px',
-        borderRadius: '5px',
-        marginBottom: '15px',
-        textAlign: 'center',
-    },
 };
 
 export default TemplateForm;
