@@ -22,7 +22,7 @@ function CampaignForm() {
         list: '', // Will store list._id
         htmlContent: '',
         scheduledAt: '', // Date and time string
-        status: 'draft',
+        status: 'draft', // Default to draft for new campaigns
         template: '' // Will store template._id
     });
     const [lists, setLists] = useState([]);
@@ -67,8 +67,7 @@ function CampaignForm() {
                     subject: campaignToEdit.subject || '',
                     list: campaignToEdit.list?._id || '', // Use _id
                     htmlContent: campaignToEdit.htmlContent || '',
-                    // Format for datetime-local input, handle potential null/undefined
-                    scheduledAt: campaignToEdit.scheduledAt ? new Date(campaignToEdit.scheduledAt).toISOString().slice(0, 16) : '',
+                    scheduledAt: campaignToEdit.scheduledAt ? new Date(campaignToEdit.scheduledAt).toISOString().slice(0, 16) : '', // Format for datetime-local input
                     status: campaignToEdit.status || 'draft',
                     template: campaignToEdit.template?._id || '' // Use _id
                 });
@@ -106,7 +105,7 @@ function CampaignForm() {
             setCampaignData(prev => ({
                 ...prev,
                 template: selectedTemplateId, // Set the template ID
-                htmlContent: selectedTemplate.htmlContent // Apply template content (assuming it's htmlContent, not just 'content')
+                htmlContent: selectedTemplate.htmlContent // Apply template content
             }));
         } else {
             setCampaignData(prev => ({
@@ -128,12 +127,26 @@ function CampaignForm() {
             return;
         }
 
+        // --- NEW LOGIC: Determine status based on scheduledAt ---
+        let newStatus = campaignData.status;
+        if (campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date()) {
+            newStatus = 'scheduled'; // If scheduled date is in the future, set status to scheduled
+        } else if (newStatus === 'scheduled' && !campaignData.scheduledAt) {
+            // If it was scheduled but scheduledAt was cleared, revert to draft
+            newStatus = 'draft';
+        }
+        // If status was already 'sent', 'sending', 'failed', 'cancelled', keep it.
+        // Otherwise, if scheduledAt is past, it's a draft until manually sent.
+        if (newStatus !== 'scheduled' && campaignData.status !== 'sent' && campaignData.status !== 'sending' && campaignData.status !== 'failed' && campaignData.status !== 'cancelled') {
+             newStatus = 'draft';
+        }
+        // --- END NEW LOGIC ---
+
         const payload = {
             ...campaignData,
-            // Ensure template and list are sent as IDs if they exist
+            status: newStatus, // <--- Use the determined status
             list: campaignData.list || null,
             template: campaignData.template || null,
-            // Format scheduledAt to ISO string if provided, otherwise null
             scheduledAt: campaignData.scheduledAt ? new Date(campaignData.scheduledAt).toISOString() : null,
         };
 
@@ -145,7 +158,6 @@ function CampaignForm() {
                 await campaignService.createCampaign(payload);
                 setSuccessMessage('Campaign created successfully!');
             }
-            // Navigate back to campaign management list after a short delay
             setTimeout(() => {
                 navigate('/campaigns');
             }, 1500);
@@ -222,7 +234,7 @@ function CampaignForm() {
                             id="template"
                             name="template"
                             value={campaignData.template}
-                            onChange={handleApplyTemplate} // Use specific handler for templates
+                            onChange={handleApplyTemplate}
                             className="form-input form-select"
                         >
                             <option value="">No Template</option>
@@ -242,10 +254,16 @@ function CampaignForm() {
                             onChange={handleInputChange}
                             className="form-input"
                         />
+                         {campaignData.scheduledAt && new Date(campaignData.scheduledAt) <= new Date() && (
+                            <p className="form-help-text text-red">Scheduled time is in the past. Campaign will be saved as Draft.</p>
+                        )}
+                        {campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date() && (
+                            <p className="form-help-text text-green">Campaign will be scheduled for sending.</p>
+                        )}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="status" className="form-label">Status:</label>
+                        <label htmlFor="status" className="form-label">Current Status:</label>
                         <select
                             id="status"
                             name="status"
@@ -254,12 +272,19 @@ function CampaignForm() {
                             className="form-input form-select"
                             disabled={isEditing && campaignData.status !== 'draft'} // Disable status change if not draft and editing
                         >
+                            {/* Only 'draft' can be manually set if it's a new campaign or existing draft */}
                             <option value="draft">Draft</option>
-                            <option value="sent">Sent (Manual override, usually set by system)</option>
-                            <option value="scheduled">Scheduled (Set by system when scheduledAt is present)</option>
+                            {/* Allow 'scheduled' if editing an already scheduled campaign or if it was just scheduled */}
+                            {isEditing && campaignData.status === 'scheduled' && <option value="scheduled">Scheduled</option>}
+                            {/* Display read-only statuses if they are set by the system */}
+                            {isEditing && campaignData.status === 'sending' && <option value="sending">Sending</option>}
+                            {isEditing && campaignData.status === 'sent' && <option value="sent">Sent</option>}
+                            {isEditing && campaignData.status === 'cancelled' && <option value="cancelled">Cancelled</option>}
+                            {isEditing && campaignData.status === 'failed' && <option value="failed">Failed</option>}
+
                         </select>
                         {isEditing && campaignData.status !== 'draft' && (
-                            <p className="form-help-text">Status can only be changed manually if campaign is a 'draft'.</p>
+                            <p className="form-help-text">Status can only be changed manually if campaign is a 'draft'. It's usually set by the system for scheduled/sent campaigns.</p>
                         )}
                     </div>
 
@@ -295,10 +320,9 @@ function CampaignForm() {
                 <div className="preview-column">
                     <h3 className="form-sub-header">Live HTML Preview:</h3>
                     <div className="preview-box">
-                        {/* Using an iframe for safer HTML rendering */}
                         <iframe
                             title="Email Content Preview"
-                            srcDoc={campaignData.htmlContent} // Renders the current htmlContent
+                            srcDoc={campaignData.htmlContent}
                             className="preview-iframe"
                         />
                     </div>

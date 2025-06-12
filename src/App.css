@@ -1132,3 +1132,144 @@ a:hover {
         height: 350px; /* Adjust editor container height for mobile */
     }
 }
+
+/* emailxp/frontend/src/App.css */
+
+/* ... (your existing CSS) ... */
+
+/* Data Table Styles (for subscribers, campaigns, etc.) */
+.table-responsive {
+    overflow-x: auto; /* Makes table scrollable on small screens */
+    margin-top: 20px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-small);
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--light-gray);
+    color: var(--text-color-dark);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--hover-light);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status Badges for Subscribers/Campaigns */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.85em;
+    display: inline-block; /* Ensures padding/margin works */
+}
+
+.status-active {
+    background-color: #d4edda; /* Light green */
+    color: #155724; /* Dark green */
+}
+
+.status-unsubscribed {
+    background-color: #f8d7da; /* Light red */
+    color: #721c24; /* Dark red */
+}
+
+.status-bounced {
+    background-color: #ffeeba; /* Light yellow */
+    color: #856404; /* Dark yellow */
+}
+
+.status-pending {
+    background-color: #cce5ff; /* Light blue */
+    color: #004085; /* Dark blue */
+}
+
+.status-unknown {
+    background-color: #e2e3e5; /* Light gray */
+    color: #383d41; /* Dark gray */
+}
+
+/* For inline button groups within tables (if uncommented in SubscriberManagement) */
+.button-group-inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.button-group-inline .btn {
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
+/* Added for ListManagement to use a more specific class */
+.list-management-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
+    gap: 20px;
+}
+
+.list-management-list .list-item {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--shadow-small);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.list-management-list .list-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+}
+
+.list-management-list .list-name {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+}
+
+.list-management-list .list-stats,
+.list-management-list .list-date {
+    color: var(--text-color-light);
+    font-size: 0.95em;
+    margin-bottom: 8px;
+}
+
+/* Ensure button groups align well in list items */
+.list-management-list .button-group {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap; /* Allow buttons to wrap */
+    gap: 10px;
+}
+
+/* Adjust button styles for list items if needed */
+.list-management-list .btn {
+    flex-grow: 1; /* Allow buttons to grow to fill space */
+    min-width: 100px; /* Minimum width for buttons */
+    text-align: center;
+}

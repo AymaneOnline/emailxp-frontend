@@ -1,16 +1,21 @@
+// emailxp/frontend/src/App.js
+
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Login from './components/Login';
 import Register from './components/Register';
 import ListManagement from './pages/ListManagement';
-import SubscribersForList from './pages/SubscribersForList';
 import CampaignManagement from './pages/CampaignManagement';
 import TemplateManagement from './pages/TemplateManagement';
 import TemplateForm from './pages/TemplateForm';
 import TemplateView from './pages/TemplateView';
-import CampaignForm from './pages/CampaignForm';     // Imported for new campaign routes
-import CampaignDetails from './pages/CampaignDetails'; // Imported for campaign details view
-import './App.css'; // Ensure your global stylesheet is imported here
+import CampaignForm from './pages/CampaignForm';
+import CampaignDetails from './pages/CampaignDetails';
+import SubscriberManagement from './pages/SubscriberManagement';
+import ListForm from './pages/ListForm';
+import SubscriberForm from './pages/SubscriberForm'; // <--- NEW IMPORT
+
+import './App.css';
 
 function App() {
     const [backendMessage, setBackendMessage] = useState('');
@@ -115,7 +120,12 @@ function App() {
                         }
                     />
                     <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/:listId/subscribers" element={user ? <SubscribersForList /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view subscribers.</p><Link to="/login">Go to Login</Link></div>} />
+                    <Route path="/lists/new" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to create a list.</p><Link to="/login">Go to Login</Link></div>} />
+                    <Route path="/lists/edit/:id" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit a list.</p><Link to="/login">Go to Login</Link></div>} />
+                    <Route path="/lists/:listId/subscribers" element={user ? <SubscriberManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view subscribers.</p><Link to="/login">Go to Login</Link></div>} />
+                    <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to add subscribers.</p><Link to="/login">Go to Login</Link></div>} /> {/* <--- NEW ROUTE */}
+                    <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} /> {/* <--- NEW ROUTE (for future use) */}
+
 
                     {/* Campaign Routes */}
                     <Route
@@ -128,7 +138,6 @@ function App() {
                             )
                         }
                     />
-                    {/* Route for creating a new campaign */}
                     <Route
                         path="/campaigns/new"
                         element={
@@ -142,7 +151,6 @@ function App() {
                             )
                         }
                     />
-                    {/* Route for editing an existing campaign */}
                     <Route
                         path="/campaigns/edit/:id"
                         element={
@@ -156,7 +164,6 @@ function App() {
                             )
                         }
                     />
-                    {/* Route for viewing campaign details/analytics */}
                     <Route
                         path="/campaigns/:id"
                         element={
