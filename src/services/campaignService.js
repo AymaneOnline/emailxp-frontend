@@ -1,77 +1,121 @@
-// In emailxp/frontend/src/services/campaignService.js
+// emailxp/frontend/src/services/campaignService.js
 
 import axios from 'axios';
 
-// Ensure this URL is correct for your deployed backend
 const API_URL = 'https://emailxp-backend-production.up.railway.app/api/campaigns/';
 
-// Helper to get auth header (same as in listService, can be refactored into a utils file later)
-const getAuthHeader = () => {
+const getToken = () => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.token) {
-        return {
-            headers: {
-                Authorization: `Bearer ${user.token}`,
-            },
-        };
-    } else {
-        return {};
-    }
+    return user?.token;
 };
 
-// --- Campaign Operations ---
-
-// Get all campaigns for the user
+// Get all campaigns
 const getCampaigns = async () => {
-    const response = await axios.get(API_URL, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(API_URL, config);
     return response.data;
 };
 
-// Create a new campaign
+// Create new campaign
 const createCampaign = async (campaignData) => {
-    const response = await axios.post(API_URL, campaignData, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.post(API_URL, campaignData, config);
     return response.data;
 };
 
-// Get a single campaign by ID
-const getCampaignById = async (campaignId) => {
-    const response = await axios.get(API_URL + campaignId, getAuthHeader());
+// Get campaign by ID
+const getCampaignById = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(API_URL + id, config);
     return response.data;
 };
 
-// Update a campaign
-const updateCampaign = async (campaignId, campaignData) => {
-    const response = await axios.put(API_URL + campaignId, campaignData, getAuthHeader());
+// Update campaign
+const updateCampaign = async (id, campaignData) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(API_URL + id, campaignData, config);
     return response.data;
 };
 
-// Delete a campaign
-const deleteCampaign = async (campaignId) => {
-    const response = await axios.delete(API_URL + campaignId, getAuthHeader());
+// Delete campaign
+const deleteCampaign = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.delete(API_URL + id, config);
     return response.data;
 };
 
-// --- New Function: Send a campaign ---
-const sendCampaign = async (campaignId) => {
-    const response = await axios.post(API_URL + campaignId + '/send', {}, getAuthHeader());
+// Send campaign manually
+const sendCampaign = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.post(API_URL + id + '/send', {}, config);
     return response.data;
 };
 
-// --- NEW FUNCTION: Get Open Stats for a specific campaign ---
+// --- NEW FUNCTION: Get campaign analytics ---
+const getCampaignAnalytics = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(`${API_URL}${id}/analytics`, config); // <--- New API call
+    return response.data;
+};
+
+// --- Existing tracking functions (we'll keep them for now, but CampaignDetails won't use them for combined stats) ---
 const getCampaignOpenStats = async (campaignId) => {
-    const response = await axios.get(API_URL + campaignId + '/opens', getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(`${API_URL}${campaignId}/opens`, config);
     return response.data;
 };
 
-// --- NEW FUNCTION FOR CLICK TRACKING: Get Click Stats for a specific campaign ---
 const getCampaignClickStats = async (campaignId) => {
-    if (!campaignId) {
-        // You could throw an error here to prevent the request from even being sent
-        // throw new Error("Campaign ID is required for click stats.");
-    }
-    const response = await axios.get(API_URL + campaignId + '/clicks', getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(`${API_URL}${campaignId}/clicks`, config);
     return response.data;
 };
+
 
 const campaignService = {
     getCampaigns,
@@ -82,6 +126,7 @@ const campaignService = {
     sendCampaign,
     getCampaignOpenStats,
     getCampaignClickStats,
+    getCampaignAnalytics, // <--- EXPORT NEW FUNCTION
 };
 
 export default campaignService;

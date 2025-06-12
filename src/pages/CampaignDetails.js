@@ -1,4 +1,5 @@
 // emailxp/frontend/src/pages/CampaignDetails.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import campaignService from '../services/campaignService';
@@ -10,9 +11,10 @@ function CampaignDetails() {
     const navigate = useNavigate();
 
     const [campaign, setCampaign] = useState(null);
-    const [openStats, setOpenStats] = useState(null);
-    const [clickStats, setClickStats] = useState(null);
-    const [listDetails, setListDetails] = useState(null); // State for list details
+    // REMOVED: [openStats, setOpenStats] = useState(null);
+    // REMOVED: [clickStats, setClickStats] = useState(null);
+    const [analytics, setAnalytics] = useState(null); // <--- NEW STATE: to hold combined analytics
+    const [listDetails, setListDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -20,36 +22,36 @@ function CampaignDetails() {
         setLoading(true);
         setError(null);
 
-        // --- Crucial: Add a guard clause for campaignId ---
         if (!campaignId || campaignId === 'undefined' || campaignId === 'null') {
             setError('Invalid Campaign ID provided in the URL.');
             setLoading(false);
-            // Optionally, you might want to navigate away or display a more specific error page
-            // navigate('/campaigns'); // Example: redirect to campaigns list if ID is missing/invalid
-            return; // Stop execution if campaignId is not valid
+            return;
         }
-        // --- End guard clause ---
 
         try {
+            // Fetch campaign basic details
             const fetchedCampaign = await campaignService.getCampaignById(campaignId);
             setCampaign(fetchedCampaign);
 
             // Fetch list details if a list is associated
-            if (fetchedCampaign.list && fetchedCampaign.list._id) { // Check if list exists and has an ID
+            if (fetchedCampaign.list && fetchedCampaign.list._id) {
                 const listData = await listService.getListById(fetchedCampaign.list._id);
                 setListDetails(listData);
             }
 
-            // Fetch open and click stats for this specific campaign
-            const fetchedOpenStats = await campaignService.getCampaignOpenStats(campaignId);
-            const fetchedClickStats = await campaignService.getCampaignClickStats(campaignId);
+            // --- CRITICAL CHANGE: Use the new combined analytics endpoint ---
+            const fetchedAnalytics = await campaignService.getCampaignAnalytics(campaignId);
+            setAnalytics(fetchedAnalytics); // Store the combined analytics data
+            // --- END CRITICAL CHANGE ---
 
-            setOpenStats(fetchedOpenStats);
-            setClickStats(fetchedClickStats);
+            // REMOVED: No longer need these individual calls
+            // const fetchedOpenStats = await campaignService.getCampaignOpenStats(campaignId);
+            // const fetchedClickStats = await campaignService.getCampaignClickStats(campaignId);
+            // setOpenStats(fetchedOpenStats);
+            // setClickStats(fetchedClickStats);
 
         } catch (err) {
             console.error('Error fetching campaign details:', err);
-            // More specific error messages from backend will be caught here
             setError(err.response?.data?.message || 'Failed to load campaign details.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
@@ -87,7 +89,7 @@ function CampaignDetails() {
         );
     }
 
-    if (!campaign) {
+    if (!campaign || !analytics) { // Ensure analytics data is also loaded
         return (
             <div className="no-data-container">
                 <p>Campaign not found or no data available.</p>
@@ -101,24 +103,26 @@ function CampaignDetails() {
     // Get totalSubscribers from fetched listDetails
     const totalSubscribers = listDetails?.subscribers?.length || 0;
 
-    const uniqueOpens = openStats?.uniqueOpens || 0;
-    const totalOpens = openStats?.totalOpens || 0;
-    const uniqueClicks = clickStats?.uniqueClicks || 0;
-    const totalClicks = clickStats?.totalClicks || 0;
+    // --- CRITICAL CHANGE: Get stats directly from the new analytics state ---
+    const totalEmailsSent = analytics.totalEmailsSent || 0; // The count from the backend
+    const uniqueOpens = analytics.uniqueOpens || 0;
+    const totalOpens = analytics.totalOpens || 0;
+    const uniqueClicks = analytics.uniqueClicks || 0;
+    const totalClicks = analytics.totalClicks || 0;
 
-    // Calculate rates. Ensure consistency with toFixed(2)
-    const openRate = totalSubscribers > 0 ? ((uniqueOpens / totalSubscribers) * 100).toFixed(2) : '0.00';
-    const clickRate = totalSubscribers > 0 ? ((uniqueClicks / totalSubscribers) * 100).toFixed(2) : '0.00';
-    const clickThroughRate = uniqueOpens > 0 ? ((uniqueClicks / uniqueOpens) * 100).toFixed(2) : '0.00';
-
+    // The rates are now directly from the backend, more consistent
+    const openRate = analytics.openRate;
+    const clickRate = analytics.clickRate;
+    const clickThroughRate = analytics.clickThroughRate;
+    // --- END CRITICAL CHANGE ---
 
     return (
-        <div className="main-content-container"> {/* Using the general container class */}
+        <div className="main-content-container">
             <h2 className="section-header">
                 Campaign Details: {campaign.name}
             </h2>
 
-            <div className="campaign-details-grid margin-bottom-large"> {/* Added margin-bottom-large for spacing */}
+            <div className="campaign-details-grid margin-bottom-large">
                 <div className="info-card">
                     <h3>Campaign Information</h3>
                     <p><strong>Subject:</strong> {campaign.subject}</p>
@@ -127,6 +131,12 @@ function CampaignDetails() {
                     <p><strong>Created:</strong> {new Date(campaign.createdAt).toLocaleString()}</p>
                     <p><strong>Scheduled:</strong> {campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleString() : 'Not Scheduled'}</p>
                     <p><strong>Template Used:</strong> {campaign.template?.name || 'No Template'}</p>
+                    {campaign.status === 'sent' && analytics.sentAt && (
+                        <p><strong>Sent At:</strong> {new Date(analytics.sentAt).toLocaleString()}</p>
+                    )}
+                     {campaign.status === 'sent' && (
+                        <p><strong>Emails Sent:</strong> {analytics.totalEmailsSent}</p>
+                    )}
                 </div>
                 <div className="stats-grid">
                     <h3>Engagement Statistics</h3>
@@ -153,11 +163,10 @@ function CampaignDetails() {
 
             <h3 className="section-header">Email Content Preview</h3>
             <div className="email-preview-frame">
-                {/* Using an iframe for safer HTML rendering */}
                 <iframe
                     title="Email Content Preview"
                     srcDoc={campaign.htmlContent}
-                    className="email-iframe-content" // Added a class for potential future styling if needed
+                    className="email-iframe-content"
                 />
             </div>
 

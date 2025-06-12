@@ -14,7 +14,7 @@ import CampaignDetails from './pages/CampaignDetails';
 import SubscriberManagement from './pages/SubscriberManagement';
 import ListForm from './pages/ListForm';
 import SubscriberForm from './pages/SubscriberForm';
-import AnalyticsDashboard from './components/AnalyticsDashboard'; // <--- NEW IMPORT
+import AnalyticsDashboard from './components/AnalyticsDashboard'; // Keep this import
 
 import './App.css';
 
@@ -65,7 +65,8 @@ function App() {
                         ) : (
                             <>
                                 <li style={{ marginLeft: '20px' }}><span style={{ color: 'white' }}>Welcome, {user.name}!</span></li>
-                                <li style={{ marginLeft: '20px' }}><Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li> {/* <--- NEW DASHBOARD LINK */}
+                                {/* CHANGE THIS LINK: Point to the root '/' or keep it as '/dashboard' as an alias */}
+                                <li style={{ marginLeft: '20px' }}><Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li> {/* <--- UPDATED DASHBOARD LINK */}
                                 <li style={{ marginLeft: '20px' }}><Link to="/lists" style={{ color: 'white', textDecoration: 'none' }}>Lists</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/campaigns" style={{ color: 'white', textDecoration: 'none' }}>Campaigns</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/templates" style={{ color: 'white', textDecoration: 'none' }}>Templates</Link></li>
@@ -82,19 +83,13 @@ function App() {
                 <Routes>
                     <Route path="/register" element={<Register setUser={setUser} />} />
                     <Route path="/login" element={<Login setUser={setUser} />} />
+
+                    {/* --- CHANGE START: Make AnalyticsDashboard the default logged-in view --- */}
                     <Route
                         path="/"
                         element={
                             user ? (
-                                <div>
-                                    <h2>Dashboard</h2> {/* This is your default logged-in home */}
-                                    <p>This is your personalized dashboard.</p>
-                                    <p>You are logged in as: {user.email}</p>
-                                    <p>Go to <Link to="/dashboard">Analytics Dashboard</Link> for overall stats.</p> {/* Link to new dashboard */}
-                                    <p>Go to <Link to="/lists">Email Lists</Link> to manage your subscribers.</p>
-                                    <p>Go to <Link to="/campaigns">Email Campaigns</Link> to create and manage your emails.</p>
-                                    <p>Go to <Link to="/templates">Email Templates</Link> to create and manage your templates.</p>
-                                </div>
+                                <AnalyticsDashboard user={user} /> // Now renders the AnalyticsDashboard
                             ) : (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
                                     <h2>Welcome!</h2>
@@ -103,12 +98,19 @@ function App() {
                             )
                         }
                     />
-                    {/* --- NEW ROUTE FOR DASHBOARD --- */}
+                    {/* --- CHANGE END --- */}
+
+                    {/* The /dashboard route can now be removed or kept as an alias if you wish.
+                        For simplicity, I'll remove it here as it's redundant if '/' is the dashboard.
+                        If you want '/dashboard' to still work as an alternative path, keep it.
+                        For now, removing it makes '/' the single canonical path for the dashboard.
+                    */}
+                    {/* REMOVED:
                     <Route
                         path="/dashboard"
                         element={
                             user ? (
-                                <AnalyticsDashboard user={user} /> // Pass the user object as a prop
+                                <AnalyticsDashboard user={user} />
                             ) : (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
                                     <p>You need to be logged in to view the analytics dashboard.</p>
@@ -117,7 +119,8 @@ function App() {
                             )
                         }
                     />
-                    {/* --- END NEW ROUTE --- */}
+                    */}
+
                     <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/new" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to create a list.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/edit/:id" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit a list.</p><Link to="/login">Go to Login</Link></div>} />
@@ -126,7 +129,7 @@ function App() {
                     <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} />
 
 
-                    {/* Campaign Routes */}
+                    {/* Campaign Routes (no change needed here) */}
                     <Route
                         path="/campaigns"
                         element={
@@ -178,7 +181,7 @@ function App() {
                     />
 
 
-                    {/* Template Routes */}
+                    {/* Template Routes (no change needed here) */}
                     <Route
                         path="/templates"
                         element={
