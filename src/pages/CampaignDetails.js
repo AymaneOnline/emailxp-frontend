@@ -19,6 +19,17 @@ function CampaignDetails() {
     const fetchCampaignData = useCallback(async () => {
         setLoading(true);
         setError(null);
+
+        // --- Crucial: Add a guard clause for campaignId ---
+        if (!campaignId || campaignId === 'undefined' || campaignId === 'null') {
+            setError('Invalid Campaign ID provided in the URL.');
+            setLoading(false);
+            // Optionally, you might want to navigate away or display a more specific error page
+            // navigate('/campaigns'); // Example: redirect to campaigns list if ID is missing/invalid
+            return; // Stop execution if campaignId is not valid
+        }
+        // --- End guard clause ---
+
         try {
             const fetchedCampaign = await campaignService.getCampaignById(campaignId);
             setCampaign(fetchedCampaign);
@@ -38,6 +49,7 @@ function CampaignDetails() {
 
         } catch (err) {
             console.error('Error fetching campaign details:', err);
+            // More specific error messages from backend will be caught here
             setError(err.response?.data?.message || 'Failed to load campaign details.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
@@ -59,7 +71,6 @@ function CampaignDetails() {
             <div className="loading-container">
                 <div className="spinner"></div>
                 <p>Loading campaign details and analytics...</p>
-                {/* The @keyframes for spinner is already in App.css, so we don't need this inline style block */}
             </div>
         );
     }
