@@ -13,14 +13,15 @@ import CampaignForm from './pages/CampaignForm';
 import CampaignDetails from './pages/CampaignDetails';
 import SubscriberManagement from './pages/SubscriberManagement';
 import ListForm from './pages/ListForm';
-import SubscriberForm from './pages/SubscriberForm'; // <--- NEW IMPORT
+import SubscriberForm from './pages/SubscriberForm';
+import AnalyticsDashboard from './components/AnalyticsDashboard'; // <--- NEW IMPORT
 
 import './App.css';
 
 function App() {
     const [backendMessage, setBackendMessage] = useState('');
     const [error, setError] = useState(null);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(null); // Managed locally
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,6 +30,7 @@ function App() {
             setUser(JSON.parse(storedUser));
         }
 
+        // Keep your backend connection check
         fetch('https://emailxp-backend-production.up.railway.app')
             .then(response => {
                 if (!response.ok) {
@@ -63,7 +65,7 @@ function App() {
                         ) : (
                             <>
                                 <li style={{ marginLeft: '20px' }}><span style={{ color: 'white' }}>Welcome, {user.name}!</span></li>
-                                <li style={{ marginLeft: '20px' }}><Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li>
+                                <li style={{ marginLeft: '20px' }}><Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li> {/* <--- NEW DASHBOARD LINK */}
                                 <li style={{ marginLeft: '20px' }}><Link to="/lists" style={{ color: 'white', textDecoration: 'none' }}>Lists</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/campaigns" style={{ color: 'white', textDecoration: 'none' }}>Campaigns</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/templates" style={{ color: 'white', textDecoration: 'none' }}>Templates</Link></li>
@@ -85,9 +87,10 @@ function App() {
                         element={
                             user ? (
                                 <div>
-                                    <h2>Dashboard</h2>
+                                    <h2>Dashboard</h2> {/* This is your default logged-in home */}
                                     <p>This is your personalized dashboard.</p>
                                     <p>You are logged in as: {user.email}</p>
+                                    <p>Go to <Link to="/dashboard">Analytics Dashboard</Link> for overall stats.</p> {/* Link to new dashboard */}
                                     <p>Go to <Link to="/lists">Email Lists</Link> to manage your subscribers.</p>
                                     <p>Go to <Link to="/campaigns">Email Campaigns</Link> to create and manage your emails.</p>
                                     <p>Go to <Link to="/templates">Email Templates</Link> to create and manage your templates.</p>
@@ -100,31 +103,27 @@ function App() {
                             )
                         }
                     />
+                    {/* --- NEW ROUTE FOR DASHBOARD --- */}
                     <Route
                         path="/dashboard"
                         element={
                             user ? (
-                                <div>
-                                    <h3>Your Email Marketing Dashboard</h3>
-                                    <p>Here you can manage your email lists and campaigns.</p>
-                                    <p>Go to <Link to="/lists">Email Lists</Link> to get started!</p>
-                                    <p>Go to <Link to="/campaigns">Email Campaigns</Link> to create and manage your emails.</p>
-                                    <p>Go to <Link to="/templates">Email Templates</Link> to create and manage your templates.</p>
-                                </div>
+                                <AnalyticsDashboard user={user} /> // Pass the user object as a prop
                             ) : (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                                    <p>You need to be logged in to view this page.</p>
+                                    <p>You need to be logged in to view the analytics dashboard.</p>
                                     <Link to="/login">Go to Login</Link>
                                 </div>
                             )
                         }
                     />
+                    {/* --- END NEW ROUTE --- */}
                     <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/new" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to create a list.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/edit/:id" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit a list.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/:listId/subscribers" element={user ? <SubscriberManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view subscribers.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to add subscribers.</p><Link to="/login">Go to Login</Link></div>} /> {/* <--- NEW ROUTE */}
-                    <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} /> {/* <--- NEW ROUTE (for future use) */}
+                    <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to add subscribers.</p><Link to="/login">Go to Login</Link></div>} />
+                    <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} />
 
 
                     {/* Campaign Routes */}
