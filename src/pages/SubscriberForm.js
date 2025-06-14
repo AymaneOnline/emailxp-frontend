@@ -3,143 +3,190 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import listService from '../services/listService';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const SubscriberForm = () => {
-    const { listId, subscriberId } = useParams();
+function SubscriberForm() {
+    const { listId, subscriberId } = useParams(); // Get both listId and subscriberId
     const navigate = useNavigate();
 
-    // --- UPDATED DEFAULT STATUS TO 'subscribed' ---
-    const [email, setEmail] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [status, setStatus] = useState('subscribed'); // Changed 'active' to 'subscribed'
+    const [formData, setFormData] = useState({
+        email: '',
+        firstName: '',
+        lastName: '',
+        status: 'subscribed' // Default for new subscribers
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(false); // New state to track mode
 
     useEffect(() => {
+        // If subscriberId exists in the URL, we are in edit mode
         if (subscriberId) {
             setIsEditing(true);
-            setError("Edit functionality for subscribers is not fully implemented yet.");
-            console.log("Attempting to edit subscriber ID:", subscriberId);
+            const fetchSubscriber = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const data = await listService.getSubscriberById(listId, subscriberId);
+                    setFormData(data); // Pre-fill the form with existing data
+                } catch (err) {
+                    console.error('Error fetching subscriber:', err);
+                    setError(err.response?.data?.message || 'Failed to load subscriber data.');
+                    toast.error('Failed to load subscriber for editing.');
+                    if (err.response && err.response.status === 401) {
+                        localStorage.removeItem('user');
+                        navigate('/login');
+                    } else {
+                        navigate(`/lists/${listId}/subscribers`); // Redirect back if error
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchSubscriber();
         } else {
             setIsEditing(false);
+            setFormData({ // Reset form for new creation if no subscriberId
+                email: '',
+                firstName: '',
+                lastName: '',
+                status: 'subscribed'
+            });
         }
-    }, [subscriberId]);
+    }, [listId, subscriberId, navigate]); // Re-run effect if listId or subscriberId changes
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prevData => ({
+            ...prevData,
+            [name]: value
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        if (!email.trim()) {
-            setError('Email is required.');
-            setLoading(false);
-            return;
-        }
-
-        const subscriberData = { email, firstName, lastName, status };
-
         try {
             if (isEditing) {
-                setError("Editing subscribers is not yet fully functional.");
+                // Update existing subscriber
+                await listService.updateSubscriber(listId, subscriberId, formData);
+                toast.success('Subscriber updated successfully!');
             } else {
-                await listService.addSubscriber(listId, subscriberData);
-                alert('Subscriber added successfully!');
+                // Add new subscriber
+                await listService.addSubscriberToList(listId, formData);
+                toast.success('Subscriber added successfully!');
             }
+            // Navigate back to the subscribers list for the current list
             navigate(`/lists/${listId}/subscribers`);
         } catch (err) {
-            console.error(`Error ${isEditing ? 'updating' : 'adding'} subscriber:`, err.response?.data || err.message);
-            // Check for specific duplicate email error message from backend if applicable
-            if (err.response && err.response.data && err.response.data.message && err.response.data.message.includes('duplicate key error')) {
-                 setError('A subscriber with this email already exists in this list.');
-            } else {
-                setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'add'} subscriber.`);
+            console.error('Error saving subscriber:', err.response?.data || err.message);
+            setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'add'} subscriber.`);
+            toast.error(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'add'} subscriber.`);
+            if (err.response && err.response.status === 401) {
+                localStorage.removeItem('user');
+                navigate('/login');
             }
         } finally {
             setLoading(false);
         }
     };
 
-    if (isEditing && error && error !== "Edit functionality for subscribers is not fully implemented yet.") {
+    if (loading && isEditing) { // Show loading only when fetching existing data for edit
         return (
-            <div className="main-content-container">
-                <p className="error-message">Error: {error}</p>
-                <button onClick={() => navigate(`/lists/${listId}/subscribers`)} className="btn btn-secondary margin-top-large">
+            <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading subscriber data...</p>
+            </div>
+        );
+    }
+
+    if (error && isEditing) { // Display error if failed to load subscriber for edit
+        return (
+            <div className="error-container">
+                <h3>Error</h3>
+                <p>{error}</p>
+                <button onClick={() => navigate(`/lists/${listId}/subscribers`)} className="btn btn-primary margin-top-large">
                     Back to Subscribers
                 </button>
             </div>
         );
     }
 
-
     return (
-        <div className="main-content-container">
+        <div className="form-card">
             <h2 className="section-header">{isEditing ? 'Edit Subscriber' : 'Add New Subscriber'}</h2>
-            <form onSubmit={handleSubmit} className="form-card">
-                {error && <p className="text-red margin-bottom-small">Error: {error}</p>}
-
+            <p className="text-muted">For List ID: {listId}</p>
+            <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label htmlFor="email" className="form-label">Email:</label>
+                    <label htmlFor="email">Email:</label>
                     <input
                         type="email"
                         id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
                         required
                         className="form-input"
-                        disabled={loading}
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="firstName" className="form-label">First Name (optional):</label>
+                    <label htmlFor="firstName">First Name (optional):</label>
                     <input
                         type="text"
                         id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
                         className="form-input"
-                        disabled={loading}
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="lastName" className="form-label">Last Name (optional):</label>
+                    <label htmlFor="lastName">Last Name (optional):</label>
                     <input
                         type="text"
                         id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
                         className="form-input"
-                        disabled={loading}
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="status" className="form-label">Status:</label>
+                    <label htmlFor="status">Status:</label>
                     <select
                         id="status"
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
                         className="form-select"
-                        disabled={loading}
+                        required
                     >
-                        {/* --- UPDATED OPTION VALUES TO MATCH BACKEND ENUM --- */}
-                        <option value="subscribed">Subscribed</option> {/* Changed 'Active' to 'Subscribed' */}
+                        <option value="subscribed">Subscribed</option>
                         <option value="unsubscribed">Unsubscribed</option>
                         <option value="bounced">Bounced</option>
-                        <option value="complaint">Complaint</option> {/* Changed 'Complained' to 'Complaint' */}
+                        <option value="complaint">Complaint</option>
                     </select>
                 </div>
+                {error && <p className="error-message">{error}</p>}
                 <div className="button-group-form">
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Saving...' : (isEditing ? 'Update Subscriber' : 'Add Subscriber')}
+                        {loading ? (isEditing ? 'Updating...' : 'Adding...') : (isEditing ? 'Update Subscriber' : 'Add Subscriber')}
                     </button>
-                    <button type="button" onClick={() => navigate(`/lists/${listId}/subscribers`)} className="btn btn-secondary" disabled={loading}>
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/lists/${listId}/subscribers`)}
+                        className="btn btn-secondary"
+                        disabled={loading}
+                    >
                         Cancel
                     </button>
                 </div>
             </form>
         </div>
     );
-};
+}
 
 export default SubscriberForm;

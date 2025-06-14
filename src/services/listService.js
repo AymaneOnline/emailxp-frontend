@@ -1,76 +1,134 @@
 import axios from 'axios';
 
-const API_URL = 'https://emailxp-backend-production.up.railway.app/api/lists/';
+// Use environment variable, default to local backend URL for development
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api';
+const API_URL_LISTS = `${API_BASE_URL}/lists/`; // Concatenate base URL with endpoint
 
-// Helper to get auth header
-const getAuthHeader = () => {
+
+const getToken = () => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.token) {
-        return {
-            headers: {
-                Authorization: `Bearer ${user.token}`,
-            },
-        };
-    } else {
-        return {}; // Return empty object if no token, implies unauthorized request
-    }
+    return user?.token;
 };
 
-// --- List Operations ---
-
-// Get all lists for the user
+// Get all lists
 const getLists = async () => {
-    const response = await axios.get(API_URL, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(API_URL_LISTS, config);
     return response.data;
 };
 
 // Create a new list
 const createList = async (listData) => {
-    const response = await axios.post(API_URL, listData, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.post(API_URL_LISTS, listData, config);
     return response.data;
 };
 
-// Get a single list by ID
-const getListById = async (listId) => {
-    const response = await axios.get(API_URL + listId, getAuthHeader());
+// Get list by ID
+const getListById = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(API_URL_LISTS + id, config);
     return response.data;
 };
 
-// Update a list
-const updateList = async (listId, listData) => {
-    const response = await axios.put(API_URL + listId, listData, getAuthHeader());
+// Update list
+const updateList = async (id, listData) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(API_URL_LISTS + id, listData, config);
     return response.data;
 };
 
-// Delete a list
-const deleteList = async (listId) => {
-    const response = await axios.delete(API_URL + listId, getAuthHeader());
+// Delete list
+const deleteList = async (id) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.delete(API_URL_LISTS + id, config);
     return response.data;
 };
 
-// --- Subscriber Operations ---
-
-// Get all subscribers for a specific list
-const getSubscribers = async (listId) => {
-    const response = await axios.get(API_URL + listId + '/subscribers', getAuthHeader());
+// --- MODIFIED FUNCTION: Get subscribers for a list with optional filters ---
+const getSubscribersByList = async (listId, filters = {}) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        // Pass filters as query parameters using Axios's `params` option
+        params: filters,
+    };
+    const response = await axios.get(`${API_URL_LISTS}${listId}/subscribers`, config);
     return response.data;
 };
 
-// Add a new subscriber to a list
-const addSubscriber = async (listId, subscriberData) => {
-    const response = await axios.post(API_URL + listId + '/subscribers', subscriberData, getAuthHeader());
+// Add a subscriber to a list
+const addSubscriberToList = async (listId, subscriberData) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.post(`${API_URL_LISTS}${listId}/subscribers`, subscriberData, config);
+    return response.data;
+};
+
+// Get a single subscriber by ID within a list
+const getSubscriberById = async (listId, subscriberId) => {
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.get(`${API_URL_LISTS}${listId}/subscribers/${subscriberId}`, config);
     return response.data;
 };
 
 // Update a subscriber in a list
 const updateSubscriber = async (listId, subscriberId, subscriberData) => {
-    const response = await axios.put(API_URL + listId + '/subscribers/' + subscriberId, subscriberData, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(`${API_URL_LISTS}${listId}/subscribers/${subscriberId}`, subscriberData, config);
     return response.data;
 };
 
 // Delete a subscriber from a list
 const deleteSubscriber = async (listId, subscriberId) => {
-    const response = await axios.delete(API_URL + listId + '/subscribers/' + subscriberId, getAuthHeader());
+    const token = getToken();
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.delete(`${API_URL_LISTS}${listId}/subscribers/${subscriberId}`, config);
     return response.data;
 };
 
@@ -81,8 +139,9 @@ const listService = {
     getListById,
     updateList,
     deleteList,
-    getSubscribers,
-    addSubscriber,
+    getSubscribersByList,
+    addSubscriberToList,
+    getSubscriberById,
     updateSubscriber,
     deleteSubscriber,
 };

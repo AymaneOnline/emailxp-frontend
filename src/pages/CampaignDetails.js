@@ -11,8 +11,6 @@ function CampaignDetails() {
     const navigate = useNavigate();
 
     const [campaign, setCampaign] = useState(null);
-    // REMOVED: [openStats, setOpenStats] = useState(null);
-    // REMOVED: [clickStats, setClickStats] = useState(null);
     const [analytics, setAnalytics] = useState(null); // <--- NEW STATE: to hold combined analytics
     const [listDetails, setListDetails] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -43,12 +41,6 @@ function CampaignDetails() {
             const fetchedAnalytics = await campaignService.getCampaignAnalytics(campaignId);
             setAnalytics(fetchedAnalytics); // Store the combined analytics data
             // --- END CRITICAL CHANGE ---
-
-            // REMOVED: No longer need these individual calls
-            // const fetchedOpenStats = await campaignService.getCampaignOpenStats(campaignId);
-            // const fetchedClickStats = await campaignService.getCampaignClickStats(campaignId);
-            // setOpenStats(fetchedOpenStats);
-            // setClickStats(fetchedClickStats);
 
         } catch (err) {
             console.error('Error fetching campaign details:', err);
@@ -134,8 +126,9 @@ function CampaignDetails() {
                     {campaign.status === 'sent' && analytics.sentAt && (
                         <p><strong>Sent At:</strong> {new Date(analytics.sentAt).toLocaleString()}</p>
                     )}
-                     {campaign.status === 'sent' && (
-                        <p><strong>Emails Sent:</strong> {analytics.totalEmailsSent}</p>
+                    {campaign.status === 'sent' && (
+                        // MODIFIED LINE: Using the 'totalEmailsSent' variable
+                        <p><strong>Emails Sent:</strong> {totalEmailsSent}</p>
                     )}
                 </div>
                 <div className="stats-grid">

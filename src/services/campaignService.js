@@ -1,8 +1,8 @@
-// emailxp/frontend/src/services/campaignService.js
-
 import axios from 'axios';
 
-const API_URL = 'https://emailxp-backend-production.up.railway.app/api/campaigns/';
+// Use environment variable, default to local backend URL for development
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/campaigns/`; // Concatenate base URL with endpoint
 
 const getToken = () => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -89,7 +89,7 @@ const getCampaignAnalytics = async (id) => {
             Authorization: `Bearer ${token}`,
         },
     };
-    const response = await axios.get(`${API_URL}${id}/analytics`, config); // <--- New API call
+    const response = await axios.get(`${API_URL}${id}/analytics`, config);
     return response.data;
 };
 
@@ -126,7 +126,7 @@ const campaignService = {
     sendCampaign,
     getCampaignOpenStats,
     getCampaignClickStats,
-    getCampaignAnalytics, // <--- EXPORT NEW FUNCTION
+    getCampaignAnalytics,
 };
 
 export default campaignService;
