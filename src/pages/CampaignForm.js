@@ -30,6 +30,8 @@ function CampaignForm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    // NEW STATE: To disable button during submission
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Quill modules (toolbar options) - These are unchanged from your original as they are Quill's internal config
     const quillModules = {
@@ -120,10 +122,12 @@ function CampaignForm() {
         e.preventDefault();
         setSuccessMessage(null);
         setError(null);
+        setIsSubmitting(true); // <--- Set submitting to true
 
         // Basic validation
         if (!campaignData.name || !campaignData.subject || !campaignData.list || !campaignData.htmlContent) {
             setError('Please fill in all required fields (Name, Subject, Target List, Email Content).');
+            setIsSubmitting(false); // <--- Reset submitting if validation fails
             return;
         }
 
@@ -164,6 +168,8 @@ function CampaignForm() {
         } catch (err) {
             console.error('Error saving campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} campaign.`);
+        } finally {
+            setIsSubmitting(false); // <--- Reset submitting in finally block
         }
     };
 
@@ -304,13 +310,15 @@ function CampaignForm() {
                         <button
                             type="submit"
                             className="btn btn-primary"
+                            disabled={isSubmitting} // Disable button when submitting
                         >
-                            {isEditing ? 'Update Campaign' : 'Create Campaign'}
+                            {isSubmitting ? 'Saving...' : (isEditing ? 'Update Campaign' : 'Create Campaign')}
                         </button>
                         <button
                             type="button"
                             onClick={() => navigate('/campaigns')}
                             className="btn btn-secondary"
+                            disabled={isSubmitting} // Optional: Disable cancel button too
                         >
                             Cancel
                         </button>
