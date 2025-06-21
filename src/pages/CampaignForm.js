@@ -1,82 +1,55 @@
-// emailxp/frontend/src/pages/CampaignForm.js
+// emailxp/frontend/src/pages/CampaignManagement.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
-import templateService from '../services/templateService';
+import { useNavigate, Link } from 'react-router-dom';
 
-// Import ReactQuill and its styles
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // For the default "snow" theme
-
-function CampaignForm() {
-    const { id: campaignId } = useParams(); // Get campaign ID if in edit mode
-    const navigate = useNavigate();
-
-    const isEditing = !!campaignId; // True if campaignId exists (means we are editing)
-
-    const [campaignData, setCampaignData] = useState({
-        name: '',
-        subject: '',
-        list: '', // Will store list._id
-        htmlContent: '',
-        scheduledAt: '', // Date and time string
-        status: 'draft', // Default to draft for new campaigns
-        template: '' // Will store template._id
-    });
+function CampaignManagement() {
+    const [campaigns, setCampaigns] = useState([]);
     const [lists, setLists] = useState([]);
-    const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    // NEW STATE: To disable button during submission
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // REMOVED: campaignOpenStats and campaignClickStats states
+    const [campaignAnalytics, setCampaignAnalytics] = useState({}); // <--- NEW STATE for combined analytics
+    const navigate = useNavigate();
 
-    // Quill modules (toolbar options) - These are unchanged from your original as they are Quill's internal config
-    const quillModules = {
-        toolbar: [
-            [{ 'header': [1, 2, false] }],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
-            ['link', 'image', 'video'],
-            ['clean']
-        ],
-    };
-
-    const quillFormats = [
-        'header',
-        'bold', 'italic', 'underline', 'strike', 'blockquote',
-        'list', 'bullet', 'indent',
-        'link', 'image', 'video'
-    ];
-
-    const fetchInitialData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const [fetchedLists, fetchedTemplates] = await Promise.all([
-                listService.getLists(),
-                templateService.getTemplates()
+            const [campaignsData, listsData] = await Promise.all([
+                campaignService.getCampaigns(),
+                listService.getLists()
             ]);
-            setLists(fetchedLists);
-            setTemplates(fetchedTemplates);
 
-            if (isEditing) {
-                const campaignToEdit = await campaignService.getCampaignById(campaignId);
-                setCampaignData({
-                    name: campaignToEdit.name || '',
-                    subject: campaignToEdit.subject || '',
-                    list: campaignToEdit.list?._id || '', // Use _id
-                    htmlContent: campaignToEdit.htmlContent || '',
-                    scheduledAt: campaignToEdit.scheduledAt ? new Date(campaignToEdit.scheduledAt).toISOString().slice(0, 16) : '', // Format for datetime-local input
-                    status: campaignToEdit.status || 'draft',
-                    template: campaignToEdit.template?._id || '' // Use _id
-                });
-            }
+            setCampaigns(campaignsData);
+            setLists(listsData);
+
+            const validCampaigns = campaignsData.filter(campaign =>
+                campaign && campaign._id && typeof campaign._id === 'string' && campaign._id.length === 24
+            );
+
+            // --- CRITICAL CHANGE: Fetch combined analytics for all campaigns ---
+            const analyticsPromises = validCampaigns.map(campaign =>
+                campaignService.getCampaignAnalytics(campaign._id)
+            );
+
+            const allAnalyticsResults = await Promise.all(analyticsPromises);
+
+            const analyticsMap = allAnalyticsResults.reduce((acc, currentAnalytics) => {
+                if (currentAnalytics && currentAnalytics.campaignId) {
+                    acc[currentAnalytics.campaignId] = currentAnalytics;
+                }
+                return acc;
+            }, {});
+            setCampaignAnalytics(analyticsMap); // Store the combined analytics data
+            // --- END CRITICAL CHANGE ---
+
         } catch (err) {
-            console.error('Error fetching data for campaign form:', err.response?.data || err.message);
-            setError(err.response?.data?.message || 'Failed to load form data. Please try again.');
+            console.error('Error fetching data:', err);
+            setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
                 navigate('/login');
@@ -84,92 +57,49 @@ function CampaignForm() {
         } finally {
             setLoading(false);
         }
-    }, [campaignId, isEditing, navigate]);
+    }, [navigate]);
 
     useEffect(() => {
-        fetchInitialData();
-    }, [fetchInitialData]);
+        fetchData();
+    }, [fetchData]);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setCampaignData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Handle Quill content changes
-    const handleQuillChange = (content) => {
-        setCampaignData(prev => ({ ...prev, htmlContent: content }));
-    };
-
-    const handleApplyTemplate = (e) => {
-        const selectedTemplateId = e.target.value;
-        const selectedTemplate = templates.find(t => t._id === selectedTemplateId);
-        if (selectedTemplate) {
-            setCampaignData(prev => ({
-                ...prev,
-                template: selectedTemplateId, // Set the template ID
-                htmlContent: selectedTemplate.htmlContent // Apply template content
-            }));
-        } else {
-            setCampaignData(prev => ({
-                ...prev,
-                template: '', // Clear template ID
-                htmlContent: '' // Clear content if no template selected or invalid
-            }));
+    const handleDeleteCampaign = async (campaignId) => {
+        if (window.confirm('Are you sure you want to delete this campaign? This action will also delete all associated open and click events.')) {
+            setError(null);
+            setSuccessMessage(null);
+            try {
+                await campaignService.deleteCampaign(campaignId);
+                setSuccessMessage('Campaign deleted successfully!');
+                fetchData();
+            } catch (err) {
+                console.error('Error deleting campaign:', err.response?.data || err.message);
+                setError(err.response?.data?.message || 'Failed to delete campaign.');
+            }
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSuccessMessage(null);
-        setError(null);
-        setIsSubmitting(true); // <--- Set submitting to true
+    const handleSendCampaign = async (campaignId, campaignName, listId) => {
+        const targetList = lists.find(l => l._id === listId);
+        const subscriberCount = targetList?.subscribers?.length || 0;
 
-        // Basic validation
-        if (!campaignData.name || !campaignData.subject || !campaignData.list || !campaignData.htmlContent) {
-            setError('Please fill in all required fields (Name, Subject, Target List, Email Content).');
-            setIsSubmitting(false); // <--- Reset submitting if validation fails
+        if (subscriberCount === 0) {
+            alert(`The list "${targetList?.name || 'Unknown List'}" has no subscribers. Please add subscribers to the list before sending this campaign.`);
             return;
         }
 
-        // --- NEW LOGIC: Determine status based on scheduledAt ---
-        let newStatus = campaignData.status;
-        if (campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date()) {
-            newStatus = 'scheduled'; // If scheduled date is in the future, set status to scheduled
-        } else if (newStatus === 'scheduled' && !campaignData.scheduledAt) {
-            // If it was scheduled but scheduledAt was cleared, revert to draft
-            newStatus = 'draft';
+        if (!window.confirm(`Are you sure you want to send "${campaignName}" to ${targetList?.name || 'Unknown List'} (${subscriberCount} subscribers)? This action cannot be undone.`)) {
+            return;
         }
-        // If status was already 'sent', 'sending', 'failed', 'cancelled', keep it.
-        // Otherwise, if scheduledAt is past, it's a draft until manually sent.
-        if (newStatus !== 'scheduled' && campaignData.status !== 'sent' && campaignData.status !== 'sending' && campaignData.status !== 'failed' && campaignData.status !== 'cancelled') {
-             newStatus = 'draft';
-        }
-        // --- END NEW LOGIC ---
 
-        const payload = {
-            ...campaignData,
-            status: newStatus, // <--- Use the determined status
-            list: campaignData.list || null,
-            template: campaignData.template || null,
-            scheduledAt: campaignData.scheduledAt ? new Date(campaignData.scheduledAt).toISOString() : null,
-        };
-
+        setError(null);
+        setSuccessMessage(null);
         try {
-            if (isEditing) {
-                await campaignService.updateCampaign(campaignId, payload);
-                setSuccessMessage('Campaign updated successfully!');
-            } else {
-                await campaignService.createCampaign(payload);
-                setSuccessMessage('Campaign created successfully!');
-            }
-            setTimeout(() => {
-                navigate('/campaigns');
-            }, 1500);
+            const response = await campaignService.sendCampaign(campaignId);
+            setSuccessMessage(`Campaign "${campaignName}" sending initiated! Total: ${response.totalSubscribers} subscribers. (Updates will appear shortly)`);
+            fetchData();
         } catch (err) {
-            console.error('Error saving campaign:', err.response?.data || err.message);
-            setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} campaign.`);
-        } finally {
-            setIsSubmitting(false); // <--- Reset submitting in finally block
+            console.error('Error sending campaign:', err.response?.data || err.message);
+            setError(err.response?.data?.message || 'Failed to send campaign.');
         }
     };
 
@@ -177,167 +107,117 @@ function CampaignForm() {
         return (
             <div className="loading-container">
                 <div className="spinner"></div>
-                <p>Loading campaign form...</p>
+                <p>Loading campaigns and statistics...</p>
             </div>
         );
     }
 
     return (
         <div className="main-content-container">
-            <h2 className="section-header-no-btn">{isEditing ? 'Edit Campaign' : 'Create New Campaign'}</h2>
+            <h2 className="section-header">
+                Email Campaigns
+                <Link to="/campaigns/new" className="btn btn-primary">
+                    Create New Campaign
+                </Link>
+            </h2>
 
             {error && <p className="error-message">{error}</p>}
             {successMessage && <p className="success-message">{successMessage}</p>}
 
-            <form onSubmit={handleSubmit} className="form-grid-layout">
-                <div className="form-column">
-                    <div className="form-group">
-                        <label htmlFor="name" className="form-label">Campaign Name:</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={campaignData.name}
-                            onChange={handleInputChange}
-                            required
-                            className="form-input"
-                        />
-                    </div>
+            {campaigns.length === 0 ? (
+                <p className="no-data-message">
+                    You don't have any email campaigns yet. Click "Create New Campaign" to get started!
+                </p>
+            ) : (
+                <div className="table-responsive">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Campaign Name</th>
+                                <th>Subject</th>
+                                <th>Target List</th>
+                                <th>Status</th>
+                                <th>Opens (Total/Unique)</th>
+                                <th>Clicks (Total/Unique)</th>
+                                <th>Created At</th>
+                                <th>Scheduled At</th>
+                                <th className="actions-column">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {campaigns.map((campaign) => {
+                                // --- CRITICAL CHANGE: Get stats from the new campaignAnalytics state ---
+                                const analytics = campaignAnalytics[campaign._id] || { totalOpens: 0, uniqueOpens: 0, totalClicks: 0, uniqueClicks: 0 };
+                                const openStats = { totalOpens: analytics.totalOpens, uniqueOpens: analytics.uniqueOpens };
+                                const clickStats = { totalClicks: analytics.totalClicks, uniqueClicks: analytics.uniqueClicks };
+                                // --- END CRITICAL CHANGE ---
 
-                    <div className="form-group">
-                        <label htmlFor="subject" className="form-label">Subject:</label>
-                        <input
-                            type="text"
-                            id="subject"
-                            name="subject"
-                            value={campaignData.subject}
-                            onChange={handleInputChange}
-                            required
-                            className="form-input"
-                        />
-                    </div>
+                                const targetList = lists.find(l => l._id === (campaign.list?._id || campaign.list));
+                                const listIdForSend = campaign.list?._id || campaign.list;
 
-                    <div className="form-group">
-                        <label htmlFor="list" className="form-label">Target List:</label>
-                        <select
-                            id="list"
-                            name="list"
-                            value={campaignData.list}
-                            onChange={handleInputChange}
-                            required
-                            className="form-input form-select"
-                        >
-                            <option value="">Select a List</option>
-                            {lists.map(list => (
-                                <option key={list._id} value={list._id}>{list.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="template" className="form-label">Apply Template:</label>
-                        <select
-                            id="template"
-                            name="template"
-                            value={campaignData.template}
-                            onChange={handleApplyTemplate}
-                            className="form-input form-select"
-                        >
-                            <option value="">No Template</option>
-                            {templates.map(template => (
-                                <option key={template._id} value={template._id}>{template.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="scheduledAt" className="form-label">Schedule Send Time (Optional):</label>
-                        <input
-                            type="datetime-local"
-                            id="scheduledAt"
-                            name="scheduledAt"
-                            value={campaignData.scheduledAt}
-                            onChange={handleInputChange}
-                            className="form-input"
-                        />
-                         {campaignData.scheduledAt && new Date(campaignData.scheduledAt) <= new Date() && (
-                            <p className="form-help-text text-red">Scheduled time is in the past. Campaign will be saved as Draft.</p>
-                        )}
-                        {campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date() && (
-                            <p className="form-help-text text-green">Campaign will be scheduled for sending.</p>
-                        )}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="status" className="form-label">Current Status:</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={campaignData.status}
-                            onChange={handleInputChange}
-                            className="form-input form-select"
-                            disabled={isEditing && campaignData.status !== 'draft'} // Disable status change if not draft and editing
-                        >
-                            {/* Only 'draft' can be manually set if it's a new campaign or existing draft */}
-                            <option value="draft">Draft</option>
-                            {/* Allow 'scheduled' if editing an already scheduled campaign or if it was just scheduled */}
-                            {isEditing && campaignData.status === 'scheduled' && <option value="scheduled">Scheduled</option>}
-                            {/* Display read-only statuses if they are set by the system */}
-                            {isEditing && campaignData.status === 'sending' && <option value="sending">Sending</option>}
-                            {isEditing && campaignData.status === 'sent' && <option value="sent">Sent</option>}
-                            {isEditing && campaignData.status === 'cancelled' && <option value="cancelled">Cancelled</option>}
-                            {isEditing && campaignData.status === 'failed' && <option value="failed">Failed</option>}
-
-                        </select>
-                        {isEditing && campaignData.status !== 'draft' && (
-                            <p className="form-help-text">Status can only be changed manually if campaign is a 'draft'. It's usually set by the system for scheduled/sent campaigns.</p>
-                        )}
-                    </div>
-
-                    <h3 className="form-sub-header">Email Content:</h3>
-                    <div className="form-group editor-container">
-                        <ReactQuill
-                            theme="snow"
-                            value={campaignData.htmlContent}
-                            onChange={handleQuillChange}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            className="quill-editor-full-height"
-                        />
-                    </div>
-
-                    <div className="button-group-form margin-top-large">
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={isSubmitting} // Disable button when submitting
-                        >
-                            {isSubmitting ? 'Saving...' : (isEditing ? 'Update Campaign' : 'Create Campaign')}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate('/campaigns')}
-                            className="btn btn-secondary"
-                            disabled={isSubmitting} // Optional: Disable cancel button too
-                        >
-                            Cancel
-                        </button>
-                    </div>
+                                return (
+                                    <tr key={campaign._id}>
+                                        <td>
+                                            <Link to={`/campaigns/${campaign._id}`} className="link-primary">
+                                                {campaign.name}
+                                            </Link>
+                                        </td>
+                                        <td>{campaign.subject}</td>
+                                        <td>
+                                            {targetList ? `${targetList.name} (${targetList.subscribers?.length || 0} subscribers)` : 'N/A'}
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge status-${campaign.status.toLowerCase()}`}>
+                                                {campaign.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            Total: <strong>{openStats.totalOpens}</strong><br />
+                                            Unique: <strong>{openStats.uniqueOpens}</strong>
+                                        </td>
+                                        <td>
+                                            Total: <strong>{clickStats.totalClicks}</strong><br />
+                                            Unique: <strong>{clickStats.uniqueClicks}</strong>
+                                        </td>
+                                        <td>{new Date(campaign.createdAt).toLocaleDateString()}</td>
+                                        <td>
+                                            {campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleString() : 'N/A'}
+                                        </td>
+                                        <td className="action-buttons-cell">
+                                            <Link
+                                                to={`/campaigns/edit/${campaign._id}`}
+                                                className="btn btn-sm btn-info"
+                                            >
+                                                Edit
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDeleteCampaign(campaign._id)}
+                                                className="btn btn-sm btn-danger margin-left-sm"
+                                            >
+                                                Delete
+                                            </button>
+                                            {campaign.status === 'draft' ? (
+                                                <button
+                                                    onClick={() => handleSendCampaign(campaign._id, campaign.name, listIdForSend)}
+                                                    className="btn btn-sm btn-success margin-left-sm"
+                                                >
+                                                    Send Now
+                                                </button>
+                                            ) : (
+                                                <span className={`status-badge status-${campaign.status.toLowerCase()} margin-left-sm`}>
+                                                    {campaign.status.toUpperCase()}
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
-
-                <div className="preview-column">
-                    <h3 className="form-sub-header">Live HTML Preview:</h3>
-                    <div className="preview-box">
-                        <iframe
-                            title="Email Content Preview"
-                            srcDoc={campaignData.htmlContent}
-                            className="preview-iframe"
-                        />
-                    </div>
-                </div>
-            </form>
+            )}
         </div>
     );
 }
 
-export default CampaignForm;
+export default CampaignManagement;

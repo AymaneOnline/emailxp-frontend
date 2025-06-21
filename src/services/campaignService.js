@@ -1,3 +1,5 @@
+// emailxp/frontend/src/services/campaignService.js
+
 import axios from 'axios';
 
 // Use environment variable, default to local backend URL for development
@@ -81,7 +83,7 @@ const sendCampaign = async (id) => {
     return response.data;
 };
 
-// --- NEW FUNCTION: Get campaign analytics ---
+// --- Keep this function: Get campaign analytics ---
 const getCampaignAnalytics = async (id) => {
     const token = getToken();
     const config = {
@@ -93,29 +95,6 @@ const getCampaignAnalytics = async (id) => {
     return response.data;
 };
 
-// --- Existing tracking functions (we'll keep them for now, but CampaignDetails won't use them for combined stats) ---
-const getCampaignOpenStats = async (campaignId) => {
-    const token = getToken();
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    };
-    const response = await axios.get(`${API_URL}${campaignId}/opens`, config);
-    return response.data;
-};
-
-const getCampaignClickStats = async (campaignId) => {
-    const token = getToken();
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    };
-    const response = await axios.get(`${API_URL}${campaignId}/clicks`, config);
-    return response.data;
-};
-
 
 const campaignService = {
     getCampaigns,
@@ -124,9 +103,7 @@ const campaignService = {
     updateCampaign,
     deleteCampaign,
     sendCampaign,
-    getCampaignOpenStats,
-    getCampaignClickStats,
-    getCampaignAnalytics,
+    getCampaignAnalytics, // Keep this one
 };
 
 export default campaignService;
