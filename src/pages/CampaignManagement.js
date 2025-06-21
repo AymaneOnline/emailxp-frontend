@@ -11,8 +11,8 @@ function CampaignManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    const [campaignOpenStats, setCampaignOpenStats] = useState({});
-    const [campaignClickStats, setCampaignClickStats] = useState({});
+    // Remove individual open/click stats states, we'll use a combined one
+    const [campaignAnalytics, setCampaignAnalytics] = useState({}); // New state for combined analytics
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
@@ -31,34 +31,34 @@ function CampaignManagement() {
                 campaign && campaign._id && typeof campaign._id === 'string' && campaign._id.length === 24
             );
 
-            // Fetching stats for all campaigns concurrently
-            const openStatsPromises = validCampaigns.map(campaign =>
-                campaignService.getCampaignOpenStats(campaign._id)
-            );
-            const clickStatsPromises = validCampaigns.map(campaign =>
-                campaignService.getCampaignClickStats(campaign._id)
+            // --- OLD CODE (REMOVED) ---
+            // const openStatsPromises = validCampaigns.map(campaign =>
+            //     campaignService.getCampaignOpenStats(campaign._id)
+            // );
+            // const clickStatsPromises = validCampaigns.map(campaign =>
+            //     campaignService.getCampaignClickStats(campaign._id)
+            // );
+            // const allOpenStats = await Promise.all(openStatsPromises);
+            // const allClickStatsResults = await Promise.all(clickStatsPromises);
+            // ... (rest of old stats processing) ...
+            // --- END OLD CODE ---
+
+            // --- NEW CODE: Fetch combined analytics for all campaigns concurrently ---
+            const analyticsPromises = validCampaigns.map(campaign =>
+                campaignService.getCampaignAnalytics(campaign._id) // Call the new consolidated service
             );
 
-            const allOpenStats = await Promise.all(openStatsPromises);
-            const allClickStatsResults = await Promise.all(clickStatsPromises);
+            const allAnalyticsResults = await Promise.all(analyticsPromises);
 
-            const openStatsMap = allOpenStats.reduce((acc, currentStat) => {
-                // Ensure currentStat and campaignId exist before assigning
-                if (currentStat && currentStat.campaignId) {
-                    acc[currentStat.campaignId] = currentStat;
+            const combinedAnalyticsMap = allAnalyticsResults.reduce((acc, currentAnalytics) => {
+                // The backend now returns { totalOpens, uniqueOpens, totalClicks, uniqueClicks, etc. }
+                // So, we map it directly by campaignId
+                if (currentAnalytics && currentAnalytics.campaignId) {
+                    acc[currentAnalytics.campaignId] = currentAnalytics;
                 }
                 return acc;
             }, {});
-            setCampaignOpenStats(openStatsMap);
-
-            const clickStatsMap = allClickStatsResults.reduce((acc, currentStat) => {
-                // Ensure currentStat and campaignId exist before assigning
-                if (currentStat && currentStat.campaignId) {
-                    acc[currentStat.campaignId] = currentStat;
-                }
-                return acc;
-            }, {});
-            setCampaignClickStats(clickStatsMap);
+            setCampaignAnalytics(combinedAnalyticsMap); // Set the combined analytics state
 
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -126,27 +126,27 @@ function CampaignManagement() {
     }
 
     return (
-        <div className="main-content-container"> {/* Replaced inline style */}
-            <h2 className="section-header"> {/* Replaced inline style */}
+        <div className="main-content-container">
+            <h2 className="section-header">
                 Email Campaigns
-                <Link to="/campaigns/new" className="btn btn-primary"> {/* Replaced inline style */}
+                <Link to="/campaigns/new" className="btn btn-primary">
                     Create New Campaign
                 </Link>
             </h2>
 
-            {error && <p className="error-message">{error}</p>} {/* Replaced inline style */}
-            {successMessage && <p className="success-message">{successMessage}</p>} {/* Replaced inline style */}
+            {error && <p className="error-message">{error}</p>}
+            {successMessage && <p className="success-message">{successMessage}</p>}
 
             {campaigns.length === 0 ? (
-                <p className="no-data-message"> {/* Replaced inline style */}
+                <p className="no-data-message">
                     You don't have any email campaigns yet. Click "Create New Campaign" to get started!
                 </p>
             ) : (
-                <div className="table-responsive"> {/* Replaced inline style */}
-                    <table className="data-table"> {/* Replaced inline style */}
+                <div className="table-responsive">
+                    <table className="data-table">
                         <thead>
-                            <tr> {/* Replaced inline style */}
-                                <th>Campaign Name</th> {/* Replaced inline style */}
+                            <tr>
+                                <th>Campaign Name</th>
                                 <th>Subject</th>
                                 <th>Target List</th>
                                 <th>Status</th>
@@ -159,8 +159,8 @@ function CampaignManagement() {
                         </thead>
                         <tbody>
                             {campaigns.map((campaign) => {
-                                const openStats = campaignOpenStats[campaign._id] || { totalOpens: 0, uniqueOpens: 0 };
-                                const clickStats = campaignClickStats[campaign._id] || { totalClicks: 0, uniqueClicks: 0 };
+                                // Use the combined analytics for display
+                                const analytics = campaignAnalytics[campaign._id] || { totalOpens: 0, uniqueOpens: 0, totalClicks: 0, uniqueClicks: 0 };
 
                                 const targetList = lists.find(l => l._id === (campaign.list?._id || campaign.list));
                                 const listIdForSend = campaign.list?._id || campaign.list;
@@ -168,7 +168,7 @@ function CampaignManagement() {
                                 return (
                                     <tr key={campaign._id}>
                                         <td>
-                                            <Link to={`/campaigns/${campaign._id}`} className="link-primary"> {/* Replaced inline style */}
+                                            <Link to={`/campaigns/${campaign._id}`} className="link-primary">
                                                 {campaign.name}
                                             </Link>
                                         </td>
@@ -182,18 +182,18 @@ function CampaignManagement() {
                                             </span>
                                         </td>
                                         <td>
-                                            Total: <strong>{openStats.totalOpens}</strong><br />
-                                            Unique: <strong>{openStats.uniqueOpens}</strong>
+                                            Total: <strong>{analytics.totalOpens}</strong><br />
+                                            Unique: <strong>{analytics.uniqueOpens}</strong>
                                         </td>
                                         <td>
-                                            Total: <strong>{clickStats.totalClicks}</strong><br />
-                                            Unique: <strong>{clickStats.uniqueClicks}</strong>
+                                            Total: <strong>{analytics.totalClicks}</strong><br />
+                                            Unique: <strong>{analytics.uniqueClicks}</strong>
                                         </td>
                                         <td>{new Date(campaign.createdAt).toLocaleDateString()}</td>
                                         <td>
                                             {campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleString() : 'N/A'}
                                         </td>
-                                        <td className="action-buttons-cell"> {/* Replaced inline style */}
+                                        <td className="action-buttons-cell">
                                             <Link
                                                 to={`/campaigns/edit/${campaign._id}`}
                                                 className="btn btn-sm btn-info"
