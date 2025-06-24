@@ -4,17 +4,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
-// Removed: import './CampaignDetails.css'; // This line should already be removed
+import CampaignTimeSeriesChart from '../components/CampaignTimeSeriesChart'; // NEW IMPORT
 
 function CampaignDetails() {
-    const { id: campaignId } = useParams(); // Get the campaign ID from the URL
+    const { id: campaignId } = useParams();
     const navigate = useNavigate();
 
     const [campaign, setCampaign] = useState(null);
-    const [analytics, setAnalytics] = useState(null); // <--- NEW STATE: to hold combined analytics
+    const [analytics, setAnalytics] = useState(null);
     const [listDetails, setListDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [timeSeriesData, setTimeSeriesData] = useState([]);
+    const [timeSeriesPeriod, setTimeSeriesPeriod] = useState('daily');
 
     const fetchCampaignData = useCallback(async () => {
         setLoading(true);
@@ -27,23 +29,23 @@ function CampaignDetails() {
         }
 
         try {
-            // Fetch campaign basic details
             const fetchedCampaign = await campaignService.getCampaignById(campaignId);
             setCampaign(fetchedCampaign);
 
-            // Fetch list details if a list is associated
             if (fetchedCampaign.list && fetchedCampaign.list._id) {
                 const listData = await listService.getListById(fetchedCampaign.list._id);
                 setListDetails(listData);
             }
 
-            // --- CRITICAL CHANGE: Use the new combined analytics endpoint ---
             const fetchedAnalytics = await campaignService.getCampaignAnalytics(campaignId);
-            setAnalytics(fetchedAnalytics); // Store the combined analytics data
-            // --- END CRITICAL CHANGE ---
+            setAnalytics(fetchedAnalytics);
+
+            // Fetch time-series data here, as it's specific to this campaign's analytics
+            const fetchedTimeSeries = await campaignService.getCampaignAnalyticsTimeSeries(campaignId, timeSeriesPeriod);
+            setTimeSeriesData(fetchedTimeSeries);
 
         } catch (err) {
-            console.error('Error fetching campaign details:', err);
+            console.error('Error fetching campaign details or analytics:', err);
             setError(err.response?.data?.message || 'Failed to load campaign details.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
@@ -54,7 +56,7 @@ function CampaignDetails() {
         } finally {
             setLoading(false);
         }
-    }, [campaignId, navigate]);
+    }, [campaignId, navigate, timeSeriesPeriod]);
 
     useEffect(() => {
         fetchCampaignData();
@@ -81,7 +83,7 @@ function CampaignDetails() {
         );
     }
 
-    if (!campaign || !analytics) { // Ensure analytics data is also loaded
+    if (!campaign || !analytics) {
         return (
             <div className="no-data-container">
                 <p>Campaign not found or no data available.</p>
@@ -92,21 +94,15 @@ function CampaignDetails() {
         );
     }
 
-    // Get totalSubscribers from fetched listDetails
     const totalSubscribers = listDetails?.subscribers?.length || 0;
-
-    // --- CRITICAL CHANGE: Get stats directly from the new analytics state ---
-    const totalEmailsSent = analytics.totalEmailsSent || 0; // The count from the backend
+    const totalEmailsSent = analytics.emailsSent || 0;
     const uniqueOpens = analytics.uniqueOpens || 0;
     const totalOpens = analytics.totalOpens || 0;
     const uniqueClicks = analytics.uniqueClicks || 0;
     const totalClicks = analytics.totalClicks || 0;
-
-    // The rates are now directly from the backend, more consistent
     const openRate = analytics.openRate;
     const clickRate = analytics.clickRate;
-    const clickThroughRate = analytics.clickThroughRate;
-    // --- END CRITICAL CHANGE ---
+    const clickThroughRate = uniqueOpens > 0 ? (uniqueClicks / uniqueOpens * 100).toFixed(2) : 0;
 
     return (
         <div className="main-content-container">
@@ -123,11 +119,10 @@ function CampaignDetails() {
                     <p><strong>Created:</strong> {new Date(campaign.createdAt).toLocaleString()}</p>
                     <p><strong>Scheduled:</strong> {campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleString() : 'Not Scheduled'}</p>
                     <p><strong>Template Used:</strong> {campaign.template?.name || 'No Template'}</p>
-                    {campaign.status === 'sent' && analytics.sentAt && (
-                        <p><strong>Sent At:</strong> {new Date(analytics.sentAt).toLocaleString()}</p>
+                    {campaign.status === 'sent' && campaign.lastSentAt && (
+                        <p><strong>Sent At:</strong> {new Date(campaign.lastSentAt).toLocaleString()}</p>
                     )}
                     {campaign.status === 'sent' && (
-                        // MODIFIED LINE: Using the 'totalEmailsSent' variable
                         <p><strong>Emails Sent:</strong> {totalEmailsSent}</p>
                     )}
                 </div>
@@ -152,6 +147,32 @@ function CampaignDetails() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* NEW SECTION FOR ANALYTICS CHARTS */}
+            <div className="chart-section margin-top-large">
+                <h3 className="section-header">Engagement Over Time</h3>
+                <div className="chart-period-selector flex justify-end gap-4 mb-4">
+                    <button
+                        onClick={() => setTimeSeriesPeriod('daily')}
+                        className={`btn ${timeSeriesPeriod === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                        Daily
+                    </button>
+                    <button
+                        onClick={() => setTimeSeriesPeriod('weekly')}
+                        className={`btn ${timeSeriesPeriod === 'weekly' ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                        Weekly
+                    </button>
+                </div>
+                {/* Use the new CampaignTimeSeriesChart component */}
+                <CampaignTimeSeriesChart
+                    timeSeriesData={timeSeriesData}
+                    timeSeriesPeriod={timeSeriesPeriod}
+                    isLoading={loading} // Pass loading state if you want component to handle its own loading indicator
+                    isError={!!error}   // Pass error state
+                />
             </div>
 
             <h3 className="section-header">Email Content Preview</h3>
