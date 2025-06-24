@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import Spinner from './Spinner'; // Assuming Spinner is correctly located
-import campaignService from '../services/campaignService'; // Import campaignService
+import Spinner from './Spinner';
+import campaignService from '../services/campaignService';
 
 function AnalyticsDashboard({ user }) {
     const [stats, setStats] = useState(null);
@@ -21,9 +21,8 @@ function AnalyticsDashboard({ user }) {
             try {
                 setLoading(true);
                 setError(null);
-                // Use campaignService to fetch dashboard stats
                 const response = await campaignService.getDashboardStats();
-                setStats(response); // Backend directly returns the object, not wrapped in 'data'
+                setStats(response);
             } catch (err) {
                 console.error('Error fetching dashboard stats:', err);
                 const message = (err.response && err.response.data && err.response.data.message) || err.message || err.toString();
@@ -53,7 +52,6 @@ function AnalyticsDashboard({ user }) {
         );
     }
 
-    // Check if stats and performance object exist before rendering
     if (!stats || !stats.performance) {
         return (
             <div className="container p-4">
@@ -63,7 +61,6 @@ function AnalyticsDashboard({ user }) {
         );
     }
 
-    // Destructure performance for easier access
     const { performance } = stats;
 
     return (
@@ -111,20 +108,10 @@ function AnalyticsDashboard({ user }) {
                         <p className="text-5xl font-extrabold text-red-600">{performance.clickRate || 0}%</p>
                         <p className="text-sm text-gray-500 mt-2">({performance.uniqueClicks || 0} unique clicks / {performance.totalClicks || 0} total clicks)</p>
                     </div>
-                    {/* Total Bounced */}
-                    <div className="bg-white rounded-lg shadow-md p-6 text-center">
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">Total Bounced</h3>
-                        <p className="text-5xl font-extrabold text-orange-600">{performance.totalBounced || 0}</p>
-                    </div>
-                    {/* Total Unsubscribed */}
+                    {/* Total Unsubscribed (still manually tracked) */}
                     <div className="bg-white rounded-lg shadow-md p-6 text-center">
                         <h3 className="text-xl font-semibold text-gray-700 mb-2">Total Unsubscribed</h3>
                         <p className="text-5xl font-extrabold text-gray-600">{performance.totalUnsubscribed || 0}</p>
-                    </div>
-                     {/* Total Complaints */}
-                     <div className="bg-white rounded-lg shadow-md p-6 text-center">
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">Total Complaints</h3>
-                        <p className="text-5xl font-extrabold text-yellow-600">{performance.totalComplaints || 0}</p>
                     </div>
                 </div>
             </div>
