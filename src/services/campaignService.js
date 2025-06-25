@@ -102,8 +102,20 @@ const getDashboardStats = async () => {
             Authorization: `Bearer ${user.token}`,
         },
     };
-    // FIX: Use getFullApiUrl for dashboard-stats
     const response = await axios.get(getFullApiUrl('/api/campaigns/dashboard-stats'), config);
+    return response.data;
+};
+
+// NEW FUNCTION: Fetch analytics for a specific campaign
+const getCampaignAnalytics = async (campaignId) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    console.log(`campaignService.js: Fetching analytics for campaign ID: ${campaignId}`); // LOG
+    const response = await axios.get(getFullApiUrl(`/api/campaigns/${campaignId}/analytics`), config);
     return response.data;
 };
 
@@ -116,6 +128,7 @@ const campaignService = {
     sendTestEmail,
     sendCampaign,
     getDashboardStats,
+    getCampaignAnalytics, // NEW: Export the new function
 };
 
 export default campaignService;

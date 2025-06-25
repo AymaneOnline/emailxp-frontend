@@ -5,19 +5,22 @@ import campaignService from '../services/campaignService';
 import listService from '../services/listService';
 import { useNavigate, Link } from 'react-router-dom';
 
+// TOP LEVEL LOG
+console.log('CampaignManagement.js (Module Load): Initializing component.');
+
 function CampaignManagement() {
     const [campaigns, setCampaigns] = useState([]);
     const [lists, setLists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    // Remove individual open/click stats states, we'll use a combined one
-    const [campaignAnalytics, setCampaignAnalytics] = useState({}); // New state for combined analytics
+    const [campaignAnalytics, setCampaignAnalytics] = useState({});
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
+        console.log('[CampaignManagement] Fetching initial campaign and list data...');
         try {
             const [campaignsData, listsData] = await Promise.all([
                 campaignService.getCampaigns(),
@@ -26,42 +29,50 @@ function CampaignManagement() {
 
             setCampaigns(campaignsData);
             setLists(listsData);
+            console.log('[CampaignManagement] Campaigns fetched:', campaignsData);
+            console.log('[CampaignManagement] Lists fetched:', listsData);
 
             const validCampaigns = campaignsData.filter(campaign =>
                 campaign && campaign._id && typeof campaign._id === 'string' && campaign._id.length === 24
             );
+            console.log(`[CampaignManagement] Found ${validCampaigns.length} valid campaigns for analytics.`);
 
-            // --- OLD CODE (REMOVED) ---
-            // const openStatsPromises = validCampaigns.map(campaign =>
-            //     campaignService.getCampaignOpenStats(campaign._id)
-            // );
-            // const clickStatsPromises = validCampaigns.map(campaign =>
-            //     campaignService.getCampaignClickStats(campaign._id)
-            // );
-            // const allOpenStats = await Promise.all(openStatsPromises);
-            // const allClickStatsResults = await Promise.all(clickStatsPromises);
-            // ... (rest of old stats processing) ...
-            // --- END OLD CODE ---
-
-            // --- NEW CODE: Fetch combined analytics for all campaigns concurrently ---
-            const analyticsPromises = validCampaigns.map(campaign =>
-                campaignService.getCampaignAnalytics(campaign._id) // Call the new consolidated service
-            );
+            const analyticsPromises = validCampaigns.map(async (campaign) => {
+                try {
+                    // This is where getCampaignAnalytics is called
+                    const analytics = await campaignService.getCampaignAnalytics(campaign._id);
+                    console.log(`[CampaignManagement] Analytics for campaign ${campaign._id}:`, analytics);
+                    return analytics;
+                } catch (analyticError) {
+                    console.error(`[CampaignManagement] Error fetching analytics for campaign ${campaign._id} (${campaign.name}):`, analyticError.response?.data || analyticError.message);
+                    return {
+                        campaignId: campaign._id,
+                        name: campaign.name,
+                        emailsSent: campaign.emailsSuccessfullySent || 0,
+                        totalOpens: 0,
+                        uniqueOpens: 0,
+                        totalClicks: 0,
+                        uniqueClicks: 0,
+                        openRate: 0,
+                        clickRate: 0,
+                        error: 'Analytics unavailable for this campaign.'
+                    };
+                }
+            });
 
             const allAnalyticsResults = await Promise.all(analyticsPromises);
 
             const combinedAnalyticsMap = allAnalyticsResults.reduce((acc, currentAnalytics) => {
-                // The backend now returns { totalOpens, uniqueOpens, totalClicks, uniqueClicks, etc. }
-                // So, we map it directly by campaignId
                 if (currentAnalytics && currentAnalytics.campaignId) {
                     acc[currentAnalytics.campaignId] = currentAnalytics;
                 }
                 return acc;
             }, {});
-            setCampaignAnalytics(combinedAnalyticsMap); // Set the combined analytics state
+            setCampaignAnalytics(combinedAnalyticsMap);
+            console.log('[CampaignManagement] Combined analytics map:', combinedAnalyticsMap);
 
         } catch (err) {
-            console.error('Error fetching data:', err);
+            console.error('[CampaignManagement] Error fetching main data:', err);
             setError(err.response?.data?.message || 'Failed to fetch data. Please login again.');
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('user');
@@ -69,6 +80,7 @@ function CampaignManagement() {
             }
         } finally {
             setLoading(false);
+            console.log('[CampaignManagement] Data fetching complete.');
         }
     }, [navigate]);
 
@@ -80,19 +92,20 @@ function CampaignManagement() {
         if (window.confirm('Are you sure you want to delete this campaign? This action will also delete all associated open and click events.')) {
             setError(null);
             setSuccessMessage(null);
+            console.log(`[CampaignManagement] Deleting campaign ID: ${campaignId}`);
             try {
                 await campaignService.deleteCampaign(campaignId);
                 setSuccessMessage('Campaign deleted successfully!');
                 fetchData();
             } catch (err) {
-                console.error('Error deleting campaign:', err.response?.data || err.message);
+                console.error('[CampaignManagement] Error deleting campaign:', err.response?.data || err.message);
                 setError(err.response?.data?.message || 'Failed to delete campaign.');
             }
         }
     };
 
     const handleSendCampaign = async (campaignId, campaignName, listId) => {
-        const targetList = lists.find(l => l._id === listId);
+        const targetList = lists.find(l => l._id === (listId));
         const subscriberCount = targetList?.subscribers?.length || 0;
 
         if (subscriberCount === 0) {
@@ -106,12 +119,13 @@ function CampaignManagement() {
 
         setError(null);
         setSuccessMessage(null);
+        console.log(`[CampaignManagement] Sending campaign ID: ${campaignId}, Name: "${campaignName}" to list ID: ${listId}`);
         try {
             const response = await campaignService.sendCampaign(campaignId);
             setSuccessMessage(`Campaign "${campaignName}" sending initiated! Total: ${response.totalSubscribers} subscribers. (Updates will appear shortly)`);
             fetchData();
         } catch (err) {
-            console.error('Error sending campaign:', err.response?.data || err.message);
+            console.error('[CampaignManagement] Error sending campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to send campaign.');
         }
     };
@@ -159,9 +173,7 @@ function CampaignManagement() {
                         </thead>
                         <tbody>
                             {campaigns.map((campaign) => {
-                                // Use the combined analytics for display
                                 const analytics = campaignAnalytics[campaign._id] || { totalOpens: 0, uniqueOpens: 0, totalClicks: 0, uniqueClicks: 0 };
-
                                 const targetList = lists.find(l => l._id === (campaign.list?._id || campaign.list));
                                 const listIdForSend = campaign.list?._id || campaign.list;
 
