@@ -1,47 +1,112 @@
 // emailxp/frontend/src/pages/CampaignForm.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import { useNavigate, useParams } from 'react-router-dom';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
 import templateService from '../services/templateService';
+import axios from 'axios'; // Import axios for image upload
 
 // Import ReactQuill and its styles
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css'; // For the default "snow" theme
 
 function CampaignForm() {
-    const { id: campaignId } = useParams(); // Get campaign ID if in edit mode
+    const { id: campaignId } = useParams();
     const navigate = useNavigate();
 
-    const isEditing = !!campaignId; // True if campaignId exists (means we are editing)
+    const isEditing = !!campaignId;
+
+    const quillRef = useRef(null); // Ref for Quill editor
 
     const [campaignData, setCampaignData] = useState({
         name: '',
         subject: '',
-        list: '', // Will store list._id
+        list: '',
         htmlContent: '',
-        scheduledAt: '', // Date and time string
-        status: 'draft', // Default to draft for new campaigns
-        template: '' // Will store template._id
+        scheduledAt: '',
+        status: 'draft',
+        template: ''
     });
     const [lists, setLists] = useState([]);
     const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    // NEW STATE: To disable button during submission
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Quill modules (toolbar options) - These are unchanged from your original as they are Quill's internal config
+    // Custom image handler for Quill
+    const imageHandler = useCallback(() => {
+        if (!quillRef.current) return;
+
+        const editor = quillRef.current.getEditor();
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files ? input.files[0] : null;
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                // Send image to a NEW backend upload endpoint
+                const API_UPLOAD_URL = process.env.REACT_APP_BACKEND_URL ?
+                                     `${process.env.REACT_APP_BACKEND_URL}/api/upload/image` :
+                                     'http://localhost:5000/api/upload/image';
+
+                const user = JSON.parse(localStorage.getItem('user'));
+                const config = {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: user && user.token ? `Bearer ${user.token}` : '',
+                    },
+                };
+
+                // Show a temporary message while uploading
+                const range = editor.getSelection();
+                const tempText = 'Uploading image...';
+                editor.insertText(range.index, tempText);
+                editor.setSelection(range.index + tempText.length);
+
+
+                const response = await axios.post(API_UPLOAD_URL, formData, config);
+                const imageUrl = response.data.imageUrl; // Expect the backend to return imageUrl
+
+                // Remove the temporary text and insert the image
+                editor.deleteText(range.index, tempText.length);
+                editor.insertEmbed(range.index, 'image', imageUrl);
+                editor.setSelection(range.index + 1); // Move cursor after the image
+                
+                setSuccessMessage('Image uploaded and inserted successfully!');
+
+            } catch (uploadError) {
+                console.error('Error uploading image:', uploadError.response?.data || uploadError.message);
+                setError(uploadError.response?.data?.message || 'Failed to upload image. Please try again.');
+                // Remove temporary text if upload fails
+                const range = editor.getSelection(); // Re-get selection as it might have changed
+                editor.deleteText(range.index - tempText.length, tempText.length); // Delete backward from current cursor
+            }
+        };
+    }, []);
+
+    // Quill modules (toolbar options)
     const quillModules = {
-        toolbar: [
-            [{ 'header': [1, 2, false] }],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
-            ['link', 'image', 'video'],
-            ['clean']
-        ],
+        toolbar: {
+            container: [
+                [{ 'header': [1, 2, false] }],
+                ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+                ['link', 'image', 'video'],
+                ['clean']
+            ],
+            handlers: {
+                image: imageHandler // Use our custom image handler
+            }
+        },
     };
 
     const quillFormats = [
@@ -67,11 +132,11 @@ function CampaignForm() {
                 setCampaignData({
                     name: campaignToEdit.name || '',
                     subject: campaignToEdit.subject || '',
-                    list: campaignToEdit.list?._id || '', // Use _id
+                    list: campaignToEdit.list?._id || '',
                     htmlContent: campaignToEdit.htmlContent || '',
-                    scheduledAt: campaignToEdit.scheduledAt ? new Date(campaignToEdit.scheduledAt).toISOString().slice(0, 16) : '', // Format for datetime-local input
+                    scheduledAt: campaignToEdit.scheduledAt ? new Date(campaignToEdit.scheduledAt).toISOString().slice(0, 16) : '',
                     status: campaignToEdit.status || 'draft',
-                    template: campaignToEdit.template?._id || '' // Use _id
+                    template: campaignToEdit.template?._id || ''
                 });
             }
         } catch (err) {
@@ -95,7 +160,6 @@ function CampaignForm() {
         setCampaignData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Handle Quill content changes
     const handleQuillChange = (content) => {
         setCampaignData(prev => ({ ...prev, htmlContent: content }));
     };
@@ -106,14 +170,14 @@ function CampaignForm() {
         if (selectedTemplate) {
             setCampaignData(prev => ({
                 ...prev,
-                template: selectedTemplateId, // Set the template ID
-                htmlContent: selectedTemplate.htmlContent // Apply template content
+                template: selectedTemplateId,
+                htmlContent: selectedTemplate.htmlContent
             }));
         } else {
             setCampaignData(prev => ({
                 ...prev,
-                template: '', // Clear template ID
-                htmlContent: '' // Clear content if no template selected or invalid
+                template: '',
+                htmlContent: ''
             }));
         }
     };
@@ -122,33 +186,27 @@ function CampaignForm() {
         e.preventDefault();
         setSuccessMessage(null);
         setError(null);
-        setIsSubmitting(true); // <--- Set submitting to true
+        setIsSubmitting(true);
 
-        // Basic validation
         if (!campaignData.name || !campaignData.subject || !campaignData.list || !campaignData.htmlContent) {
             setError('Please fill in all required fields (Name, Subject, Target List, Email Content).');
-            setIsSubmitting(false); // <--- Reset submitting if validation fails
+            setIsSubmitting(false);
             return;
         }
 
-        // --- NEW LOGIC: Determine status based on scheduledAt ---
         let newStatus = campaignData.status;
         if (campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date()) {
-            newStatus = 'scheduled'; // If scheduled date is in the future, set status to scheduled
+            newStatus = 'scheduled';
         } else if (newStatus === 'scheduled' && !campaignData.scheduledAt) {
-            // If it was scheduled but scheduledAt was cleared, revert to draft
             newStatus = 'draft';
         }
-        // If status was already 'sent', 'sending', 'failed', 'cancelled', keep it.
-        // Otherwise, if scheduledAt is past, it's a draft until manually sent.
         if (newStatus !== 'scheduled' && campaignData.status !== 'sent' && campaignData.status !== 'sending' && campaignData.status !== 'failed' && campaignData.status !== 'cancelled') {
-             newStatus = 'draft';
+            newStatus = 'draft';
         }
-        // --- END NEW LOGIC ---
 
         const payload = {
             ...campaignData,
-            status: newStatus, // <--- Use the determined status
+            status: newStatus,
             list: campaignData.list || null,
             template: campaignData.template || null,
             scheduledAt: campaignData.scheduledAt ? new Date(campaignData.scheduledAt).toISOString() : null,
@@ -169,7 +227,7 @@ function CampaignForm() {
             console.error('Error saving campaign:', err.response?.data || err.message);
             setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} campaign.`);
         } finally {
-            setIsSubmitting(false); // <--- Reset submitting in finally block
+            setIsSubmitting(false);
         }
     };
 
@@ -260,7 +318,7 @@ function CampaignForm() {
                             onChange={handleInputChange}
                             className="form-input"
                         />
-                         {campaignData.scheduledAt && new Date(campaignData.scheduledAt) <= new Date() && (
+                        {campaignData.scheduledAt && new Date(campaignData.scheduledAt) <= new Date() && (
                             <p className="form-help-text text-red">Scheduled time is in the past. Campaign will be saved as Draft.</p>
                         )}
                         {campaignData.scheduledAt && new Date(campaignData.scheduledAt) > new Date() && (
@@ -276,18 +334,14 @@ function CampaignForm() {
                             value={campaignData.status}
                             onChange={handleInputChange}
                             className="form-input form-select"
-                            disabled={isEditing && campaignData.status !== 'draft'} // Disable status change if not draft and editing
+                            disabled={isEditing && campaignData.status !== 'draft'}
                         >
-                            {/* Only 'draft' can be manually set if it's a new campaign or existing draft */}
                             <option value="draft">Draft</option>
-                            {/* Allow 'scheduled' if editing an already scheduled campaign or if it was just scheduled */}
                             {isEditing && campaignData.status === 'scheduled' && <option value="scheduled">Scheduled</option>}
-                            {/* Display read-only statuses if they are set by the system */}
                             {isEditing && campaignData.status === 'sending' && <option value="sending">Sending</option>}
                             {isEditing && campaignData.status === 'sent' && <option value="sent">Sent</option>}
                             {isEditing && campaignData.status === 'cancelled' && <option value="cancelled">Cancelled</option>}
                             {isEditing && campaignData.status === 'failed' && <option value="failed">Failed</option>}
-
                         </select>
                         {isEditing && campaignData.status !== 'draft' && (
                             <p className="form-help-text">Status can only be changed manually if campaign is a 'draft'. It's usually set by the system for scheduled/sent campaigns.</p>
@@ -297,10 +351,11 @@ function CampaignForm() {
                     <h3 className="form-sub-header">Email Content:</h3>
                     <div className="form-group editor-container">
                         <ReactQuill
+                            ref={quillRef} // Attach ref to Quill
                             theme="snow"
                             value={campaignData.htmlContent}
                             onChange={handleQuillChange}
-                            modules={quillModules}
+                            modules={quillModules} // Use updated modules with custom handler
                             formats={quillFormats}
                             className="quill-editor-full-height"
                         />
@@ -310,7 +365,7 @@ function CampaignForm() {
                         <button
                             type="submit"
                             className="btn btn-primary"
-                            disabled={isSubmitting} // Disable button when submitting
+                            disabled={isSubmitting}
                         >
                             {isSubmitting ? 'Saving...' : (isEditing ? 'Update Campaign' : 'Create Campaign')}
                         </button>
@@ -318,7 +373,7 @@ function CampaignForm() {
                             type="button"
                             onClick={() => navigate('/campaigns')}
                             className="btn btn-secondary"
-                            disabled={isSubmitting} // Optional: Disable cancel button too
+                            disabled={isSubmitting}
                         >
                             Cancel
                         </button>
