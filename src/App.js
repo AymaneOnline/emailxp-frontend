@@ -14,7 +14,7 @@ import CampaignDetails from './pages/CampaignDetails';
 import SubscriberManagement from './pages/SubscriberManagement';
 import ListForm from './pages/ListForm';
 import SubscriberForm from './pages/SubscriberForm';
-import AnalyticsDashboard from './components/AnalyticsDashboard'; // Keep this import
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 import './App.css';
 
@@ -30,20 +30,25 @@ function App() {
             setUser(JSON.parse(storedUser));
         }
 
-        // Keep your backend connection check
-        fetch('https://emailxp-backend-production.up.railway.app')
-            .then(response => {
+        const checkBackendStatus = async () => {
+            try {
+                // FIX: Point to the new /api/status endpoint
+                const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+                const response = await fetch(`${backendUrl}/api/status`);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.text();
-            })
-            .then(data => setBackendMessage(data))
-            .catch(err => {
-                console.error('Error fetching backend:', err);
-                setError(`Failed to connect to backend: ${err.message}. Is the backend server running at http://localhost:5000/?`);
-            });
-    }, []);
+                const data = await response.json(); // Backend now returns JSON
+                setBackendMessage(data.message); // Set message from backend response
+            } catch (err) {
+                console.error('Error fetching backend status:', err);
+                setError(`Failed to connect to backend: ${err.message}.`);
+            }
+        };
+
+        checkBackendStatus();
+    }, []); // Empty dependency array means this runs once on mount
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -65,8 +70,7 @@ function App() {
                         ) : (
                             <>
                                 <li style={{ marginLeft: '20px' }}><span style={{ color: 'white' }}>Welcome, {user.name}!</span></li>
-                                {/* CHANGE THIS LINK: Point to the root '/' or keep it as '/dashboard' as an alias */}
-                                <li style={{ marginLeft: '20px' }}><Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li> {/* <--- UPDATED DASHBOARD LINK */}
+                                <li style={{ marginLeft: '20px' }}><Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/lists" style={{ color: 'white', textDecoration: 'none' }}>Lists</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/campaigns" style={{ color: 'white', textDecoration: 'none' }}>Campaigns</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/templates" style={{ color: 'white', textDecoration: 'none' }}>Templates</Link></li>
@@ -78,18 +82,18 @@ function App() {
             </header>
 
             <main style={{ padding: '20px' }}>
+                {/* Display backend status */}
                 <p>Backend Status: {backendMessage || (error || 'Connecting...')}</p>
 
                 <Routes>
                     <Route path="/register" element={<Register setUser={setUser} />} />
                     <Route path="/login" element={<Login setUser={setUser} />} />
 
-                    {/* --- CHANGE START: Make AnalyticsDashboard the default logged-in view --- */}
                     <Route
                         path="/"
                         element={
                             user ? (
-                                <AnalyticsDashboard user={user} /> // Now renders the AnalyticsDashboard
+                                <AnalyticsDashboard user={user} />
                             ) : (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
                                     <h2>Welcome!</h2>
@@ -98,28 +102,6 @@ function App() {
                             )
                         }
                     />
-                    {/* --- CHANGE END --- */}
-
-                    {/* The /dashboard route can now be removed or kept as an alias if you wish.
-                        For simplicity, I'll remove it here as it's redundant if '/' is the dashboard.
-                        If you want '/dashboard' to still work as an alternative path, keep it.
-                        For now, removing it makes '/' the single canonical path for the dashboard.
-                    */}
-                    {/* REMOVED:
-                    <Route
-                        path="/dashboard"
-                        element={
-                            user ? (
-                                <AnalyticsDashboard user={user} />
-                            ) : (
-                                <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                                    <p>You need to be logged in to view the analytics dashboard.</p>
-                                    <Link to="/login">Go to Login</Link>
-                                </div>
-                            )
-                        }
-                    />
-                    */}
 
                     <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/new" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to create a list.</p><Link to="/login">Go to Login</Link></div>} />
@@ -128,8 +110,6 @@ function App() {
                     <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to add subscribers.</p><Link to="/login">Go to Login</Link></div>} />
                     <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} />
 
-
-                    {/* Campaign Routes (no change needed here) */}
                     <Route
                         path="/campaigns"
                         element={
@@ -180,8 +160,6 @@ function App() {
                         }
                     />
 
-
-                    {/* Template Routes (no change needed here) */}
                     <Route
                         path="/templates"
                         element={

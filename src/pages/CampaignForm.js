@@ -17,7 +17,7 @@ function CampaignForm() {
     const isEditing = !!campaignId;
 
     const quillRef = useRef(null);
-    const fileInputRef = useRef(null); // NEW: Ref for the hidden file input
+    const fileInputRef = useRef(null); // Ref for the hidden file input
 
     const [campaignData, setCampaignData] = useState({
         name: '',
@@ -51,6 +51,11 @@ function CampaignForm() {
         console.log('[CampaignForm] handleFileChange triggered.');
         const file = event.target.files ? event.target.files[0] : null;
 
+        // Declare editor, range, and tempText at a higher scope within this function
+        let editor;
+        let range;
+        let tempText;
+
         if (!file) {
             console.warn('[CampaignForm] No file selected or file is null after selection.');
             return;
@@ -82,9 +87,10 @@ function CampaignForm() {
                 },
             };
 
-            const editor = quillRef.current.getEditor();
-            const range = editor.getSelection();
-            const tempText = 'Uploading image...';
+            editor = quillRef.current.getEditor(); // Assign editor here
+            range = editor.getSelection();         // Assign range here
+            tempText = 'Uploading image...';      // Assign tempText here
+
             editor.insertText(range.index, tempText);
             editor.setSelection(range.index + tempText.length);
 
@@ -102,10 +108,12 @@ function CampaignForm() {
         } catch (uploadError) {
             console.error('[CampaignForm] Error during image upload (catch block):', uploadError.response?.data || uploadError.message || uploadError);
             setError(uploadError.response?.data?.message || 'Failed to upload image. Please try again.');
-            const editor = quillRef.current.getEditor(); // Re-get editor instance
-            const range = editor.getSelection(); // Re-get selection as it might have changed
-            // Ensure tempText removal handles cases where cursor moved
-            editor.deleteText(range ? range.index - tempText.length : editor.getLength() - tempText.length, tempText.length);
+            
+            // Only attempt to remove tempText if editor, range, and tempText were successfully defined
+            if (editor && range && tempText) {
+                // Ensure tempText removal handles cases where cursor moved
+                editor.deleteText(range.index, tempText.length); // Delete from original insertion point
+            }
         } finally {
             // Reset the file input value to allow uploading the same file again
             if (fileInputRef.current) {
@@ -269,8 +277,6 @@ function CampaignForm() {
 
             <form onSubmit={handleSubmit} className="form-grid-layout">
                 <div className="form-column">
-                    {/* ... (existing form fields) ... */}
-
                     <div className="form-group">
                         <label htmlFor="name" className="form-label">Campaign Name:</label>
                         <input
@@ -381,7 +387,7 @@ function CampaignForm() {
                             formats={quillFormats}
                             className="quill-editor-full-height"
                         />
-                        {/* NEW: Hidden file input */}
+                        {/* Hidden file input */}
                         <input
                             type="file"
                             ref={fileInputRef}
