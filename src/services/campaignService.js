@@ -2,79 +2,110 @@
 
 import axios from 'axios';
 
-// Use environment variable, default to local backend URL for development
-const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/';
-const API_URL = `${API_BASE_URL}/campaigns/`; // Concatenate base URL with endpoint
+// TOP LEVEL LOG:
+console.log('campaignService.js (Module Load): REACT_APP_BACKEND_URL =', process.env.REACT_APP_BACKEND_URL);
 
-const getToken = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user?.token;
+// Ensure API_BASE_URL is just the base domain (e.g., http://localhost:5000 or https://your-backend.railway.app)
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+console.log('campaignService.js: Derived API_BASE_URL =', API_BASE_URL); // LOG
+
+// Helper to construct full API URLs
+const getFullApiUrl = (path) => {
+    // URL constructor handles potential trailing slashes on API_BASE_URL
+    const fullUrl = new URL(path, API_BASE_URL).toString();
+    console.log(`campaignService.js: Constructing URL - Path: ${path}, Base: ${API_BASE_URL}, Full: ${fullUrl}`); // LOG
+    return fullUrl;
 };
 
-// Helper to create config object with auth header
-const getConfig = () => {
-    const token = getToken();
-    return {
+
+const getCampaigns = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
         headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${user.token}`,
         },
     };
-};
-
-// Get all campaigns
-const getCampaigns = async () => {
-    const response = await axios.get(API_URL, getConfig());
+    const response = await axios.get(getFullApiUrl('/api/campaigns'), config);
     return response.data;
 };
 
-// Create new campaign
 const createCampaign = async (campaignData) => {
-    const response = await axios.post(API_URL, campaignData, getConfig());
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.post(getFullApiUrl('/api/campaigns'), campaignData, config);
     return response.data;
 };
 
-// Get campaign by ID
 const getCampaignById = async (id) => {
-    const response = await axios.get(API_URL + id, getConfig());
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.get(getFullApiUrl(`/api/campaigns/${id}`), config);
     return response.data;
 };
 
-// Update campaign
 const updateCampaign = async (id, campaignData) => {
-    const response = await axios.put(API_URL + id, campaignData, getConfig());
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.put(getFullApiUrl(`/api/campaigns/${id}`), campaignData, config);
     return response.data;
 };
 
-// Delete campaign
 const deleteCampaign = async (id) => {
-    const response = await axios.delete(API_URL + id, getConfig());
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.delete(getFullApiUrl(`/api/campaigns/${id}`), config);
     return response.data;
 };
 
-// Send campaign manually
-const sendCampaign = async (id) => {
-    const response = await axios.post(API_URL + id + '/send', {}, getConfig());
+const sendTestEmail = async (campaignId, recipientEmail) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.post(getFullApiUrl(`/api/campaigns/${campaignId}/send-test`), { recipientEmail }, config);
     return response.data;
 };
 
-// Get campaign analytics (total/unique opens/clicks)
-const getCampaignAnalytics = async (id) => {
-    const response = await axios.get(`${API_URL}${id}/analytics`, getConfig());
+const sendCampaign = async (campaignId) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.post(getFullApiUrl(`/api/campaigns/${campaignId}/send`), {}, config);
     return response.data;
 };
 
-// Get time-series analytics (daily/weekly opens/clicks)
-const getCampaignAnalyticsTimeSeries = async (id, period = 'daily') => {
-    const response = await axios.get(`${API_URL}${id}/analytics/time-series?period=${period}`, getConfig());
-    return response.data;
-};
-
-// NEW FUNCTION: Get dashboard stats (overall opens/clicks/rates etc.)
 const getDashboardStats = async () => {
-    const response = await axios.get(`${API_URL}dashboard-stats`, getConfig());
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    // FIX: Use getFullApiUrl for dashboard-stats
+    const response = await axios.get(getFullApiUrl('/api/campaigns/dashboard-stats'), config);
     return response.data;
 };
-
 
 const campaignService = {
     getCampaigns,
@@ -82,10 +113,9 @@ const campaignService = {
     getCampaignById,
     updateCampaign,
     deleteCampaign,
+    sendTestEmail,
     sendCampaign,
-    getCampaignAnalytics,
-    getCampaignAnalyticsTimeSeries,
-    getDashboardStats, // <-- THIS WAS MISSING! Now correctly exported.
+    getDashboardStats,
 };
 
 export default campaignService;
