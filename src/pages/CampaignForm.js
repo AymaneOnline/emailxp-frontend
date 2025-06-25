@@ -17,7 +17,7 @@ function CampaignForm() {
     const isEditing = !!campaignId;
 
     const quillRef = useRef(null);
-    const fileInputRef = useRef(null); // Ref for the hidden file input
+    const fileInputRef = useRef(null);
 
     const [campaignData, setCampaignData] = useState({
         name: '',
@@ -35,23 +35,20 @@ function CampaignForm() {
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Custom image handler for Quill
     const imageHandler = useCallback(() => {
         console.log('[CampaignForm] imageHandler triggered.');
         if (fileInputRef.current) {
-            fileInputRef.current.click(); // Trigger the hidden file input click
+            fileInputRef.current.click();
             console.log('[CampaignForm] Hidden file input triggered.');
         } else {
             console.warn('[CampaignForm] fileInputRef.current is null. File input not ready.');
         }
     }, []);
 
-    // Function to handle file selection from the hidden input
     const handleFileChange = useCallback(async (event) => {
         console.log('[CampaignForm] handleFileChange triggered.');
         const file = event.target.files ? event.target.files[0] : null;
 
-        // Declare editor, range, and tempText at a higher scope within this function
         let editor;
         let range;
         let tempText;
@@ -66,9 +63,9 @@ function CampaignForm() {
         formData.append('image', file);
 
         try {
-            const API_UPLOAD_URL = process.env.REACT_APP_BACKEND_URL ?
-                                 `${process.env.REACT_APP_BACKEND_URL}/api/upload/image` :
-                                 'http://localhost:5000/api/upload/image';
+            // Construct the URL correctly: base URL + /api/upload/image
+            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+            const API_UPLOAD_URL = `${backendUrl}/api/upload/image`;
 
             console.log(`[CampaignForm] Attempting to upload to: ${API_UPLOAD_URL}`);
 
@@ -87,9 +84,9 @@ function CampaignForm() {
                 },
             };
 
-            editor = quillRef.current.getEditor(); // Assign editor here
-            range = editor.getSelection();         // Assign range here
-            tempText = 'Uploading image...';      // Assign tempText here
+            editor = quillRef.current.getEditor();
+            range = editor.getSelection();
+            tempText = 'Uploading image...';
 
             editor.insertText(range.index, tempText);
             editor.setSelection(range.index + tempText.length);
@@ -109,18 +106,15 @@ function CampaignForm() {
             console.error('[CampaignForm] Error during image upload (catch block):', uploadError.response?.data || uploadError.message || uploadError);
             setError(uploadError.response?.data?.message || 'Failed to upload image. Please try again.');
             
-            // Only attempt to remove tempText if editor, range, and tempText were successfully defined
             if (editor && range && tempText) {
-                // Ensure tempText removal handles cases where cursor moved
-                editor.deleteText(range.index, tempText.length); // Delete from original insertion point
+                editor.deleteText(range.index, tempText.length);
             }
         } finally {
-            // Reset the file input value to allow uploading the same file again
             if (fileInputRef.current) {
                 fileInputRef.current.value = null;
             }
         }
-    }, []); // Dependencies for useCallback
+    }, []);
 
     const quillModules = {
         toolbar: {
@@ -387,12 +381,11 @@ function CampaignForm() {
                             formats={quillFormats}
                             className="quill-editor-full-height"
                         />
-                        {/* Hidden file input */}
                         <input
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileChange}
-                            style={{ display: 'none' }} // Keep it hidden
+                            style={{ display: 'none' }}
                             accept="image/*"
                         />
                     </div>

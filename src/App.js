@@ -32,15 +32,15 @@ function App() {
 
         const checkBackendStatus = async () => {
             try {
-                // FIX: Point to the new /api/status endpoint
+                // Construct the URL correctly: base URL + /api/status
                 const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
                 const response = await fetch(`${backendUrl}/api/status`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json(); // Backend now returns JSON
-                setBackendMessage(data.message); // Set message from backend response
+                const data = await response.json();
+                setBackendMessage(data.message);
             } catch (err) {
                 console.error('Error fetching backend status:', err);
                 setError(`Failed to connect to backend: ${err.message}.`);
@@ -48,7 +48,7 @@ function App() {
         };
 
         checkBackendStatus();
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -82,7 +82,6 @@ function App() {
             </header>
 
             <main style={{ padding: '20px' }}>
-                {/* Display backend status */}
                 <p>Backend Status: {backendMessage || (error || 'Connecting...')}</p>
 
                 <Routes>
