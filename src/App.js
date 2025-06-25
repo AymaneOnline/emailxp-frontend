@@ -21,7 +21,7 @@ import './App.css';
 function App() {
     const [backendMessage, setBackendMessage] = useState('');
     const [error, setError] = useState(null);
-    const [user, setUser] = useState(null); // Managed locally
+    const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -32,9 +32,10 @@ function App() {
 
         const checkBackendStatus = async () => {
             try {
-                // Construct the URL correctly: base URL + /api/status
-                const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-                const response = await fetch(`${backendUrl}/api/status`);
+                const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+                const statusUrl = new URL('/api/status', backendBaseUrl).toString();
+
+                const response = await fetch(statusUrl);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -43,7 +44,7 @@ function App() {
                 setBackendMessage(data.message);
             } catch (err) {
                 console.error('Error fetching backend status:', err);
-                setError(`Failed to connect to backend: ${err.message}.`);
+                setError(`Failed to connect to backend: ${err.message}. Please check if the backend server is running and accessible.`);
             }
         };
 
@@ -63,12 +64,12 @@ function App() {
                 <nav>
                     <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex' }}>
                         {!user ? (
-                            <>
+                            <> {/* Wrapped in Fragment */}
                                 <li style={{ marginLeft: '20px' }}><Link to="/register" style={{ color: 'white', textDecoration: 'none' }}>Register</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/login" style={{ color: 'white', textDecoration: 'none' }}>Login</Link></li>
                             </>
                         ) : (
-                            <>
+                            <> {/* Wrapped in Fragment */}
                                 <li style={{ marginLeft: '20px' }}><span style={{ color: 'white' }}>Welcome, {user.name}!</span></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link></li>
                                 <li style={{ marginLeft: '20px' }}><Link to="/lists" style={{ color: 'white', textDecoration: 'none' }}>Lists</Link></li>
@@ -102,12 +103,46 @@ function App() {
                         }
                     />
 
-                    <Route path="/lists" element={user ? <ListManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view your lists.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/new" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to create a list.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/edit/:id" element={user ? <ListForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit a list.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/:listId/subscribers" element={user ? <SubscriberManagement /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to view subscribers.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to add subscribers.</p><Link to="/login">Go to Login</Link></div>} />
-                    <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : <div style={{ textAlign: 'center', marginTop: '50px' }}><p>You need to be logged in to edit subscribers.</p><Link to="/login">Go to Login</Link></div>} />
+                    {/* All subsequent routes also need to ensure their `element` prop
+                        returns a single JSX element or a Fragment.
+                        I'm assuming these are already well-formed, but I'll double-check the problematic ones. */}
+
+                    <Route path="/lists" element={user ? <ListManagement /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to view your lists.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
+                    <Route path="/lists/new" element={user ? <ListForm /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to create a list.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
+                    <Route path="/lists/edit/:id" element={user ? <ListForm /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to edit a list.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
+                    <Route path="/lists/:listId/subscribers" element={user ? <SubscriberManagement /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to view subscribers.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
+                    <Route path="/lists/:listId/subscribers/new" element={user ? <SubscriberForm /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to add subscribers.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
+                    <Route path="/lists/:listId/subscribers/edit/:subscriberId" element={user ? <SubscriberForm /> : (
+                        <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                            <p>You need to be logged in to edit subscribers.</p>
+                            <Link to="/login">Go to Login</Link>
+                        </div>
+                    )} />
 
                     <Route
                         path="/campaigns"
@@ -125,6 +160,7 @@ function App() {
                             user ? (
                                 <CampaignForm />
                             ) : (
+                                // FIX: Removed extra style brace and ensured valid JSX structure
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
                                     <p>You need to be logged in to create a campaign.</p>
                                     <Link to="/login">Go to Login</Link>

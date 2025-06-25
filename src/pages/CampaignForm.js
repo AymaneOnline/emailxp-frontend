@@ -64,8 +64,8 @@ function CampaignForm() {
 
         try {
             // Construct the URL correctly: base URL + /api/upload/image
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            const API_UPLOAD_URL = `${backendUrl}/api/upload/image`;
+            const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+            const API_UPLOAD_URL = new URL('/api/upload/image', backendBaseUrl).toString();
 
             console.log(`[CampaignForm] Attempting to upload to: ${API_UPLOAD_URL}`);
 
