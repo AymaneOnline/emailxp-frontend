@@ -142,6 +142,7 @@ function CampaignForm() {
         setLoading(true);
         setError(null);
         try {
+            // Updated calls to listService and templateService to use the new base URL assumption
             const [fetchedLists, fetchedTemplates] = await Promise.all([
                 listService.getLists(),
                 templateService.getTemplates()

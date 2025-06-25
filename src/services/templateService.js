@@ -2,56 +2,73 @@
 
 import axios from 'axios';
 
-// Replace with your actual backend URL (e.g., 'http://localhost:5000' during development)
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api';
+// Ensure API_URL is just the base domain (e.g., http://localhost:5000 or https://your-backend.railway.app)
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
-// You might need to add headers for authentication if your API is protected
-// const config = (token) => {
-//     return {
-//         headers: {
-//             Authorization: `Bearer ${token}`,
-//         },
-//     };
-// };
+// Helper to construct full API URLs
+const getFullApiUrl = (path) => {
+    // URL constructor handles potential trailing slashes on API_BASE_URL
+    return new URL(path, API_BASE_URL).toString();
+};
 
-// --- Create Template ---
-const createTemplate = async (templateData, token) => {
-    // const response = await axios.post(`${API_URL}/templates`, templateData, config(token));
-    const response = await axios.post(`${API_URL}/templates`, templateData); // For now, assuming no token needed
+const getTemplates = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.get(getFullApiUrl('/api/templates'), config);
     return response.data;
 };
 
-// --- Get All Templates ---
-const getTemplates = async (token) => {
-    // const response = await axios.get(`${API_URL}/templates`, config(token));
-    const response = await axios.get(`${API_URL}/templates`); // For now, assuming no token needed
+const createTemplate = async (templateData) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.post(getFullApiUrl('/api/templates'), templateData, config);
     return response.data;
 };
 
-// --- Get Template by ID ---
-const getTemplateById = async (id, token) => {
-    // const response = await axios.get(`${API_URL}/templates/${id}`, config(token));
-    const response = await axios.get(`${API_URL}/templates/${id}`); // For now, assuming no token needed
+const getTemplateById = async (id) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.get(getFullApiUrl(`/api/templates/${id}`), config);
     return response.data;
 };
 
-// --- Update Template ---
-const updateTemplate = async (id, templateData, token) => {
-    // const response = await axios.put(`${API_URL}/templates/${id}`, templateData, config(token));
-    const response = await axios.put(`${API_URL}/templates/${id}`, templateData); // For now, assuming no token needed
+const updateTemplate = async (id, templateData) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.put(getFullApiUrl(`/api/templates/${id}`), templateData, config);
     return response.data;
 };
 
-// --- Delete Template ---
-const deleteTemplate = async (id, token) => {
-    // const response = await axios.delete(`${API_URL}/templates/${id}`, config(token));
-    const response = await axios.delete(`${API_URL}/templates/${id}`); // For now, assuming no token needed
+const deleteTemplate = async (id) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`,
+        },
+    };
+    const response = await axios.delete(getFullApiUrl(`/api/templates/${id}`), config);
     return response.data;
 };
 
 const templateService = {
-    createTemplate,
     getTemplates,
+    createTemplate,
     getTemplateById,
     updateTemplate,
     deleteTemplate,

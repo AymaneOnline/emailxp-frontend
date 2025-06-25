@@ -3,7 +3,7 @@
 import axios from 'axios';
 
 // Use environment variable, default to local backend URL for development
-const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/';
 const API_URL = `${API_BASE_URL}/campaigns/`; // Concatenate base URL with endpoint
 
 const getToken = () => {

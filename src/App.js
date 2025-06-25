@@ -32,6 +32,8 @@ function App() {
 
         const checkBackendStatus = async () => {
             try {
+                // Construct the URL correctly: base URL + /api/status
+                // The URL constructor handles potential trailing slashes on backendBaseUrl
                 const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
                 const statusUrl = new URL('/api/status', backendBaseUrl).toString();
 
@@ -40,8 +42,8 @@ function App() {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json();
-                setBackendMessage(data.message);
+                const data = await response.json(); // Backend now returns JSON
+                setBackendMessage(data.message); // Set message from backend response
             } catch (err) {
                 console.error('Error fetching backend status:', err);
                 setError(`Failed to connect to backend: ${err.message}. Please check if the backend server is running and accessible.`);
@@ -49,7 +51,7 @@ function App() {
         };
 
         checkBackendStatus();
-    }, []);
+    }, []); // Empty dependency array means this runs once on mount
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -83,6 +85,7 @@ function App() {
             </header>
 
             <main style={{ padding: '20px' }}>
+                {/* Display backend status */}
                 <p>Backend Status: {backendMessage || (error || 'Connecting...')}</p>
 
                 <Routes>
@@ -102,10 +105,6 @@ function App() {
                             )
                         }
                     />
-
-                    {/* All subsequent routes also need to ensure their `element` prop
-                        returns a single JSX element or a Fragment.
-                        I'm assuming these are already well-formed, but I'll double-check the problematic ones. */}
 
                     <Route path="/lists" element={user ? <ListManagement /> : (
                         <div style={{ textAlign: 'center', marginTop: '50px' }}>
@@ -160,7 +159,6 @@ function App() {
                             user ? (
                                 <CampaignForm />
                             ) : (
-                                // FIX: Removed extra style brace and ensured valid JSX structure
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
                                     <p>You need to be logged in to create a campaign.</p>
                                     <Link to="/login">Go to Login</Link>
