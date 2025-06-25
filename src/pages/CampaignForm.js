@@ -1,15 +1,14 @@
 // emailxp/frontend/src/pages/CampaignForm.js
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import campaignService from '../services/campaignService';
 import listService from '../services/listService';
 import templateService from '../services/templateService';
-import axios from 'axios'; // Import axios for image upload
+import axios from 'axios';
 
-// Import ReactQuill and its styles
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // For the default "snow" theme
+import 'react-quill/dist/quill.snow.css';
 
 function CampaignForm() {
     const { id: campaignId } = useParams();
@@ -17,7 +16,8 @@ function CampaignForm() {
 
     const isEditing = !!campaignId;
 
-    const quillRef = useRef(null); // Ref for Quill editor
+    const quillRef = useRef(null);
+    const fileInputRef = useRef(null); // NEW: Ref for the hidden file input
 
     const [campaignData, setCampaignData] = useState({
         name: '',
@@ -30,70 +30,90 @@ function CampaignForm() {
     });
     const [lists, setLists] = useState([]);
     const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Custom image handler for Quill
     const imageHandler = useCallback(() => {
-        if (!quillRef.current) return;
-
-        const editor = quillRef.current.getEditor();
-        const input = document.createElement('input');
-        input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'image/*');
-        input.click();
-
-        input.onchange = async () => {
-            const file = input.files ? input.files[0] : null;
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('image', file);
-
-            try {
-                // Send image to a NEW backend upload endpoint
-                const API_UPLOAD_URL = process.env.REACT_APP_BACKEND_URL ?
-                                     `${process.env.REACT_APP_BACKEND_URL}/api/upload/image` :
-                                     'http://localhost:5000/api/upload/image';
-
-                const user = JSON.parse(localStorage.getItem('user'));
-                const config = {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                        Authorization: user && user.token ? `Bearer ${user.token}` : '',
-                    },
-                };
-
-                // Show a temporary message while uploading
-                const range = editor.getSelection();
-                const tempText = 'Uploading image...';
-                editor.insertText(range.index, tempText);
-                editor.setSelection(range.index + tempText.length);
-
-
-                const response = await axios.post(API_UPLOAD_URL, formData, config);
-                const imageUrl = response.data.imageUrl; // Expect the backend to return imageUrl
-
-                // Remove the temporary text and insert the image
-                editor.deleteText(range.index, tempText.length);
-                editor.insertEmbed(range.index, 'image', imageUrl);
-                editor.setSelection(range.index + 1); // Move cursor after the image
-                
-                setSuccessMessage('Image uploaded and inserted successfully!');
-
-            } catch (uploadError) {
-                console.error('Error uploading image:', uploadError.response?.data || uploadError.message);
-                setError(uploadError.response?.data?.message || 'Failed to upload image. Please try again.');
-                // Remove temporary text if upload fails
-                const range = editor.getSelection(); // Re-get selection as it might have changed
-                editor.deleteText(range.index - tempText.length, tempText.length); // Delete backward from current cursor
-            }
-        };
+        console.log('[CampaignForm] imageHandler triggered.');
+        if (fileInputRef.current) {
+            fileInputRef.current.click(); // Trigger the hidden file input click
+            console.log('[CampaignForm] Hidden file input triggered.');
+        } else {
+            console.warn('[CampaignForm] fileInputRef.current is null. File input not ready.');
+        }
     }, []);
 
-    // Quill modules (toolbar options)
+    // Function to handle file selection from the hidden input
+    const handleFileChange = useCallback(async (event) => {
+        console.log('[CampaignForm] handleFileChange triggered.');
+        const file = event.target.files ? event.target.files[0] : null;
+
+        if (!file) {
+            console.warn('[CampaignForm] No file selected or file is null after selection.');
+            return;
+        }
+        console.log(`[CampaignForm] File selected: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const API_UPLOAD_URL = process.env.REACT_APP_BACKEND_URL ?
+                                 `${process.env.REACT_APP_BACKEND_URL}/api/upload/image` :
+                                 'http://localhost:5000/api/upload/image';
+
+            console.log(`[CampaignForm] Attempting to upload to: ${API_UPLOAD_URL}`);
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            const authHeader = user && user.token ? `Bearer ${user.token}` : '';
+            if (!authHeader) {
+                console.error('[CampaignForm] User token not found. Cannot upload image without authentication.');
+                setError('Authentication token missing. Please log in again.');
+                return;
+            }
+
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: authHeader,
+                },
+            };
+
+            const editor = quillRef.current.getEditor();
+            const range = editor.getSelection();
+            const tempText = 'Uploading image...';
+            editor.insertText(range.index, tempText);
+            editor.setSelection(range.index + tempText.length);
+
+            console.log('[CampaignForm] Sending axios POST request for image upload...');
+            const response = await axios.post(API_UPLOAD_URL, formData, config);
+            console.log('[CampaignForm] Image upload response received:', response.data);
+            const imageUrl = response.data.imageUrl;
+
+            editor.deleteText(range.index, tempText.length);
+            editor.insertEmbed(range.index, 'image', imageUrl);
+            editor.setSelection(range.index + 1);
+            
+            setSuccessMessage('Image uploaded and inserted successfully!');
+
+        } catch (uploadError) {
+            console.error('[CampaignForm] Error during image upload (catch block):', uploadError.response?.data || uploadError.message || uploadError);
+            setError(uploadError.response?.data?.message || 'Failed to upload image. Please try again.');
+            const editor = quillRef.current.getEditor(); // Re-get editor instance
+            const range = editor.getSelection(); // Re-get selection as it might have changed
+            // Ensure tempText removal handles cases where cursor moved
+            editor.deleteText(range ? range.index - tempText.length : editor.getLength() - tempText.length, tempText.length);
+        } finally {
+            // Reset the file input value to allow uploading the same file again
+            if (fileInputRef.current) {
+                fileInputRef.current.value = null;
+            }
+        }
+    }, []); // Dependencies for useCallback
+
     const quillModules = {
         toolbar: {
             container: [
@@ -104,7 +124,7 @@ function CampaignForm() {
                 ['clean']
             ],
             handlers: {
-                image: imageHandler // Use our custom image handler
+                image: imageHandler
             }
         },
     };
@@ -249,6 +269,8 @@ function CampaignForm() {
 
             <form onSubmit={handleSubmit} className="form-grid-layout">
                 <div className="form-column">
+                    {/* ... (existing form fields) ... */}
+
                     <div className="form-group">
                         <label htmlFor="name" className="form-label">Campaign Name:</label>
                         <input
@@ -351,13 +373,21 @@ function CampaignForm() {
                     <h3 className="form-sub-header">Email Content:</h3>
                     <div className="form-group editor-container">
                         <ReactQuill
-                            ref={quillRef} // Attach ref to Quill
+                            ref={quillRef}
                             theme="snow"
                             value={campaignData.htmlContent}
                             onChange={handleQuillChange}
-                            modules={quillModules} // Use updated modules with custom handler
+                            modules={quillModules}
                             formats={quillFormats}
                             className="quill-editor-full-height"
+                        />
+                        {/* NEW: Hidden file input */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }} // Keep it hidden
+                            accept="image/*"
                         />
                     </div>
 
