@@ -19,7 +19,7 @@ import {
   Share2
 } from 'lucide-react';
 import templateService from '../services/templateService';
-import EmailEditor from '../components/EmailEditor';
+
 import TemplateAnalytics from '../components/TemplateAnalytics';
 import TemplateSharing from '../components/TemplateSharing';
 import { toast } from 'react-toastify';

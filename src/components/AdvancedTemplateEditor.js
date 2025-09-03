@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import templateService from '../services/templateService';
-import EnhancedDragDropEditor from './EnhancedDragDropEditor';
+
 
 const DEVICE_PREVIEWS = [
   { id: 'desktop', label: 'Desktop', icon: Monitor, width: '100%' },
@@ -121,19 +121,29 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
       console.log('Template data received:', data);
       
       // Convert backend structure to frontend format
+      const settings = data.structure?.settings || {};
+      const blocks = (data.structure?.blocks || []).map(b => ({
+        ...b,
+        content: b?.content || {},
+        styles: b?.styles || {}
+      }));
       const convertedTemplate = {
         name: data.name || '',
         description: data.description || '',
         category: data.category || 'custom',
         tags: data.tags || [],
-        blocks: data.structure?.blocks || [],
-        styles: data.structure?.settings || {
-          backgroundColor: '#f4f4f4',
-          containerWidth: '600px',
-          fontFamily: 'Arial, sans-serif',
-          fontSize: '16px',
-          lineHeight: '1.6',
-          textColor: '#333333'
+        blocks,
+        styles: {
+          backgroundColor: settings.backgroundColor || '#f4f4f4',
+          containerWidth: `${settings.contentWidth || settings.containerWidth || 600}px`,
+          fontFamily: settings.fontFamily || 'Arial, sans-serif',
+          fontSize: `${settings.fontSize || 16}px`,
+          lineHeight: `${settings.lineHeight || 1.6}`,
+          textColor: settings.textColor || '#333333',
+          linkColor: settings.linkColor || '#007cba',
+        },
+        settings: {
+          preheader: settings.preheader || ''
         }
       };
       
@@ -175,7 +185,35 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
         return;
       }
 
-      // Convert frontend format to backend format
+      // Client-side validation: require footer + unsubscribe token
+      const hasFooter = (template.blocks || []).some(b => b.type === 'footer');
+      const footer = (template.blocks || []).find(b => b.type === 'footer');
+      const footerText = (footer?.content?.text || '').toString();
+      if (!hasFooter || !/\{\{\s*unsubscribeUrl\s*\}\}/i.test(footerText)) {
+        toast.error('Template must include a Footer block with an unsubscribe link ({{unsubscribeUrl}}).');
+        return;
+      }
+
+      // Convert frontend format to backend format (align naming)
+      const styles = template.styles || {};
+      const advSettings = template.settings || {};
+
+      // Normalize container/content width to number
+      const contentWidth = typeof styles.containerWidth === 'string'
+        ? parseInt(styles.containerWidth, 10) || 600
+        : (styles.containerWidth || styles.contentWidth || 600);
+
+      const structureSettings = {
+        backgroundColor: styles.backgroundColor || '#f4f4f4',
+        contentWidth,
+        fontFamily: styles.fontFamily || 'Arial, sans-serif',
+        fontSize: parseInt(styles.fontSize, 10) || 16,
+        lineHeight: typeof styles.lineHeight === 'string' ? parseFloat(styles.lineHeight) || 1.6 : (styles.lineHeight || 1.6),
+        textColor: styles.textColor || '#333333',
+        linkColor: styles.linkColor || '#007cba',
+        preheader: advSettings.preheader || ''
+      };
+
       const templateData = {
         name: template.name,
         description: template.description,
@@ -183,7 +221,7 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
         tags: template.tags,
         structure: {
           blocks: template.blocks,
-          settings: template.styles
+          settings: structureSettings
         }
       };
 
@@ -373,9 +411,22 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
     }
   };
 
+  // Safely serialize style objects
+  const styleObjectToString = (styles) => {
+    if (!styles || typeof styles !== 'object') return '';
+    return Object.entries(styles)
+      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
+      .map(([key, value]) => {
+        const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        const needsPx = typeof value === 'number' && !kebab.includes('color') && !kebab.includes('opacity') && !kebab.includes('z-index') && !kebab.includes('font-weight') && !kebab.includes('line-height');
+        return `${kebab}: ${value}${needsPx ? 'px' : ''}`;
+      })
+      .join('; ');
+  };
+
   const generateHTMLFromBlocks = (blocks, styles) => {
     const blockHTML = blocks.map(block => generateBlockHTML(block)).join('\n');
-    
+    const preheader = template.settings?.preheader ? `<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${template.settings.preheader}</div>` : '';
     return `
 <!DOCTYPE html>
 <html>
@@ -410,6 +461,7 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
   </style>
 </head>
 <body>
+  ${preheader}
   <div class="container">
     ${blockHTML}
   </div>
@@ -418,23 +470,40 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
   };
 
   const generateBlockHTML = (block) => {
-    switch (block.type) {
+    const styles = block?.styles || {};
+    const content = block?.content || {};
+    switch (block?.type) {
       case 'text':
-        return `<p style="${styleObjectToString(block.styles)}">${block.content.text}</p>`;
-      case 'heading':
-        return `<${block.content.level} style="${styleObjectToString(block.styles)}">${block.content.text}</${block.content.level}>`;
-      case 'image':
-        const imgStyle = `width: ${block.content.width}; height: auto; display: block;`;
-        const img = `<img src="${block.content.src}" alt="${block.content.alt}" style="${imgStyle}">`;
-        return block.content.link ? `<a href="${block.content.link}">${img}</a>` : img;
+        return `<p style="${styleObjectToString(styles)}">${content.text || ''}</p>`;
+      case 'heading': {
+        const level = content.level || 'h2';
+        return `<${level} style="${styleObjectToString(styles)}">${content.text || ''}</${level}>`;
+      }
+      case 'image': {
+        const width = content.width || '100%';
+        const imgStyle = `width: ${width}; height: auto; display: block;`;
+        const img = `<img src="${content.src || ''}" alt="${content.alt || ''}" style="${imgStyle}">`;
+        return content.link ? `<a href="${content.link}">${img}</a>` : img;
+      }
       case 'button':
-        return `<div style="text-align: ${block.content.align}; padding: ${block.styles.margin || '10px 0'};">
-          <a href="${block.content.link}" style="${styleObjectToString(block.styles)}">${block.content.text}</a>
+        return `<div style="text-align: ${content.align || 'center'};">
+          <a href="${content.link || '#'}" style="${styleObjectToString(styles)}">${content.text || 'Button'}</a>
         </div>`;
       case 'divider':
-        return `<hr style="border: none; border-top: 1px ${block.content.style} ${block.content.color}; width: ${block.content.width}; margin: 20px auto;">`;
+        return `<hr style="border: none; border-top: 1px ${content.style || 'solid'} ${content.color || '#cccccc'}; width: ${content.width || '100%'}; margin: 20px auto;">`;
       case 'spacer':
-        return `<div style="height: ${block.content.height};"></div>`;
+        return `<div style="height: ${content.height || '20px'};"></div>`;
+      case 'social': {
+        const links = content.links || [];
+        const align = content.align || 'center';
+        return `<div style="text-align: ${align}; ${styleObjectToString(styles)}">
+          ${links.map(link => `<a href="${link.url || '#'}" style="display: inline-block; margin: 0 10px; text-decoration: none; font-size: 24px;">🔗</a>`).join('')}
+        </div>`;
+      }
+      case 'footer': {
+        const align = content.align || 'center';
+        return `<div style="text-align: ${align}; ${styleObjectToString(styles)}">${content.text || ''}</div>`;
+      }
       default:
         return '';
     }
@@ -817,20 +886,30 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
               </div>
             </div>
           ) : (
-            <EnhancedDragDropEditor
-              initialBlocks={template.blocks}
-              onBlocksChange={(blocks) => {
-                const newTemplate = { ...template, blocks };
-                setTemplate(newTemplate);
-                addToHistory(newTemplate);
-              }}
-              onPreview={(blocks) => {
-                setTemplate(prev => ({ ...prev, blocks }));
-                setPreviewMode(true);
-              }}
-              className="flex-1"
-            />
-          )}
+            <div className="flex-1 overflow-auto p-4">
+              {/* Block List */}
+              <div className="max-w-3xl mx-auto space-y-4">
+                {template.blocks.map((block) => (
+                  <div
+                    key={block.id}
+                    className={`border rounded-lg p-4 bg-white dark:bg-gray-800 ${selectedBlock === block.id ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
+                    onClick={() => setSelectedBlock(block.id)}
+                  >
+                    {renderBlockPreview(block)}
+                    <div className="flex justify-end space-x-2 mt-3">
+                      <button className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded" onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'up'); }}>Up</button>
+                      <button className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded" onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'down'); }}>Down</button>
+                      <button className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded" onClick={(e) => { e.stopPropagation(); duplicateBlock(block.id); }}>Duplicate</button>
+                      <button className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+                <div className="text-center">
+                  <button className="px-3 py-2 bg-red-600 text-white rounded" onClick={() => setShowBlockLibrary(true)}>Add block</button>
+                </div>
+              </div>
+            </div>
+          )
         </div>
       </div>
     </div>

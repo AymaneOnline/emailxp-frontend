@@ -99,30 +99,45 @@ const TemplatePreview = () => {
 
     // This is a simplified HTML generation - you might want to use the same logic from AdvancedTemplateEditor
     const { blocks = [], settings = {} } = template.structure;
-    
+
     const blockHTML = blocks.map(block => {
       switch (block.type) {
         case 'text':
-          return `<p style="${styleObjectToString(block.styles || {})}">${block.content?.text || ''}</p>`;
-        case 'heading':
+          return `<div class="text-block block" style="${styleObjectToString(block.styles || {})}">${block.content?.text || ''}</div>`;
+        case 'heading': {
           const level = block.content?.level || 'h2';
-          return `<${level} style="${styleObjectToString(block.styles || {})}">${block.content?.text || ''}</${level}>`;
-        case 'image':
+          return `<${level} class="block" style="${styleObjectToString(block.styles || {})}">${block.content?.text || ''}</${level}>`;
+        }
+        case 'image': {
           const imgStyle = `width: ${block.content?.width || '100%'}; height: auto; display: block;`;
           const img = `<img src="${block.content?.src || ''}" alt="${block.content?.alt || ''}" style="${imgStyle}">`;
-          return block.content?.link ? `<a href="${block.content.link}">${img}</a>` : img;
+          return `<div class="image-block block" style="${styleObjectToString(block.styles || {})}">${block.content?.link ? `<a href="${block.content.link}">${img}</a>` : img}</div>`;
+        }
         case 'button':
-          return `<div style="text-align: ${block.content?.align || 'center'}; padding: 10px 0;">
-            <a href="${block.content?.link || '#'}" style="${styleObjectToString(block.styles || {})}">${block.content?.text || 'Button'}</a>
+          return `<div class="button-block block" style="text-align: ${block.content?.align || 'center'}; padding: 10px 0;">
+            <a href="${block.content?.link || '#'}" class="button" style="${styleObjectToString(block.styles || {})}">${block.content?.text || 'Button'}</a>
           </div>`;
         case 'divider':
-          return `<hr style="border: none; border-top: 1px ${block.content?.style || 'solid'} ${block.content?.color || '#cccccc'}; width: ${block.content?.width || '100%'}; margin: 20px auto;">`;
+          return `<div class="divider-block block"><div class="divider" style="border: none; border-top: 1px ${block.content?.style || 'solid'} ${block.content?.color || '#cccccc'}; width: ${block.content?.width || '100%'}; margin: 20px auto;"></div></div>`;
         case 'spacer':
-          return `<div style="height: ${block.content?.height || '20px'};"></div>`;
+          return `<div class="spacer-block" style="height: ${block.content?.height || '20px'};"></div>`;
+        case 'social': {
+          const links = block.content?.links || [];
+          const align = block.content?.align || 'center';
+          return `<div class="social-block block" style="text-align: ${align}; ${styleObjectToString(block.styles || {})}">
+            ${links.map(link => `<a href="${link.url || '#'}" style="display: inline-block; margin: 0 10px; text-decoration: none; font-size: 24px;">🔗</a>`).join('')}
+          </div>`;
+        }
+        case 'footer': {
+          const align = block.content?.align || 'center';
+          return `<div class="block" style="text-align: ${align}; ${styleObjectToString(block.styles || {})}">${block.content?.text || ''}</div>`;
+        }
         default:
           return '';
       }
     }).join('\n');
+
+    const preheader = settings.preheader ? `<div style="display:none; max-height:0; overflow:hidden; opacity:0;">${settings.preheader}</div>` : '';
 
     return `
 <!DOCTYPE html>
@@ -141,13 +156,11 @@ const TemplatePreview = () => {
       line-height: ${settings.lineHeight || '1.6'};
       color: ${settings.textColor || '#333333'};
     }
+    a { color: ${settings.linkColor || '#007cba'}; }
     .container {
       max-width: ${settings.contentWidth || '600px'};
       margin: 0 auto;
       padding: 20px;
-    }
-    a {
-      color: ${settings.linkColor || '#007cba'};
     }
     @media only screen and (max-width: 600px) {
       .container {
@@ -158,6 +171,7 @@ const TemplatePreview = () => {
   </style>
 </head>
 <body>
+  ${preheader}
   <div class="container">
     ${blockHTML}
   </div>
@@ -166,8 +180,14 @@ const TemplatePreview = () => {
   };
 
   const styleObjectToString = (styles) => {
+    if (!styles || typeof styles !== 'object') return '';
     return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
+      .map(([key, value]) => {
+        const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        const needsPx = typeof value === 'number' && !kebab.includes('color') && !kebab.includes('opacity') && !kebab.includes('z-index') && !kebab.includes('font-weight') && !kebab.includes('line-height');
+        return `${kebab}: ${value}${needsPx ? 'px' : ''}`;
+      })
       .join('; ');
   };
 
@@ -201,6 +221,19 @@ const TemplatePreview = () => {
 
   const currentDevice = DEVICE_PREVIEWS.find(d => d.id === previewDevice);
   const htmlContent = generateHTMLFromTemplate(template);
+
+  // Prevent clicks inside preview from navigating the SPA (only when not using iframe src)
+  useEffect(() => {
+    const handler = (e) => {
+      const target = e.target.closest('a');
+      if (target) {
+        e.preventDefault();
+      }
+    };
+    // Applies only if we ever render a div-based preview
+    document.getElementById('template-preview-root')?.addEventListener('click', handler);
+    return () => document.getElementById('template-preview-root')?.removeEventListener('click', handler);
+  }, [htmlContent]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -319,10 +352,11 @@ const TemplatePreview = () => {
               }}
             >
               <iframe
-                srcDoc={htmlContent}
+                src={templateService.getPreviewUrl(id)}
                 className="w-full h-full border-0"
                 style={{ minHeight: '600px' }}
                 title="Template Preview"
+                sandbox="allow-same-origin"
               />
             </div>
           </div>

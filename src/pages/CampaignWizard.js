@@ -69,6 +69,7 @@ function CampaignWizard() {
     segments: [], // array of selected segment ids
     individuals: [], // array of selected individual subscriber ids
     htmlContent: '',
+    selectedTemplateId: null, // track selected template
     // Scheduling
     sendOption: 'now', // 'now' | 'schedule'
     scheduleType: 'fixed', // 'fixed' | 'subscriber_local'
@@ -101,7 +102,8 @@ function CampaignWizard() {
       const templateData = await templateService.useTemplate(template._id);
       setForm({
         ...form,
-        htmlContent: templateData.template.htmlContent
+        htmlContent: templateData.template.htmlContent,
+        selectedTemplateId: template._id,
       });
       setShowTemplateSelector(false);
     } catch (error) {
@@ -149,6 +151,7 @@ function CampaignWizard() {
           segments: campaign.segments || [],
           individuals: campaign.individuals || [],
           htmlContent: campaign.htmlContent || '',
+          selectedTemplateId: campaign.template?._id || campaign.template || null,
           sendOption: campaign.status === 'scheduled' ? 'schedule' : 'now',
           scheduleType: campaign.scheduleType || 'fixed',
           scheduledAt: campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : '',
@@ -224,6 +227,7 @@ function CampaignWizard() {
       groups: form.groups,
       segments: form.segments,
       individuals: form.individuals,
+      template: form.selectedTemplateId || null,
     };
 
     // Backend compatibility: set primary group if groups exist

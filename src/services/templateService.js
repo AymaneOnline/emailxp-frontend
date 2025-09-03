@@ -123,17 +123,6 @@ const templateService = {
     return `${templateAPI.defaults.baseURL}/${id}/preview`;
   },
 
-  // Duplicate template
-  duplicateTemplate: async (id) => {
-    try {
-      const response = await templateAPI.post(`/${id}/duplicate`);
-      return response.data;
-    } catch (error) {
-      console.error('Error duplicating template:', error);
-      throw error;
-    }
-  },
-
   // Export template
   exportTemplate: async (id) => {
     try {
