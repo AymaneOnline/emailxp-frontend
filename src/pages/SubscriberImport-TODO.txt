@@ -1,0 +1,26 @@
+import tagService from '../services/tagService';
+// ...existing imports...
+
+// Add to SubscriberImport.js:
+// Tag selection for all imported subscribers
+// (Place this in Step 1 UI, after group selection)
+//
+// State:
+// const [tags, setTags] = useState([]);
+// const [selectedTags, setSelectedTags] = useState([]);
+//
+// useEffect(() => { tagService.getTags().then(setTags); }, []);
+//
+// In the JSX:
+// <div className="mb-6">
+//   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign Tags (Optional)</label>
+//   <select multiple value={selectedTags} onChange={e => setSelectedTags(Array.from(e.target.selectedOptions).map(opt => opt.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+//     {tags.map(tag => <option key={tag._id} value={tag._id}>{tag.name}</option>)}
+//   </select>
+//   <p className="text-gray-500 text-sm mt-1">Assign tags to all imported subscribers.</p>
+// </div>
+//
+// In handleImport:
+// if (selectedTags.length > 0) importData.tagIds = selectedTags;
+//
+// This enables tag assignment to all imported subscribers.

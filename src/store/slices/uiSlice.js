@@ -6,7 +6,7 @@ const initialState = {
   notifications: [],
   loading: {
     campaigns: false,
-    lists: false,
+    groups: false,
     templates: false,
   },
 };

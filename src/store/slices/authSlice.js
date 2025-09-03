@@ -1,7 +1,7 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+// emailxp/frontend/src/store/slices/authSlice.js
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import authService from '../../services/authService';
 
 // Get user from localStorage
 const user = JSON.parse(localStorage.getItem('user'));
@@ -14,35 +14,52 @@ const initialState = {
   message: '',
 };
 
-// Login user
-export const login = createAsyncThunk(
-  'auth/login',
-  async (userData, thunkAPI) => {
+// Register user
+export const register = createAsyncThunk(
+  'auth/register',
+  async (user, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/users/login`, userData);
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
-      }
-      return response.data;
+      return await authService.register(user);
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// Register user
-export const register = createAsyncThunk(
-  'auth/register',
-  async (userData, thunkAPI) => {
+// Login user
+export const login = createAsyncThunk('auth/login', async (user, thunkAPI) => {
+  try {
+    return await authService.login(user);
+  } catch (error) {
+    const message =
+      (error.response &&
+        error.response.data &&
+        error.response.data.message) ||
+      error.message ||
+      error.toString();
+    return thunkAPI.rejectWithValue(message);
+  }
+});
+
+// Verify user auth
+export const verifyAuth = createAsyncThunk(
+  'auth/verify',
+  async (_, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/users/register`, userData);
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
-      }
-      return response.data;
+      return await authService.verifyAuth();
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -50,7 +67,7 @@ export const register = createAsyncThunk(
 
 // Logout user
 export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('user');
+  await authService.logout();
 });
 
 export const authSlice = createSlice({
@@ -63,6 +80,13 @@ export const authSlice = createSlice({
       state.isError = false;
       state.message = '';
     },
+    // NEW: Action to update user data (e.g., after profile update or verification)
+    updateUserData: (state, action) => {
+      // Merge the new payload with the existing user data
+      state.user = { ...state.user, ...action.payload };
+      // Update localStorage to persist the changes
+      localStorage.setItem('user', JSON.stringify(state.user));
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -73,6 +97,8 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload)); // Persist user state
+        state.message = action.payload.message || 'Registration successful!';
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
@@ -87,6 +113,8 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload)); // Persist user state
+        state.message = 'Login successful!';
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -96,9 +124,28 @@ export const authSlice = createSlice({
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
+        state.isSuccess = false; // Reset success state on logout
+        state.isError = false; // Reset error state on logout
+        state.message = ''; // Clear message on logout
+      })
+      .addCase(verifyAuth.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(verifyAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.user = { ...state.user, ...action.payload };
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(verifyAuth.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+        state.user = null;
+        localStorage.removeItem('user');
       });
   },
 });
 
-export const { reset } = authSlice.actions;
+export const { reset, updateUserData } = authSlice.actions;
 export default authSlice.reducer;

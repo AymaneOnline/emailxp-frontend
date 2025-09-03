@@ -24,17 +24,25 @@ ChartJS.register(
     Legend
 );
 
-function CampaignTimeSeriesChart({ timeSeriesData, timeSeriesPeriod, isLoading, isError }) {
+function CampaignTimeSeriesChart({ timeSeriesData, isLoading, isError }) {
 
     // Function to format data for Chart.js
     const getChartData = () => {
-        const labels = timeSeriesData.map(item => item.date);
-        const opensData = timeSeriesData.map(item => item.opens);
-        const clicksData = timeSeriesData.map(item => item.clicks);
+        const labels = timeSeriesData.labels || [];
+        const sentData = timeSeriesData.emailsSent || [];
+        const opensData = timeSeriesData.opens || [];
+        const clicksData = timeSeriesData.clicks || [];
 
         return {
             labels,
             datasets: [
+                {
+                    label: 'Sent',
+                    data: sentData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    borderWidth: 1,
+                },
                 {
                     label: 'Opens',
                     data: opensData,
@@ -62,7 +70,7 @@ function CampaignTimeSeriesChart({ timeSeriesData, timeSeriesPeriod, isLoading, 
             },
             title: {
                 display: true,
-                text: `${timeSeriesPeriod === 'daily' ? 'Daily' : 'Weekly'} Engagement`,
+                text: `${timeSeriesData.period === 'daily' ? 'Daily' : 'Weekly'} Engagement`,
             },
         },
         scales: {

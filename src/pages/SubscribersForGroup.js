@@ -1,44 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import listService from '../services/listService'; // This is correct, uses listService
+import groupService from '../services/groupService'; // This is correct, uses groupService
 
-function SubscribersForList() {
-    const { listId } = useParams(); // Get listId from URL
+function SubscribersForGroup() {
+    const { groupId } = useParams(); // Get groupId from URL
     const navigate = useNavigate();
-    const [listName, setListName] = useState('');
+    const [groupName, setGroupName] = useState('');
     const [subscribers, setSubscribers] = useState([]);
     const [newSubscriberEmail, setNewSubscriberEmail] = useState('');
     const [newSubscriberName, setNewSubscriberName] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Memoize fetchListDataAndSubscribers using useCallback
-    const fetchListDataAndSubscribers = useCallback(async () => {
+    // Memoize fetchGroupDataAndSubscribers using useCallback
+    const fetchGroupDataAndSubscribers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const listData = await listService.getListById(listId);
-            setListName(listData.name); // Set list name for display
+            const groupData = await groupService.getGroupById(groupId);
+            setGroupName(groupData.name); // Set group name for display
 
-            // This line already uses listService, which is correctly imported.
-            const data = await listService.getSubscribers(listId);
+            // This line already uses groupService, which is correctly imported.
+            const data = await groupService.getSubscribers(groupId);
             setSubscribers(data);
         } catch (err) {
-            console.error('Error fetching list or subscribers:', err.response?.data || err.message);
-            setError(err.response?.data?.message || 'Failed to fetch list/subscribers. Ensure you have access and login again.');
+            console.error('Error fetching group or subscribers:', err.response?.data || err.message);
+            setError(err.response?.data?.message || 'Failed to fetch group/subscribers. Ensure you have access and login again.');
             if (err.response && (err.response.status === 401 || err.response.status === 404)) {
-                // If unauthorized or list not found, go back to list management or login
+                // If unauthorized or group not found, go back to group management or login
                 localStorage.removeItem('user'); // Clear invalid token
                 navigate('/login');
             }
         } finally {
             setLoading(false);
         }
-    }, [listId, navigate]); // Dependencies for useCallback: listId and navigate
+    }, [groupId, navigate]); // Dependencies for useCallback: groupId and navigate
 
     useEffect(() => {
-        fetchListDataAndSubscribers();
-    }, [fetchListDataAndSubscribers]); // Dependency for useEffect: the memoized function
+        fetchGroupDataAndSubscribers();
+    }, [fetchGroupDataAndSubscribers]); // Dependency for useEffect: the memoized function
 
     const handleAddSubscriber = async (e) => {
         e.preventDefault();
@@ -48,10 +48,10 @@ function SubscribersForList() {
             return;
         }
         try {
-            await listService.addSubscriber(listId, { email: newSubscriberEmail, name: newSubscriberName });
+            await groupService.addSubscriber(groupId, { email: newSubscriberEmail, name: newSubscriberName });
             setNewSubscriberEmail('');
             setNewSubscriberName('');
-            fetchListDataAndSubscribers(); // Re-fetch subscribers
+            fetchGroupDataAndSubscribers(); // Re-fetch subscribers
         } catch (err) {
             console.error('Error adding subscriber:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to add subscriber.');
@@ -62,8 +62,8 @@ function SubscribersForList() {
         if (window.confirm('Are you sure you want to remove this subscriber?')) {
             setError(null);
             try {
-                await listService.deleteSubscriber(listId, subscriberId);
-                fetchListDataAndSubscribers(); // Re-fetch subscribers
+                await groupService.deleteSubscriber(groupId, subscriberId);
+                fetchGroupDataAndSubscribers(); // Re-fetch subscribers
             } catch (err) {
                 console.error('Error deleting subscriber:', err.response?.data || err.message);
                 setError(err.response?.data?.message || 'Failed to remove subscriber.');
@@ -77,10 +77,10 @@ function SubscribersForList() {
 
     return (
         <div style={{ padding: '20px', maxWidth: '800px', margin: '20px auto', border: '1px solid #eee', borderRadius: '8px', boxShadow: '2px 2px 5px rgba(0,0,0,0.1)' }}>
-            <button onClick={() => navigate('/lists')} style={{ marginBottom: '20px', padding: '8px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                &larr; Back to Lists
+            <button onClick={() => navigate('/groups')} style={{ marginBottom: '20px', padding: '8px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                &larr; Back to Groups
             </button>
-            <h2>Subscribers for "{listName}"</h2>
+            <h2>Subscribers for "{groupName}"</h2>
 
             {error && <p style={{ color: 'red', marginBottom: '15px' }}>Error: {error}</p>}
 
@@ -113,7 +113,7 @@ function SubscribersForList() {
             </form>
 
             {subscribers.length === 0 ? (
-                <p>This list has no subscribers yet. Add one above!</p>
+                <p>This group has no subscribers yet. Add one above!</p>
             ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                     <thead>
@@ -150,4 +150,4 @@ function SubscribersForList() {
     );
 }
 
-export default SubscribersForList;
+export default SubscribersForGroup;

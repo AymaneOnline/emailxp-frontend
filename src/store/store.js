@@ -1,25 +1,18 @@
+// emailxp/frontend/src/store/store.js
+
 import { configureStore } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import campaignSlice from './slices/campaignSlice';
-import listSlice from './slices/listSlice';
-import templateSlice from './slices/templateSlice';
-import uiSlice from './slices/uiSlice';
+import authReducer from './slices/authSlice';
+import uiReducer from './slices/uiSlice';
+import campaignReducer from './slices/campaignSlice'; // NEW IMPORT
+import groupReducer from './slices/groupSlice';       // NEW IMPORT
+import templateReducer from './slices/templateSlice'; // NEW IMPORT
 
 export const store = configureStore({
   reducer: {
-    auth: authSlice,
-    campaigns: campaignSlice,
-    lists: listSlice,
-    templates: templateSlice,
-    ui: uiSlice,
+    auth: authReducer,
+    ui: uiReducer,
+    campaigns: campaignReducer, // Add campaigns reducer
+    groups: groupReducer,         // Add groups reducer
+    templates: templateReducer, // Add templates reducer
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
-      },
-    }),
 });
-
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;

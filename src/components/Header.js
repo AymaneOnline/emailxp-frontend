@@ -1,99 +1,129 @@
-// emailxp/frontend/src/components/Header.js (Example update)
+// emailxp/frontend/src/components/Header.js
 
-import React from 'react';
-import { FaSignInAlt, FaSignOutAlt, FaUser, FaEnvelopeOpenText, FaUsers, FaCopy, FaChartLine } from 'react-icons/fa'; // <--- ADD FaChartLine
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logout, reset } from '../features/auth/authSlice';
-import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Disclosure } from '@headlessui/react';
 
 function Header() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
-  const onLogout = () => {
-    dispatch(logout());
-    dispatch(reset());
-    toast.success('Logged out successfully!');
-    navigate('/');
+  const handleAuthClick = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
   };
 
   return (
-    <header className='flex justify-between items-center p-4 mb-6 border-b-2 border-gray-200'>
-      <div className='flex items-center'>
-        <Link to='/' className='text-3xl font-bold text-gray-800 flex items-center'>
-          <FaEnvelopeOpenText className='mr-2 text-blue-600' /> EmailXpress
-        </Link>
-        {user && (
-          <nav className='ml-8'>
-            <ul className='flex space-x-6'>
-              <li>
-                <Link to='/campaigns' className='text-gray-700 hover:text-blue-600 flex items-center text-lg'>
-                  <FaEnvelopeOpenText className='mr-1' /> Campaigns
-                </Link>
-              </li>
-              <li>
-                <Link to='/lists' className='text-gray-700 hover:text-blue-600 flex items-center text-lg'>
-                  <FaUsers className='mr-1' /> Lists
-                </Link>
-              </li>
-              <li>
-                <Link to='/templates' className='text-gray-700 hover:text-blue-600 flex items-center text-lg'>
-                  <FaCopy className='mr-1' /> Templates
-                </Link>
-              </li>
-              {/* --- NEW DASHBOARD LINK --- */}
-              <li>
-                <Link to='/dashboard' className='text-gray-700 hover:text-blue-600 flex items-center text-lg'>
-                  <FaChartLine className='mr-1' /> Dashboard
-                </Link>
-              </li>
-              {/* --- END NEW DASHBOARD LINK --- */}
-            </ul>
-          </nav>
-        )}
-      </div>
+    <Disclosure as="nav" className="bg-white shadow-sm py-4">
+      {({ open }) => (
+        <>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative flex h-16 items-center justify-between">
+              <div className="absolute inset-y-0 left-0 flex items-center md:hidden">
+                <Disclosure.Button
+                  className="relative inline-flex items-center justify-center rounded-md p-2 text-dark-gray hover:text-primary-red focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-red"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                >
+                  <span className="absolute -inset-0.5" />
+                  <span className="sr-only">Open main menu</span>
+                  {isMobileMenuOpen ? (
+                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+                  ) : (
+                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+                  )}
+                </Disclosure.Button>
+              </div>
+              <div className="flex flex-1 items-center justify-center md:items-stretch md:justify-start">
+                <div className="flex flex-shrink-0 items-center">
+                  <Link to="/" className="text-2xl font-bold text-dark-gray">
+                    Email<span className="text-primary-red">XP</span>
+                  </Link>
+                </div>
+                <div className="hidden md:ml-6 md:block">
+                    <div className="flex space-x-6 text-gray-600 font-medium">
+                        <button className="hover:text-primary-red transition duration-300">Features</button>
+                        <button className="hover:text-primary-red transition duration-300">Pricing</button>
+                        <button className="hover:text-primary-red transition duration-300">Testimonials</button>
+                        <button className="hover:text-primary-red transition duration-300">FAQ</button>
+                    </div>
+                </div>
+              </div>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 md:static md:inset-auto md:ml-6 md:pr-0">
+                <div className="hidden md:flex space-x-4 items-center">
+                  {user ? (
+                    <button 
+                      onClick={handleAuthClick}
+                      className="text-gray-600 hover:text-primary-red transition duration-300"
+                    >
+                      Dashboard
+                    </button>
+                  ) : (
+                    <Link to="/login" className="text-gray-600 hover:text-primary-red transition duration-300">
+                      Login
+                    </Link>
+                  )}
+                  {user ? (
+                    <button 
+                      onClick={() => navigate('/dashboard')}
+                      className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300"
+                    >
+                      Go to App
+                    </button>
+                  ) : (
+                    <Link to="/register" className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300">
+                      Sign up
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <div className='flex items-center'>
-        <ul className='flex space-x-4'>
-          {user ? (
-            <>
-              <li className='flex items-center text-gray-700 text-lg'>
-                Hello, {user.name}!
-              </li>
-              <li>
-                <button
-                  className='flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 text-lg'
-                  onClick={onLogout}
-                >
-                  <FaSignOutAlt className='mr-1' /> Logout
-                </button>
-              </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <Link
-                  to='/login'
-                  className='flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-lg'
-                >
-                  <FaSignInAlt className='mr-1' /> Login
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to='/register'
-                  className='flex items-center px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-lg'
-                >
-                  <FaUser className='mr-1' /> Register
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
-      </div>
-    </header>
+          <Disclosure.Panel className={`md:hidden bg-white py-2 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+            <div className="flex flex-col items-center space-y-2 text-gray-600 font-medium">
+                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Features</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Pricing</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Testimonials</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">FAQ</Disclosure.Button>
+                {user ? (
+                  <Disclosure.Button 
+                    as="button" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleAuthClick();
+                    }} 
+                    className="text-gray-600 hover:bg-gray-100 block rounded-md px-3 py-2 text-base font-medium w-full text-center"
+                  >
+                    Dashboard
+                  </Disclosure.Button>
+                ) : (
+                  <Disclosure.Button as={Link} to="/login" className="text-gray-600 hover:bg-gray-100 block rounded-md px-3 py-2 text-base font-medium w-full text-center" onClick={() => setIsMobileMenuOpen(false)}>Login</Disclosure.Button>
+                )}
+                {user ? (
+                  <Disclosure.Button 
+                    as="button" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate('/dashboard');
+                    }} 
+                    className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300 w-3/4 text-center block"
+                  >
+                    Go to App
+                  </Disclosure.Button>
+                ) : (
+                  <Disclosure.Button as={Link} to="/register" className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300 w-3/4 text-center block" onClick={() => setIsMobileMenuOpen(false)}>Sign up</Disclosure.Button>
+                )}
+            </div>
+          </Disclosure.Panel>
+        </>
+      )}
+    </Disclosure>
   );
 }
 

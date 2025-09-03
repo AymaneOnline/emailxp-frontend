@@ -65,7 +65,7 @@ const TemplateForm = () => {
                 // Update existing template
                 await templateService.updateTemplate(id, templateData);
                 setSuccess('Template updated successfully!');
-                navigate('/templates'); // Go back to list after update
+                navigate('/templates'); // Go back to templates after update
             } else {
                 // Create new template
                 await templateService.createTemplate(templateData);
@@ -75,7 +75,7 @@ const TemplateForm = () => {
                 setSubject('');
                 setHtmlContent('');
                 setPlainTextContent('');
-                navigate('/templates'); // Go back to list after creation
+                navigate('/templates'); // Go back to templates after creation
             }
         } catch (err) {
             console.error('Error saving template:', err);
