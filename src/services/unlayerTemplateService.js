@@ -18,6 +18,25 @@ unlayerAPI.interceptors.request.use((config) => {
   return config;
 });
 
+// Add response interceptor to handle 401 errors
+unlayerAPI.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.error('Authentication error in unlayer service:', error.response.status);
+      // Import store dynamically to avoid circular imports
+      import('../store/store').then(({ store }) => {
+        import('../store/slices/authSlice').then(({ logout, reset }) => {
+          store.dispatch(logout());
+          store.dispatch(reset());
+          window.location.href = '/login';
+        });
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Fallback templates for when API is not available or configured
 const FALLBACK_TEMPLATES = [
   {
