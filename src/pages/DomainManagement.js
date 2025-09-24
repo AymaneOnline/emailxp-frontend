@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import { H1, H2, Muted } from '../components/ui/Typography';
-import { listDomains, createDomain, verifyDomain, regenerateDkim } from '../services/domainService';
+import { listDomains, createDomain, getDomain, verifyDomain, regenerateDkim } from '../services/domainService';
 import { CheckCircle, AlertCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info } from 'lucide-react';
 
 function StatusBadge({ domain }) {
@@ -478,7 +478,20 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                   onVerify={() => handleVerify(d._id)}
                   verifyingId={verifyingId}
                   onRegenerateDkim={handleRegenerateDkim}
-                  onShowDns={setShowDnsFor}
+                  onShowDns={async (domain) => {
+                    // If domain doesn't have DNS records, fetch them
+                    if (!domain.dkimRecord && !domain.dkim) {
+                      try {
+                        const fullDomain = await getDomain(domain._id);
+                        setShowDnsFor(fullDomain);
+                      } catch (error) {
+                        console.error('Failed to fetch domain details:', error);
+                        setShowDnsFor(domain); // Fallback to basic domain info
+                      }
+                    } else {
+                      setShowDnsFor(domain);
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -527,25 +540,25 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 <div className="space-y-4">
                   <DnsRow
                     label="DKIM"
-                    type="CNAME"
-                    host={showDnsFor.dkimHost || `dkim._domainkey.${showDnsFor.domain}`}
-                    value={showDnsFor.dkimValue || `dkim.${showDnsFor.domain}`}
+                    type={showDnsFor.dkim?.type || showDnsFor.dkimRecord?.type || "CNAME"}
+                    host={showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`}
+                    value={showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`}
                     setCopyState={setCopyState}
                     copyState={copyState}
                   />
                   <DnsRow
                     label="SPF"
-                    type="TXT"
-                    host={showDnsFor.domain}
-                    value={showDnsFor.spfValue || 'v=spf1 include:emailxp.net ~all'}
+                    type={showDnsFor.spf?.type || showDnsFor.spfRecord?.type || "TXT"}
+                    host={showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain}
+                    value={showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all'}
                     setCopyState={setCopyState}
                     copyState={copyState}
                   />
                   <DnsRow
                     label="Tracking"
-                    type="CNAME"
-                    host={showDnsFor.trackingHost || `track.${showDnsFor.domain}`}
-                    value={showDnsFor.trackingValue || 'tracking.emailxp.net'}
+                    type={showDnsFor.tracking?.type || showDnsFor.trackingRecord?.type || "CNAME"}
+                    host={showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`}
+                    value={showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com'}
                     setCopyState={setCopyState}
                     copyState={copyState}
                   />
