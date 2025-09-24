@@ -501,7 +501,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
         {/* DNS Records Modal */}
         {showDnsFor && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden pointer-events-auto">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -586,10 +586,12 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                     copyState={copyState}
                   />
                 </div>
+              </div>
 
-                <div className="mt-8 flex items-center justify-end space-x-3">
-                  <button
-                    onClick={() => {
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    try {
                       // Generate DNS records in Cloudflare CSV import format
                       // Format: Name,Type,Content,TTL,Proxy status
                       const dkimName = showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`;
@@ -605,42 +607,46 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                         `${trackingName},CNAME,${trackingValue},AUTO,OFF`
                       ].join('\n');
 
-                      const blob = new Blob([records], { type: 'text/csv' });
+                      const blob = new Blob([records], { type: 'text/csv;charset=utf-8;' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
                       a.download = `${showDnsFor.domain.replace(/\./g, '-')}-dns-records.csv`;
+                      a.style.display = 'none';
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
                       URL.revokeObjectURL(url);
-                    }}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Download CSV
-                  </button>
-                  <button
-                    onClick={() => setShowDnsFor(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-                  >
-                    I'll do this later
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (showDnsFor?._id) {
-                        const id = showDnsFor._id;
-                        setShowDnsFor(null);
-                        await handleVerify(id);
-                      }
-                    }}
-                    className="inline-flex items-center px-6 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
-                  >
-                    Done, Verify Now
-                  </button>
-                </div>
+                    } catch (error) {
+                      console.error('Error downloading CSV:', error);
+                      alert('Failed to download CSV. Please try again.');
+                    }
+                  }}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download CSV
+                </button>
+                <button
+                  onClick={() => setShowDnsFor(null)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                >
+                  I'll do this later
+                </button>
+                <button
+                  onClick={async () => {
+                    if (showDnsFor?._id) {
+                      const id = showDnsFor._id;
+                      setShowDnsFor(null);
+                      await handleVerify(id);
+                    }
+                  }}
+                  className="inline-flex items-center px-6 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                >
+                  Done, Verify Now
+                </button>
               </div>
             </div>
           </div>
