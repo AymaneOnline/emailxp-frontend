@@ -5,6 +5,7 @@ import { Plus, Search, Filter } from 'lucide-react';
 import { H1, Body } from '../components/ui/Typography';
 import unlayerTemplateService from '../services/unlayerTemplateService';
 import TemplateCard from '../components/templates/TemplateCard';
+import UnlayerEmailEditorModal from '../components/UnlayerEmailEditorModal';
 
 const TemplateManagement = () => {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ const TemplateManagement = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const categories = [
     { value: 'welcome', label: 'Welcome' },
@@ -46,8 +49,9 @@ const TemplateManagement = () => {
   };
 
   const handlePreview = (template) => {
-    // Navigate to preview page or open modal
-    navigate(`/templates/preview/${template.id}`);
+    // Open preview modal with the selected template
+    setSelectedTemplate(template);
+    setPreviewModalOpen(true);
   };
 
   const handleUseTemplate = (template) => {
@@ -162,6 +166,21 @@ const TemplateManagement = () => {
           </>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {previewModalOpen && selectedTemplate && (
+        <UnlayerEmailEditorModal
+          isOpen={previewModalOpen}
+          onClose={() => {
+            setPreviewModalOpen(false);
+            setSelectedTemplate(null);
+          }}
+          initialDesign={selectedTemplate.design}
+          templateId={selectedTemplate.id}
+          unlayerTemplateService={unlayerTemplateService}
+          readOnly={true}
+        />
+      )}
     </PageContainer>
   );
 };
