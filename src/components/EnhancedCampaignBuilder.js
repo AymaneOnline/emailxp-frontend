@@ -5,25 +5,65 @@ import { toast } from 'react-toastify';
 import AudienceSelector from './AudienceSelector';
 import audienceService from '../services/audienceService';
 import campaignService from '../services/campaignService';
+import { listDomains } from '../services/domainService';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
 // Lazy load the Unlayer editor for better performance
 const UnlayerEmailEditor = lazy(() => import('./UnlayerEmailEditor'));
 
-const SetupAudienceStep = ({ data, onChange, showValidation = false }) => {
+const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId }) => {
   const name = data.name || '';
   const from = data.from || '';
   const fromName = data.fromName || '';
   const subject = data.subject || '';
 
   const [touched, setTouched] = React.useState({ name: false, from: false, fromName: false, subject: false });
+  const [domains, setDomains] = React.useState([]);
+  const [loadingDomains, setLoadingDomains] = React.useState(true);
 
   const emailValid = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
   const nameError = !name && (touched.name || showValidation);
   const fromError = !from && (touched.from || showValidation);
   const fromInvalid = from && !emailValid(from) && (touched.from || showValidation);
   const subjectError = !subject && (touched.subject || showValidation);
+
+  // Fetch domains
+  React.useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        setLoadingDomains(true);
+        const userDomains = await listDomains();
+        setDomains(userDomains);
+      } catch (error) {
+        console.error('Failed to fetch domains:', error);
+      } finally {
+        setLoadingDomains(false);
+      }
+    };
+
+    fetchDomains();
+  }, []); // Only run once on mount
+
+  // Set default from address when domains are loaded
+  React.useEffect(() => {
+    if (!loadingDomains && domains.length > 0) {
+      // Find primary domain or first verified domain
+      const primaryDomain = domains.find(d => d.isPrimary);
+      const verifiedDomain = domains.find(d => d.status === 'verified');
+
+      const defaultDomain = primaryDomain || verifiedDomain;
+
+      if (defaultDomain) {
+        const expectedFromAddress = `no-reply@${defaultDomain.domain}`;
+
+        // For new campaigns or campaigns with empty/mismatched from address, set it
+        if (!from || (!campaignId && from !== expectedFromAddress) || (campaignId && !from.startsWith('no-reply@'))) {
+          onChange({ from: expectedFromAddress });
+        }
+      }
+    }
+  }, [domains, loadingDomains, from, onChange, campaignId]);
 
   return (
     <div className="space-y-8">
@@ -72,15 +112,29 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false }) => {
                   aria-required="true"
                   aria-invalid={fromError || fromInvalid}
                   value={from}
-                  onChange={(e) => onChange({ from: e.target.value })}
-                  onBlur={() => setTouched((s) => ({ ...s, from: true }))}
+                  readOnly
                   className={`block w-full px-4 py-3 border-2 rounded-lg shadow-sm transition-all duration-200 ${
                     fromError || fromInvalid
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-200 focus:border-red-500 focus:ring-red-500 hover:border-gray-300'
-                  } focus:ring-2 focus:ring-opacity-20 bg-white`}
-                  placeholder="hello@yourcompany.com"
+                      : 'border-gray-200 bg-gray-50 text-gray-500'
+                  } focus:ring-2 focus:ring-opacity-20`}
+                  placeholder="Will be set automatically based on your verified domain"
                 />
+                {loadingDomains ? (
+                  <p className="mt-2 text-sm text-gray-500">Loading your verified domains...</p>
+                ) : domains.length === 0 ? (
+                  <p className="mt-2 text-sm text-amber-600">
+                    No verified domains found. Please add and verify a domain in{' '}
+                    <a href="/settings#domains" className="text-red-600 hover:text-red-800 underline">
+                      Settings → Domains
+                    </a>{' '}
+                    to enable sending.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm text-gray-500">
+                    From address is automatically set based on your verified domain and cannot be changed.
+                  </p>
+                )}
                 {fromError && <p className="mt-2 text-sm text-red-600 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -1484,7 +1538,7 @@ const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChang
         )}
 
         <div className="min-h-[400px] px-6 py-8">
-          <CurrentStepComponent data={campaignData} onChange={updateCampaign} editorRef={editorRef} showValidation={showSetupValidation} />
+          <CurrentStepComponent data={campaignData} onChange={updateCampaign} editorRef={editorRef} showValidation={showSetupValidation} campaignId={campaignId} />
         </div>
 
         <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
