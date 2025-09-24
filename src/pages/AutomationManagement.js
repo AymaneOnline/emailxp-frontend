@@ -111,9 +111,9 @@ function ActionNode({ data }) {
 // Condition node component
 function ConditionNode({ data }) {
   return (
-    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-500 shadow-lg">
+    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-red-500 shadow-lg">
       <div className="flex items-center space-x-2">
-        <GitBranch className="w-5 h-5 text-purple-500" />
+        <GitBranch className="w-5 h-5 text-red-500" />
         <div className="font-medium text-gray-900 dark:text-white">
           {data.label}
         </div>
@@ -121,9 +121,9 @@ function ConditionNode({ data }) {
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
         {data.description}
       </div>
-      <div className="absolute top-0 -left-2 w-4 h-4 bg-purple-500 rounded-full"></div>
-      <div className="absolute top-0 -right-2 w-4 h-4 bg-purple-500 rounded-full"></div>
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-4 h-4 bg-purple-500 rounded-full"></div>
+      <div className="absolute top-0 -left-2 w-4 h-4 bg-red-500 rounded-full"></div>
+      <div className="absolute top-0 -right-2 w-4 h-4 bg-red-500 rounded-full"></div>
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-4 h-4 bg-red-500 rounded-full"></div>
     </div>
   );
 }
@@ -348,7 +348,7 @@ const AutomationManagement = () => {
       active: { color: 'bg-green-100 text-green-800', label: 'Active' },
       paused: { color: 'bg-yellow-100 text-yellow-800', label: 'Paused' },
       draft: { color: 'bg-gray-100 text-gray-800', label: 'Draft' },
-      completed: { color: 'bg-purple-100 text-purple-800', label: 'Completed' }
+      completed: { color: 'bg-red-100 text-red-800', label: 'Completed' }
     };
 
     const config = statusConfig[status] || statusConfig.draft;
@@ -430,7 +430,7 @@ const AutomationManagement = () => {
 
   const loadingSpinner = (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-purple"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
     </div>
   );
 
@@ -461,7 +461,7 @@ const AutomationManagement = () => {
             </div>
             <button
               onClick={handleCreateAutomation}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               <Plus className="h-4 w-4" />
               <span>Create Automation</span>
@@ -474,7 +474,7 @@ const AutomationManagement = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="all">All Statuses</option>
                 <option value="draft">Draft</option>
@@ -494,7 +494,7 @@ const AutomationManagement = () => {
               </p>
               <button
                 onClick={handleCreateAutomation}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 <span>Create Automation</span>
@@ -573,7 +573,7 @@ const AutomationManagement = () => {
                 </button>
                 <button
                   onClick={saveFlow}
-                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
                 >
                   Save
                 </button>

@@ -14,6 +14,14 @@ const TemplateManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  const categories = [
+    { value: 'welcome', label: 'Welcome' },
+    { value: 'newsletter', label: 'Newsletter' },
+    { value: 'promotional', label: 'Promotional' },
+    { value: 'transactional', label: 'Transactional' },
+    { value: 'educational', label: 'Educational' }
+  ];
+
   useEffect(() => {
     fetchTemplates();
   }, [searchTerm, selectedCategory]);
@@ -143,6 +151,7 @@ const TemplateManagement = () => {
                   <TemplateCard
                     key={template.id}
                     template={template}
+                    categories={categories}
                     onPreview={handlePreview}
                     onUse={handleUseTemplate}
                     unlayerTemplateService={unlayerTemplateService}

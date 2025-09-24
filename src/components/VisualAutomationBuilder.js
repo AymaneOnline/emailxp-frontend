@@ -99,9 +99,9 @@ function ActionNode({ data }) {
 // Condition node component
 function ConditionNode({ data }) {
   return (
-    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-500 shadow-lg">
+    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-red-500 shadow-lg">
       <div className="flex items-center space-x-2">
-        <GitBranch className="w-5 h-5 text-purple-500" />
+        <GitBranch className="w-5 h-5 text-red-500" />
         <div className="font-medium text-gray-900 dark:text-white">
           {data.label}
         </div>
@@ -109,9 +109,9 @@ function ConditionNode({ data }) {
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
         {data.description}
       </div>
-      <div className="absolute top-0 -left-2 w-4 h-4 bg-purple-500 rounded-full"></div>
-      <div className="absolute top-0 -right-2 w-4 h-4 bg-purple-500 rounded-full"></div>
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-4 h-4 bg-purple-500 rounded-full"></div>
+      <div className="absolute top-0 -left-2 w-4 h-4 bg-red-500 rounded-full"></div>
+      <div className="absolute top-0 -right-2 w-4 h-4 bg-red-500 rounded-full"></div>
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-4 h-4 bg-red-500 rounded-full"></div>
     </div>
   );
 }
@@ -466,7 +466,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                         conditionType: e.target.value,
                         label: `Condition: ${e.target.options[e.target.selectedIndex].text}`
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
                       <option value="tag_exists">Has Tag</option>
                       <option value="opened_email">Opened Email</option>
@@ -485,7 +485,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                       onChange={(e) => updateNodeData(selectedNode.id, {
                         conditionValue: e.target.value
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="Enter condition value"
                     />
                   </div>
@@ -512,7 +512,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
               </button>
               <button
                 onClick={() => setShowNodeModal(false)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
               >
                 Save
               </button>
@@ -526,7 +526,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -553,7 +553,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
           </button>
           <button
             onClick={saveAutomation}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
           >
             <Save className="w-4 h-4 mr-2" />
             Save Automation
@@ -579,7 +579,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                   type="text"
                   value={automation.name}
                   onChange={(e) => setAutomation(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="e.g., Welcome Series"
                 />
               </div>
@@ -592,7 +592,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                   <button
                     onClick={() => setAutomation(prev => ({ ...prev, isActive: !prev.isActive }))}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      automation.isActive ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'
+                      automation.isActive ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'
                     }`}
                   >
                     <span
@@ -615,7 +615,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                   value={automation.description}
                   onChange={(e) => setAutomation(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="Describe what this automation does..."
                 />
               </div>
