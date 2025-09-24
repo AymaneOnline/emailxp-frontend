@@ -22,12 +22,8 @@ function Register() {
 
   useEffect(() => {
     if (isError) toast.error(message);
-    if (isSuccess && user) {
-      // Do NOT auto-send verification email; user will trigger manually from checklist
-      navigate('/dashboard');
-    }
-    dispatch(reset());
-  }, [user, isError, isSuccess, message, navigate, dispatch]);
+    return () => dispatch(reset());
+  }, [isError, message, dispatch]);
 
   const onChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -38,14 +34,22 @@ function Register() {
     return base.split(/[-_.\s]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') + ' Workspace';
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (password !== password2) { toast.error('Passwords do not match'); return; }
     if (!firstName.trim()) { toast.error('First name is required'); return; }
     if (!lastName.trim()) { toast.error('Last name is required'); return; }
     const companyOrOrganization = deriveCompanyName();
     const userData = { companyOrOrganization, name: `${firstName.trim()} ${lastName.trim()}`.trim(), email, password };
-    dispatch(register(userData));
+    try {
+      await dispatch(register(userData)).unwrap();
+      // registration was successful and authService stored the user
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Registration failed';
+      toast.error(msg);
+      dispatch(reset());
+    }
   };
 
   if (isLoading) return <Spinner />;

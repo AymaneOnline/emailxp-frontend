@@ -8,12 +8,15 @@ const USERS_API_PATH = (getBackendUrl() || '').replace(/\/$/, '') + '/api/users'
 // Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {
   const response = await axios.post(USERS_API_PATH + '/register', userData);
-  if (response.data) {
-    // Registration defaults to persistent storage; user can later choose session via login
-    localStorage.setItem('user', JSON.stringify(response.data));
-    sessionStorage.removeItem('user');
+  const data = response && response.data;
+  // Basic validation: ensure we received an object containing a token
+  if (!data || typeof data !== 'object' || !data.token) {
+    throw new Error('Invalid register response from server');
   }
-  return response.data;
+  // Registration defaults to persistent storage; user can later choose session via login
+  localStorage.setItem('user', JSON.stringify(data));
+  sessionStorage.removeItem('user');
+  return data;
 };
 
 // Login user (does not need interceptor as token is only available AFTER login)
