@@ -2,13 +2,14 @@
 
 import axios from 'axios';
 import { logout, reset } from '../store/slices/authSlice';
+import { getBackendUrl } from './getBackendUrl';
 
 // This function will be called once from index.js
 const configureAxios = (store) => {
   // Set the base URL for all axios requests.
   // If `REACT_APP_BACKEND_URL` is set at build time, use it (strip trailing slash).
   // Otherwise use a relative base (empty string) so requests go to the same origin.
-  const rawBackend = import.meta.env.VITE_BACKEND_URL;
+  const rawBackend = getBackendUrl();
   axios.defaults.baseURL = rawBackend ? rawBackend.replace(/\/$/, '') : '';
 
   // Request interceptor

@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const TAG_API = base ? `${base}/api/tags` : '/api/tags';
 const tagAPI = axios.create({ baseURL: TAG_API });
 
