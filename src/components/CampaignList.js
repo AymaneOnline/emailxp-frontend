@@ -16,7 +16,7 @@ import { PageHeader } from './ui/PageHeader';
 import { Button } from './ui/Button';
 import { toast } from 'react-toastify';
 import campaignService from '../services/campaignService';
-// Campaign creation uses separate route `/campaigns/new`
+import analyticsService from '../services/analyticsService';
 
 // Status styling now handled by StatusBadge component
 
@@ -50,8 +50,9 @@ const CampaignList = () => {
   const loadCampaigns = async () => {
     try {
       setLoading(true);
-      const data = await campaignService.getCampaigns();
-      setCampaigns(data || []);
+      const data = await analyticsService.getCampaignsAnalytics({ limit: 100 }); // Get more campaigns for analytics
+      // Data is already in the correct format from the updated analytics endpoint
+      setCampaigns(data.campaigns || []);
     } catch (error) {
       console.error('Failed to load campaigns:', error);
       toast.error('Failed to load campaigns');
@@ -157,12 +158,22 @@ const CampaignList = () => {
 
   // Calculate open rate
   const calculateOpenRate = (campaign) => {
+    // Use pre-calculated rate from analytics if available
+    if (campaign.openRate !== undefined) {
+      return Math.round(campaign.openRate);
+    }
+    // Fallback to manual calculation
     if (!campaign.totalRecipients || campaign.totalRecipients === 0) return 0;
     return Math.round((campaign.opens / campaign.totalRecipients) * 100);
   };
 
   // Calculate click rate
   const calculateClickRate = (campaign) => {
+    // Use pre-calculated rate from analytics if available
+    if (campaign.clickRate !== undefined) {
+      return Math.round(campaign.clickRate);
+    }
+    // Fallback to manual calculation
     if (!campaign.totalRecipients || campaign.totalRecipients === 0) return 0;
     return Math.round((campaign.clicks / campaign.totalRecipients) * 100);
   };
