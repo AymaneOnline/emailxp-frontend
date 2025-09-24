@@ -45,6 +45,23 @@ export default function useDashboardLiveUpdates(enabled=true){
               queryClient.setQueryData(['deliverability','summary',30], (prev)=>{
                 return { ...(prev||{}), ...payload.deliverability };
               });
+              // Also update dashboard overview
+              queryClient.setQueryData(['dashboard-overview', '30d'], (prev)=>{
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  overview: {
+                    ...prev.overview,
+                    totalSent: payload.deliverability.attempted,
+                    totalDelivered: payload.deliverability.delivered,
+                    openRate: payload.deliverability.openRate,
+                    clickRate: payload.deliverability.clickRate,
+                    bounceRate: payload.deliverability.bounceRate,
+                    complaintRate: payload.deliverability.complaintRate,
+                    unsubRate: 0 // Not available in live updates
+                  }
+                };
+              });
             }
           } catch(err){ /* silent */ }
         });
