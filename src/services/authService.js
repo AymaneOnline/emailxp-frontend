@@ -2,7 +2,7 @@
 
 import axios from 'axios'; // Uses global axios configured in configureAxios
 
-const USERS_API_PATH = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '') + '/api/users';
+const USERS_API_PATH = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '') + '/api/users';
 
 // Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {

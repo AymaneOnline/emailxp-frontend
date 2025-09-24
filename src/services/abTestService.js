@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const base = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
 const ABTEST_API = base ? `${base}/api/ab-tests` : '/api/ab-tests';
 
 // Create axios instance with default config and auth

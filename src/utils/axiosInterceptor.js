@@ -8,7 +8,7 @@ const configureAxios = (store) => {
   // Set the base URL for all axios requests.
   // If `REACT_APP_BACKEND_URL` is set at build time, use it (strip trailing slash).
   // Otherwise use a relative base (empty string) so requests go to the same origin.
-  const rawBackend = process.env.REACT_APP_BACKEND_URL;
+  const rawBackend = import.meta.env.REACT_APP_BACKEND_URL;
   axios.defaults.baseURL = rawBackend ? rawBackend.replace(/\/$/, '') : '';
 
   // Request interceptor
