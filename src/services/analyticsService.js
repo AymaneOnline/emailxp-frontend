@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/analyticsService.js
 
 import axios from 'axios';
+import { getAuthToken } from '../utils/authToken';
 
 const ANALYTICS_API_PATH = '/api/analytics';
 
@@ -10,8 +11,7 @@ const analyticsAPI = axios.create({
 });
 
 analyticsAPI.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  const token = user && user.token ? user.token : null;
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,6 +27,10 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
+      if (error?.response?.status === 403) {
+        // Suppress onboarding noise: unverified/incomplete profiles will 403
+        return null;
+      }
       console.error('Error fetching dashboard overview:', error);
       throw error;
     }
@@ -293,6 +297,11 @@ const analyticsService = {
       label: 'Complaint Rate',
       description: 'Percentage of delivered emails marked as spam',
       format: 'percentage'
+    },
+    deliveryRate: {
+      label: 'Delivery Rate',
+      description: 'Percentage of sent emails successfully delivered',
+      format: 'percentage'
     }
   }),
 
@@ -348,6 +357,32 @@ const analyticsService = {
     return colors[rating] || colors.unknown;
   },
 
+  // Get landing page analytics
+  getLandingPageAnalytics: async (landingPageId, timeframe = '30d') => {
+    try {
+      const response = await analyticsAPI.get(`/landing-pages/${landingPageId}`, {
+        params: { timeframe }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching landing page analytics:', error);
+      throw error;
+    }
+  },
+
+  // Get all landing pages analytics
+  getLandingPagesAnalytics: async (timeframe = '30d') => {
+    try {
+      const response = await analyticsAPI.get('/landing-pages', {
+        params: { timeframe }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching landing pages analytics:', error);
+      throw error;
+    }
+  },
+
   // Export data utilities
   exportToCSV: (data, filename = 'analytics-data.csv') => {
     if (!data || data.length === 0) return;
@@ -355,7 +390,14 @@ const analyticsService = {
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => headers.map(header => row[header]).join(','))
+      ...data.map(row => headers.map(header => {
+        const value = row[header];
+        // Escape commas and quotes in values
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(','))
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv' });

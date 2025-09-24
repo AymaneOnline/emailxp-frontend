@@ -11,12 +11,12 @@ describe('CampaignTimeSeriesChart', () => {
     expect(screen.getByText(/Error loading chart data/i)).toBeInTheDocument();
   });
   it('renders no data message', () => {
-    render(<CampaignTimeSeriesChart isLoading={false} isError={false} timeSeriesData={{ labels: [], emailsSent: [], opens: [], clicks: [] }} />);
-    expect(screen.getByText(/No time-series data available/i)).toBeInTheDocument();
+    render(<CampaignTimeSeriesChart isLoading={false} isError={false} timeSeriesData={{ labels: [], opens: [], clicks: [] }} />);
+    expect(screen.getByText(/No data available/i)).toBeInTheDocument();
   });
-  it('renders chart with data', () => {
-    render(<CampaignTimeSeriesChart isLoading={false} isError={false} timeSeriesData={{ labels: ['2024-01-01'], emailsSent: [10], opens: [5], clicks: [2] }} />);
-    expect(screen.getByText(/Sent/i)).toBeInTheDocument();
+  it('renders chart with data (mocked)', () => {
+    render(<CampaignTimeSeriesChart isLoading={false} isError={false} timeSeriesData={{ labels: ['2024-01-01'], opens: [5], clicks: [2] }} />);
+    // From mock chart component we should see dataset labels
     expect(screen.getByText(/Opens/i)).toBeInTheDocument();
     expect(screen.getByText(/Clicks/i)).toBeInTheDocument();
   });

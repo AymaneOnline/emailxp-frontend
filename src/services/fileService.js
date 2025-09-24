@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/fileService.js
 
 import axios from 'axios';
+import { getAuthToken } from '../utils/authToken';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL
     ? `${process.env.REACT_APP_BACKEND_URL}/api/files`
@@ -8,8 +9,8 @@ const API_URL = process.env.REACT_APP_BACKEND_URL
 
 // Helper to get auth header
 const getAuthHeader = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user && user.token ? { Authorization: `Bearer ${user.token}` } : {};
+    const token = getAuthToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Upload a new file

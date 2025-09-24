@@ -1,0 +1,373 @@
+// emailxp/frontend/src/pages/RecommendationsManager.js
+
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { Search, Filter, RefreshCw, TrendingUp, PlusCircle } from 'lucide-react';
+import ContentRecommendations from '../components/ContentRecommendations';
+import SubscriberEngagementProfile from '../components/SubscriberEngagementProfile';
+import subscriberService from '../services/subscriberService';
+
+/**
+ * Recommendations Manager Page
+ * Central hub for managing content recommendations and viewing subscriber engagement
+ */
+function RecommendationsManager() {
+  const { user } = useSelector((state) => state.auth);
+  const [subscribers, setSubscribers] = useState([]);
+  const [filteredSubscribers, setFilteredSubscribers] = useState([]);
+  const [selectedSubscriber, setSelectedSubscriber] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newSubscriber, setNewSubscriber] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    status: 'subscribed'
+  });
+
+  useEffect(() => {
+    console.log('RecommendationsManager mounted, fetching subscribers...');
+    fetchSubscribers();
+  }, []);
+
+  useEffect(() => {
+    console.log('Filtering and sorting subscribers...');
+    filterAndSortSubscribers();
+  }, [subscribers, searchTerm, statusFilter, sortBy]);
+
+  const fetchSubscribers = async () => {
+    try {
+      console.log('Fetching subscribers...');
+      setLoading(true);
+      setError(null);
+      
+      const data = await subscriberService.getSubscribers();
+      console.log('Subscribers fetched:', data);
+      setSubscribers(data);
+      setFilteredSubscribers(data);
+      
+      // Select the first subscriber by default
+      if (data.length > 0 && !selectedSubscriber) {
+        console.log('Selecting first subscriber:', data[0]);
+        setSelectedSubscriber(data[0]);
+      } else if (data.length === 0) {
+        // If no subscribers, show the create form
+        setShowCreateForm(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch subscribers:', err);
+      setError('Failed to load subscribers: ' + err.message);
+    } finally {
+      console.log('Finished fetching subscribers, setting loading to false');
+      setLoading(false);
+    }
+  };
+
+  const filterAndSortSubscribers = () => {
+    console.log('Filtering and sorting subscribers, current subscribers:', subscribers);
+    let result = [...subscribers];
+    
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(subscriber => 
+        subscriber.email.toLowerCase().includes(term) ||
+        (subscriber.firstName && subscriber.firstName.toLowerCase().includes(term)) ||
+        (subscriber.lastName && subscriber.lastName.toLowerCase().includes(term)) ||
+        (subscriber.name && subscriber.name.toLowerCase().includes(term))
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(subscriber => subscriber.status === statusFilter);
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'name':
+        result.sort((a, b) => {
+          const nameA = (a.firstName || a.name || '').toLowerCase();
+          const nameB = (b.firstName || b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        break;
+      case 'email':
+        result.sort((a, b) => a.email.localeCompare(b.email));
+        break;
+      case 'status':
+        result.sort((a, b) => a.status.localeCompare(b.status));
+        break;
+      default:
+        break;
+    }
+    
+    console.log('Filtered and sorted subscribers:', result);
+    setFilteredSubscribers(result);
+  };
+
+  const handleRefresh = () => {
+    fetchSubscribers();
+  };
+
+  const handleSubscriberSelect = (subscriber) => {
+    console.log('Selecting subscriber:', subscriber);
+    setSelectedSubscriber(subscriber);
+    setShowCreateForm(false);
+  };
+
+  const handleCreateSubscriber = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const subscriberData = {
+        ...newSubscriber,
+        name: `${newSubscriber.firstName} ${newSubscriber.lastName}`.trim()
+      };
+      await subscriberService.createSubscriber(subscriberData);
+      setNewSubscriber({
+        email: '',
+        firstName: '',
+        lastName: '',
+        status: 'subscribed'
+      });
+      setShowCreateForm(false);
+      fetchSubscribers(); // Refresh the subscriber list
+    } catch (err) {
+      console.error('Failed to create subscriber:', err);
+      setError('Failed to create subscriber: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && subscribers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh]">
+        <RefreshCw className="h-16 w-16 text-primary-red animate-spin" />
+        <p className="mt-4 text-lg text-dark-gray">Loading recommendations data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] p-4">
+        <div className="text-center p-8 bg-red-50 border border-red-200 rounded-lg max-w-lg">
+          <h3 className="text-2xl font-semibold text-red-800 mb-2">Error</h3>
+          <p className="text-red-600 mb-6">{error}</p>
+          <Button onClick={handleRefresh} variant="destructive">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 className="text-3xl font-bold text-dark-gray mb-4 md:mb-0">Content Recommendations</h1>
+        <div className="flex items-center space-x-2">
+          <Button onClick={() => setShowCreateForm(!showCreateForm)} variant="default">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {showCreateForm ? 'Cancel' : 'Add Subscriber'}
+          </Button>
+          <Button onClick={handleRefresh} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {showCreateForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Create New Subscriber</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateSubscriber} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <Input
+                  value={newSubscriber.firstName}
+                  onChange={(e) => setNewSubscriber({...newSubscriber, firstName: e.target.value})}
+                  placeholder="First Name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <Input
+                  value={newSubscriber.lastName}
+                  onChange={(e) => setNewSubscriber({...newSubscriber, lastName: e.target.value})}
+                  placeholder="Last Name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <Input
+                  value={newSubscriber.email}
+                  onChange={(e) => setNewSubscriber({...newSubscriber, email: e.target.value})}
+                  placeholder="Email"
+                  type="email"
+                  required
+                />
+              </div>
+              <div className="flex items-end">
+                <Button type="submit" className="w-full">Create Subscriber</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {subscribers.length === 0 && !showCreateForm ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center h-64">
+            <TrendingUp className="h-12 w-12 text-gray-300 mb-4" />
+            <p className="text-gray-500 text-center mb-4">
+              No subscribers found. Create your first subscriber to get started with content recommendations.
+            </p>
+            <Button onClick={() => setShowCreateForm(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Subscriber
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Subscribers List */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Search className="mr-2 h-5 w-5" />
+                  Subscribers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Filters */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search subscribers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="subscribed">Subscribed</SelectItem>
+                          <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
+                          <SelectItem value="bounced">Bounced</SelectItem>
+                          <SelectItem value="complained">Complained</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="status">Status</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Subscribers List */}
+                  <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+                    {filteredSubscribers.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        No subscribers found
+                      </div>
+                    ) : (
+                      <ul className="divide-y">
+                        {filteredSubscribers.map((subscriber) => (
+                          <li key={subscriber._id}>
+                            <button
+                              onClick={() => handleSubscriberSelect(subscriber)}
+                              className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
+                                selectedSubscriber?._id === subscriber._id 
+                                  ? 'bg-primary-red/10 border-l-4 border-primary-red' 
+                                  : ''
+                              }`}
+                            >
+                              <div className="font-medium">
+                                {subscriber.firstName || subscriber.name || 'Unnamed Subscriber'}
+                              </div>
+                              <div className="text-sm text-gray-600 truncate">
+                                {subscriber.email}
+                              </div>
+                              <div className="flex items-center mt-1">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  subscriber.status === 'subscribed' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : subscriber.status === 'unsubscribed'
+                                    ? 'bg-gray-100 text-gray-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {subscriber.status}
+                                </span>
+                              </div>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Recommendations and Engagement Profile */}
+          <div className="lg:col-span-2 space-y-6">
+            {selectedSubscriber ? (
+              <>
+                <ContentRecommendations 
+                  subscriberId={selectedSubscriber._id} 
+                  userId={user.id} 
+                />
+                <SubscriberEngagementProfile 
+                  subscriberId={selectedSubscriber._id} 
+                />
+              </>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center h-64">
+                  <TrendingUp className="h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-center">
+                    Select a subscriber to view their content recommendations and engagement profile
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default RecommendationsManager;

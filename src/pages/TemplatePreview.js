@@ -36,6 +36,20 @@ const TemplatePreview = () => {
     loadTemplate();
   }, [id]);
 
+  // Prevent clicks inside preview from navigating the SPA
+  useEffect(() => {
+    const handler = (e) => {
+      const target = e.target.closest('a');
+      if (target && target.closest('#template-preview-root')) {
+        e.preventDefault();
+        console.log('Prevented navigation to:', target.href);
+      }
+    };
+    
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [template]); // Changed dependency from htmlContent to template
+
   const loadTemplate = async () => {
     try {
       setLoading(true);
@@ -222,19 +236,6 @@ const TemplatePreview = () => {
   const currentDevice = DEVICE_PREVIEWS.find(d => d.id === previewDevice);
   const htmlContent = generateHTMLFromTemplate(template);
 
-  // Prevent clicks inside preview from navigating the SPA (only when not using iframe src)
-  useEffect(() => {
-    const handler = (e) => {
-      const target = e.target.closest('a');
-      if (target) {
-        e.preventDefault();
-      }
-    };
-    // Applies only if we ever render a div-based preview
-    document.getElementById('template-preview-root')?.addEventListener('click', handler);
-    return () => document.getElementById('template-preview-root')?.removeEventListener('click', handler);
-  }, [htmlContent]);
-
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -351,12 +352,12 @@ const TemplatePreview = () => {
                 minHeight: '600px'
               }}
             >
-              <iframe
-                src={templateService.getPreviewUrl(id)}
-                className="w-full h-full border-0"
+              <div 
+                id="template-preview-root"
+                dangerouslySetInnerHTML={{ 
+                  __html: htmlContent 
+                }}
                 style={{ minHeight: '600px' }}
-                title="Template Preview"
-                sandbox="allow-same-origin"
               />
             </div>
           </div>

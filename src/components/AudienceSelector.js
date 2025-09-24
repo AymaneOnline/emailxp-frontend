@@ -13,7 +13,7 @@ const AudienceSelector = ({
   onSelectionChange,
   showRecipientCount = true 
 }) => {
-  const [activeTab, setActiveTab] = useState('groups');
+  const [activeTab, setActiveTab] = useState('individuals');
   const [groups, setGroups] = useState([]);
   const [segments, setSegments] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
@@ -62,7 +62,12 @@ const AudienceSelector = ({
         try {
           setLoading(true);
           const subscribersData = await subscriberService.getSubscribers();
-          setSubscribers(subscribersData?.subscribers || []);
+          // `subscriberService.getSubscribers()` may return either an array
+          // or an object like { subscribers: [...] }. Normalize both shapes.
+          const list = Array.isArray(subscribersData)
+            ? subscribersData
+            : (subscribersData?.subscribers || []);
+          setSubscribers(list);
         } catch (error) {
           console.error('Failed to load subscribers:', error);
         } finally {
@@ -329,26 +334,24 @@ const AudienceSelector = ({
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8 px-4">
           {[
-            { id: 'groups', label: 'Groups', icon: Users },
-            { id: 'segments', label: 'Segments', icon: Filter },
-            { id: 'individuals', label: 'Individual', icon: Search }
-          ].map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                  activeTab === tab.id
-                    ? 'border-primary-red text-primary-red'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+                { id: 'individuals', label: 'Individual' },
+                { id: 'segments', label: 'Segments' },
+                { id: 'groups', label: 'Groups' }
+              ].map(tab => {
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                      activeTab === tab.id
+                        ? 'border-primary-red text-primary-red'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
         </nav>
       </div>
 

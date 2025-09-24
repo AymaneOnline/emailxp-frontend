@@ -3,8 +3,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from '../../services/authService';
 
-// Get user from localStorage
-const user = JSON.parse(localStorage.getItem('user'));
+// Get user from localStorage first, then sessionStorage as fallback
+let user = JSON.parse(localStorage.getItem('user'));
+if (!user) {
+  user = JSON.parse(sessionStorage.getItem('user'));
+}
 
 const initialState = {
   user: user ? user : null,
@@ -84,8 +87,12 @@ export const authSlice = createSlice({
     updateUserData: (state, action) => {
       // Merge the new payload with the existing user data
       state.user = { ...state.user, ...action.payload };
-      // Update localStorage to persist the changes
-      localStorage.setItem('user', JSON.stringify(state.user));
+      // Persist to whichever storage currently holds the user
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(state.user));
+      } else if (sessionStorage.getItem('user')) {
+        sessionStorage.setItem('user', JSON.stringify(state.user));
+      }
     },
   },
   extraReducers: (builder) => {
@@ -97,7 +104,7 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload;
-        localStorage.setItem('user', JSON.stringify(action.payload)); // Persist user state
+        localStorage.setItem('user', JSON.stringify(action.payload)); // Registration always persistent
         state.message = action.payload.message || 'Registration successful!';
       })
       .addCase(register.rejected, (state, action) => {
@@ -113,7 +120,7 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = action.payload;
-        localStorage.setItem('user', JSON.stringify(action.payload)); // Persist user state
+        // Storage already handled in authService.login; no extra write here to avoid overriding session choice
         state.message = 'Login successful!';
       })
       .addCase(login.rejected, (state, action) => {
@@ -135,7 +142,11 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('user', JSON.stringify(state.user));
+        if (localStorage.getItem('user')) {
+          localStorage.setItem('user', JSON.stringify(state.user));
+        } else if (sessionStorage.getItem('user')) {
+          sessionStorage.setItem('user', JSON.stringify(state.user));
+        }
       })
       .addCase(verifyAuth.rejected, (state, action) => {
         state.isLoading = false;
@@ -143,6 +154,7 @@ export const authSlice = createSlice({
         state.message = action.payload;
         state.user = null;
         localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
       });
   },
 });

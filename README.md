@@ -68,3 +68,89 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+---
+
+## Onboarding Implementation Notes
+
+### Overview
+The dashboard gate keeps most data queries disabled until the user is both `isVerified` and `isProfileComplete`. Until then, the onboarding overlay shows a checklist, teaser panel, and a blurred placeholder behind it.
+
+### Key Files
+- `src/pages/DashboardNew.js`: Applies gating, blur preview, completion transition + confetti.
+- `src/components/OnboardingChecklist.js`: Renders steps, progress bar, cooldown logic, accessibility attributes.
+- `src/utils/onboarding.js`: Helper to determine completion.
+- `src/hooks/useReducedMotion.js`: Detects user preference for reduced motion.
+- `src/utils/confetti.js`: Lightweight canvas confetti (no external dependency).
+- `src/services/analyticsClient.js`: Simple client for tracking events (currently logs in dev).
+
+### Analytics Events
+Emitted through `track()`:
+- `onboarding_progress_change` `{ completed, total }`
+- `onboarding_complete`
+
+Extend by replacing `track` implementation to POST to backend.
+
+### Cooldown Logic
+Verification resend has a 60s cooldown stored in `localStorage` under `verifyEmailCooldown`. A progress bar (role="progressbar") reflects elapsed time. Width formula: `((60 - remainingSeconds) / 60) * 100`.
+
+### Accessibility
+- Progress region uses `aria-live="polite"`.
+- Active step heading receives focus when state changes.
+- Cooldown progress bar has `aria-valuenow`, `aria-valuemax=60`.
+- Buttons include focus rings and `aria-disabled` where appropriate.
+
+### Reduced Motion
+If `(prefers-reduced-motion: reduce)` is set, most transition classes are suppressed and confetti is skipped.
+
+### Adding New Steps
+1. Adjust `total` in checklist progress closure.
+2. Append new `renderStep` call with proper completion predicate.
+3. Update analytics events if total changes.
+
+### Testing
+Basic tests: `src/__tests__/onboardingCooldown.test.jsx` covers progress counts and state-driven UI. Extend with interaction tests using `user-event` for more coverage.
+
+### Future Enhancements
+- Replace inline teaser content with dynamic marketing copy.
+- Persist analytics events to backend.
+- Add skeleton preview components under blur.
+
+## Backend Onboarding Analytics Events
+
+### Endpoint
+`POST /api/analytics-events`
+
+### Auth
+Requires standard auth (JWT/session) via existing `protect` middleware.
+
+### Request Body
+```
+{
+	"events": [
+		{ "event": "onboarding_progress_change", "payload": { "completed": 2, "total": 3 }, "ts": 1732212345678 },
+		{ "event": "onboarding_complete", "payload": {} }
+	]
+}
+```
+Notes:
+- `ts` optional (ms epoch). If omitted, server sets current time.
+- Max 100 events per request (client currently batches at 25).
+
+### Persistence Model
+Collection: `onboardingeven ts` (Mongoose model `OnboardingEvent`). Fields:
+- `userId` (ObjectId, indexed)
+- `event` (string, indexed)
+- `payload` (object)
+- `ts` (Date, indexed)
+
+### Client Batching
+Implemented in `src/services/analyticsClient.js`:
+- Queues events; flush every 5s or when 25 queued.
+- Retries failed batch by re-queuing at front.
+
+### Extending
+- Add server-side aggregation endpoints for funnel analytics later (e.g. `/api/analytics-events/summary`).
+- Consider TTL index if long-term retention not required.
+
+

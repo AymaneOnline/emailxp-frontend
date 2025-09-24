@@ -6,7 +6,7 @@ import { logout, reset } from '../store/slices/authSlice';
 // This function will be called once from index.js
 const configureAxios = (store) => {
   // Set the base URL for all axios requests
-  axios.defaults.baseURL = '/api'; // This will be used by all axios calls (including plain axios imports)
+  axios.defaults.baseURL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; // Use env var or fallback to backend URL
 
   // Request interceptor
   axios.interceptors.request.use(

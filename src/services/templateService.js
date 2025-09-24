@@ -4,25 +4,11 @@ import axios from 'axios';
 
 const TEMPLATES_API_PATH = '/api/templates';
 
-// Create axios instance with default config and auth
-const templateAPI = axios.create({
-  baseURL: TEMPLATES_API_PATH,
-});
-
-templateAPI.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  const token = user && user.token ? user.token : null;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 const templateService = {
   // Get all templates
   getTemplates: async (params = {}) => {
     try {
-      const response = await templateAPI.get('/', { params });
+      const response = await axios.get(TEMPLATES_API_PATH, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -33,7 +19,7 @@ const templateService = {
   // Get popular templates
   getPopularTemplates: async (limit = 10) => {
     try {
-      const response = await templateAPI.get('/popular', { params: { limit } });
+      const response = await axios.get(`${TEMPLATES_API_PATH}/popular`, { params: { limit } });
       return response.data;
     } catch (error) {
       console.error('Error fetching popular templates:', error);
@@ -44,7 +30,7 @@ const templateService = {
   // Get templates by category
   getTemplatesByCategory: async (category) => {
     try {
-      const response = await templateAPI.get(`/category/${category}`);
+      const response = await axios.get(`${TEMPLATES_API_PATH}/category/${category}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching templates by category:', error);
@@ -55,7 +41,7 @@ const templateService = {
   // Get a specific template by ID
   getTemplateById: async (id) => {
     try {
-      const response = await templateAPI.get(`/${id}`);
+      const response = await axios.get(`${TEMPLATES_API_PATH}/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching template:', error);
@@ -66,7 +52,7 @@ const templateService = {
   // Create a new template
   createTemplate: async (templateData) => {
     try {
-      const response = await templateAPI.post('/', templateData);
+      const response = await axios.post(TEMPLATES_API_PATH, templateData);
       return response.data;
     } catch (error) {
       console.error('Error creating template:', error);
@@ -77,7 +63,7 @@ const templateService = {
   // Update an existing template
   updateTemplate: async (id, templateData) => {
     try {
-      const response = await templateAPI.put(`/${id}`, templateData);
+      const response = await axios.put(`${TEMPLATES_API_PATH}/${id}`, templateData);
       return response.data;
     } catch (error) {
       console.error('Error updating template:', error);
@@ -88,7 +74,7 @@ const templateService = {
   // Delete a template
   deleteTemplate: async (id) => {
     try {
-      const response = await templateAPI.delete(`/${id}`);
+      const response = await axios.delete(`${TEMPLATES_API_PATH}/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting template:', error);
@@ -99,7 +85,7 @@ const templateService = {
   // Duplicate a template
   duplicateTemplate: async (id) => {
     try {
-      const response = await templateAPI.post(`/${id}/duplicate`);
+      const response = await axios.post(`${TEMPLATES_API_PATH}/${id}/duplicate`);
       return response.data;
     } catch (error) {
       console.error('Error duplicating template:', error);
@@ -110,7 +96,7 @@ const templateService = {
   // Use a template (increment usage stats)
   useTemplate: async (id) => {
     try {
-      const response = await templateAPI.post(`/${id}/use`);
+      const response = await axios.post(`${TEMPLATES_API_PATH}/${id}/use`);
       return response.data;
     } catch (error) {
       console.error('Error using template:', error);
@@ -120,13 +106,13 @@ const templateService = {
 
   // Get template preview URL
   getPreviewUrl: (id) => {
-    return `${templateAPI.defaults.baseURL}/${id}/preview`;
+    return `${TEMPLATES_API_PATH}/${id}/preview`;
   },
 
   // Export template
   exportTemplate: async (id) => {
     try {
-      const response = await templateAPI.get(`/${id}/export`);
+      const response = await axios.get(`${TEMPLATES_API_PATH}/${id}/export`);
       return response.data;
     } catch (error) {
       console.error('Error exporting template:', error);
@@ -137,7 +123,7 @@ const templateService = {
   // Import template
   importTemplate: async (templateData) => {
     try {
-      const response = await templateAPI.post('/import', templateData);
+      const response = await axios.post(`${TEMPLATES_API_PATH}/import`, templateData);
       return response.data;
     } catch (error) {
       console.error('Error importing template:', error);
@@ -148,10 +134,47 @@ const templateService = {
   // Get template categories
   getCategories: async () => {
     try {
-      const response = await templateAPI.get('/meta/categories');
+      const response = await axios.get(`${TEMPLATES_API_PATH}/meta/categories`);
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
+      throw error;
+    }
+  },
+
+  // Get recommended templates for a subscriber
+  getRecommendedTemplates: async (subscriberId, limit = 10) => {
+    try {
+      const response = await axios.get(`/api/recommendations/subscriber/${subscriberId}`, {
+        params: { limit, contentType: 'template' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recommended templates:', error);
+      throw error;
+    }
+  },
+
+  // Get personalized template for a subscriber
+  getPersonalizedTemplate: async (subscriberId) => {
+    try {
+      const response = await axios.get(`/api/recommendations/personalized/${subscriberId}`, {
+        params: { contentType: 'template' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching personalized template:', error);
+      throw error;
+    }
+  },
+
+  // Record feedback for template recommendations
+  recordTemplateFeedback: async (feedbackData) => {
+    try {
+      const response = await axios.post('/api/recommendations/feedback', feedbackData);
+      return response.data;
+    } catch (error) {
+      console.error('Error recording template feedback:', error);
       throw error;
     }
   }

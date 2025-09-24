@@ -155,6 +155,8 @@ const DEVICE_PREVIEWS = [
 
 // Sortable Block Component
 const SortableBlock = ({ block, onUpdate, onDelete, onDuplicate, isSelected, onSelect }) => {
+  console.log('SortableBlock rendered for block:', block.id, 'with onDelete:', typeof onDelete);
+  
   const {
     attributes,
     listeners,
@@ -177,44 +179,55 @@ const SortableBlock = ({ block, onUpdate, onDelete, onDuplicate, isSelected, onS
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group border-2 rounded-lg p-4 mb-4 transition-all ${
+      className={`relative group border-2 rounded-lg p-4 mb-4 transition-all hover:border-gray-300 dark:hover:border-gray-600 ${
         isSelected
           ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-          : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+          : 'border-transparent bg-white dark:bg-gray-800'
       }`}
       onClick={() => onSelect(block.id)}
+      onMouseEnter={() => {}} // Explicit hover handling
     >
       {/* Drag Handle */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 bg-gray-100 dark:bg-gray-700 rounded"
+        className={`absolute left-2 top-2 transition-opacity cursor-grab active:cursor-grabbing p-1 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
       >
         <GripVertical className="w-4 h-4 text-gray-500" />
       </div>
 
       {/* Block Controls */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 rounded shadow-lg p-1">
+      <div className={`absolute top-2 right-2 z-10 ${
+        isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      } transition-opacity duration-200`}>
+        <div className="flex items-center space-x-1 bg-white dark:bg-gray-800 rounded shadow-lg p-1 border border-gray-200 dark:border-gray-600">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDuplicate(block.id);
             }}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title="Duplicate"
           >
-            <Copy className="w-3 h-3" />
+            <Copy className="w-4 h-4" />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(block.id);
+              console.log('Delete button clicked for block:', block.id);
+              console.log('onDelete function type:', typeof onDelete);
+              if (onDelete) {
+                onDelete(block.id);
+              } else {
+                console.error('onDelete function is not provided!');
+              }
             }}
-            className="p-1 text-gray-400 hover:text-red-600"
+            className="p-2 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title="Delete"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -629,6 +642,11 @@ const EnhancedDragDropEditor = ({
     }
   }, [blocks, onBlocksChange]);
 
+  // Sync blocks when initialBlocks changes (e.g., when template is applied)
+  useEffect(() => {
+    setBlocks(initialBlocks);
+  }, [initialBlocks]);
+
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
   };
@@ -669,10 +687,19 @@ const EnhancedDragDropEditor = ({
   };
 
   const deleteBlock = (blockId) => {
-    setBlocks(prev => prev.filter(block => block.id !== blockId));
+    console.log('Attempting to delete block:', blockId);
+    console.log('Current blocks before deletion:', blocks);
+    
+    setBlocks(prev => {
+      const newBlocks = prev.filter(block => block.id !== blockId);
+      console.log('Blocks after deletion:', newBlocks);
+      return newBlocks;
+    });
+    
     if (selectedBlockId === blockId) {
       setSelectedBlockId(null);
     }
+    console.log('Block deletion completed');
   };
 
   const duplicateBlock = (blockId) => {

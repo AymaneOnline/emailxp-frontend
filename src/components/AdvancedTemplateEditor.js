@@ -52,7 +52,8 @@ const BLOCK_TYPES = [
   { id: 'divider', label: 'Divider', icon: Layers, description: 'Add a divider line' },
   { id: 'spacer', label: 'Spacer', icon: Grid, description: 'Add spacing' },
   { id: 'social', label: 'Social', icon: Link, description: 'Add social media links' },
-  { id: 'footer', label: 'Footer', icon: AlignCenter, description: 'Add footer content' }
+  { id: 'footer', label: 'Footer', icon: AlignCenter, description: 'Add footer content' },
+  { id: 'dynamic', label: 'Dynamic Content', icon: Code, description: 'Add personalized content based on subscriber data' }
 ];
 
 const FONT_FAMILIES = [
@@ -314,6 +315,12 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
           unsubscribeText: 'Unsubscribe from this list',
           align: 'center'
         };
+      case 'dynamic':
+        return {
+          conditions: [],
+          defaultContent: 'Default content',
+          variable: 'name' // Default personalization variable
+        };
       default:
         return {};
     }
@@ -509,11 +516,143 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
     }
   };
 
-  const styleObjectToString = (styles) => {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
+  const renderBlockPreview = (block) => {
+    const styles = block?.styles || {};
+    const content = block?.content || {};
+    
+    switch (block?.type) {
+      case 'text':
+        return (
+          <div style={{ ...styles, minHeight: '20px' }}>
+            {content.text || 'Enter your text here...'}
+          </div>
+        );
+      case 'heading': {
+        const HeadingTag = content.level || 'h2';
+        return (
+          <HeadingTag style={styles}>
+            {content.text || 'Your Heading'}
+          </HeadingTag>
+        );
+      }
+      case 'image':
+        return (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            {content.src ? (
+              <img 
+                src={content.src} 
+                alt={content.alt || 'Image'} 
+                style={{ maxWidth: '100%', height: 'auto' }}
+              />
+            ) : (
+              <div style={{ 
+                backgroundColor: '#f0f0f0', 
+                padding: '40px', 
+                border: '2px dashed #ccc',
+                textAlign: 'center',
+                color: '#666'
+              }}>
+                📷 Image placeholder
+              </div>
+            )}
+          </div>
+        );
+      case 'button':
+        return (
+          <div style={{ textAlign: content.align || 'center', padding: '10px' }}>
+            <span
+              style={{
+                ...styles,
+                padding: '12px 24px',
+                borderRadius: '4px',
+                backgroundColor: styles.backgroundColor || '#007cba',
+                color: styles.color || '#ffffff',
+                textDecoration: 'none',
+                display: 'inline-block',
+                cursor: 'pointer'
+              }}
+            >
+              {content.text || 'Click Here'}
+            </span>
+          </div>
+        );
+      case 'divider':
+        return (
+          <hr style={{
+            border: 'none',
+            borderTop: `1px ${content.style || 'solid'} ${content.color || '#cccccc'}`,
+            width: content.width || '100%',
+            margin: '20px auto'
+          }} />
+        );
+      case 'spacer':
+        return (
+          <div style={{ 
+            height: content.height || '20px',
+            backgroundColor: '#f9f9f9',
+            border: '1px dashed #ddd',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#999',
+            fontSize: '12px'
+          }}>
+            Spacer ({content.height || '20px'})
+          </div>
+        );
+      case 'social': {
+        const links = content.links || [];
+        return (
+          <div style={{ textAlign: content.align || 'center', padding: '10px' }}>
+            {links.map((link, index) => (
+              <span key={index} style={{ display: 'inline-block', margin: '0 10px', fontSize: '24px' }}>
+                🔗
+              </span>
+            ))}
+            {links.length === 0 && (
+              <span style={{ color: '#666', fontSize: '14px' }}>Social media links</span>
+            )}
+          </div>
+        );
+      }
+      case 'footer':
+        return (
+          <div style={{ 
+            textAlign: content.align || 'center', 
+            padding: '20px 0',
+            borderTop: '1px solid #eee',
+            fontSize: '12px',
+            color: '#666'
+          }}>
+            {content.text || 'Footer content'}
+          </div>
+        );
+      case 'dynamic':
+        return (
+          <div style={{ 
+            padding: '20px', 
+            border: '2px dashed #007cba', 
+            borderRadius: '4px',
+            backgroundColor: '#f0f8ff',
+            textAlign: 'center'
+          }}>
+            <Code className="w-6 h-6 mx-auto text-blue-500 mb-2" />
+            <div className="font-medium text-blue-700">Dynamic Content Block</div>
+            <div className="text-sm text-blue-600 mt-1">
+              Personalized: {content.variable || 'name'}
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+            Unknown block type: {block?.type}
+          </div>
+        );
+    }
   };
+
+
 
   const renderBlockEditor = (block) => {
     if (!block) return null;
@@ -675,6 +814,179 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
                   className="w-full h-10 border border-gray-300 dark:border-gray-600 rounded-lg"
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {block.type === 'dynamic' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Personalization Variable
+              </label>
+              <select
+                value={block.content.variable || 'name'}
+                onChange={(e) => updateBlock(block.id, {
+                  content: { ...block.content, variable: e.target.value }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+              >
+                <option value="name">Name</option>
+                <option value="firstName">First Name</option>
+                <option value="lastName">Last Name</option>
+                <option value="email">Email</option>
+                <option value="location.country">Country</option>
+                <option value="location.city">City</option>
+                <option value="customFields.company">Company</option>
+                <option value="customFields.jobTitle">Job Title</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Default Content
+              </label>
+              <input
+                type="text"
+                value={block.content.defaultContent || ''}
+                onChange={(e) => updateBlock(block.id, {
+                  content: { ...block.content, defaultContent: e.target.value }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                placeholder="Content to show if personalization fails"
+              />
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="font-medium mb-1">Dynamic Content Block</p>
+                <p>This block will show personalized content based on subscriber data.</p>
+                <p className="mt-2">Variable: {block.content.variable || 'name'}</p>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Conditional Content</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Show different content based on subscriber attributes
+              </p>
+              
+              {block.content.conditions && block.content.conditions.map((condition, index) => (
+                <div key={index} className="mb-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="grid grid-cols-12 gap-2 mb-2">
+                    <div className="col-span-4">
+                      <select
+                        value={condition.variable || ''}
+                        onChange={(e) => {
+                          const newConditions = [...block.content.conditions];
+                          newConditions[index].variable = e.target.value;
+                          updateBlock(block.id, {
+                            content: { ...block.content, conditions: newConditions }
+                          });
+                        }}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="">Select variable</option>
+                        <option value="name">Name</option>
+                        <option value="firstName">First Name</option>
+                        <option value="lastName">Last Name</option>
+                        <option value="location.country">Country</option>
+                        <option value="location.city">City</option>
+                        <option value="customFields.company">Company</option>
+                      </select>
+                    </div>
+                    
+                    <div className="col-span-3">
+                      <select
+                        value={condition.operator || ''}
+                        onChange={(e) => {
+                          const newConditions = [...block.content.conditions];
+                          newConditions[index].operator = e.target.value;
+                          updateBlock(block.id, {
+                            content: { ...block.content, conditions: newConditions }
+                          });
+                        }}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="">Operator</option>
+                        <option value="equals">Equals</option>
+                        <option value="notEquals">Not Equals</option>
+                        <option value="contains">Contains</option>
+                        <option value="startsWith">Starts With</option>
+                        <option value="endsWith">Ends With</option>
+                      </select>
+                    </div>
+                    
+                    <div className="col-span-4">
+                      <input
+                        type="text"
+                        value={condition.value || ''}
+                        onChange={(e) => {
+                          const newConditions = [...block.content.conditions];
+                          newConditions[index].value = e.target.value;
+                          updateBlock(block.id, {
+                            content: { ...block.content, conditions: newConditions }
+                          });
+                        }}
+                        placeholder="Value"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    
+                    <div className="col-span-1 flex items-center">
+                      <button
+                        onClick={() => {
+                          const newConditions = [...block.content.conditions];
+                          newConditions.splice(index, 1);
+                          updateBlock(block.id, {
+                            content: { ...block.content, conditions: newConditions }
+                          });
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                      Content for this condition
+                    </label>
+                    <textarea
+                      value={condition.content || ''}
+                      onChange={(e) => {
+                        const newConditions = [...block.content.conditions];
+                        newConditions[index].content = e.target.value;
+                        updateBlock(block.id, {
+                          content: { ...block.content, conditions: newConditions }
+                        });
+                      }}
+                      rows={2}
+                      className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Content to show when condition is met"
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                onClick={() => {
+                  const newConditions = [...(block.content.conditions || []), {
+                    variable: '',
+                    operator: 'equals',
+                    value: '',
+                    content: ''
+                  }];
+                  updateBlock(block.id, {
+                    content: { ...block.content, conditions: newConditions }
+                  });
+                }}
+                className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add Condition
+              </button>
             </div>
           </div>
         )}
@@ -910,6 +1222,7 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
               </div>
             </div>
           )
+        }
         </div>
       </div>
     </div>

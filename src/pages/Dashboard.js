@@ -1,566 +1,564 @@
 // emailxp/frontend/src/pages/Dashboard.js
 
-import React, { useEffect, useState, Fragment, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
-import campaignService from '../services/campaignService';
-import { updateUserData } from '../store/slices/authSlice'; // Import updateUserData to mark profile complete
-import { toast } from 'react-toastify'; // Import toast
-
-import TopBar from '../components/TopBar';
-import OnboardingChecklist from '../components/OnboardingChecklist'; // NEW: Import OnboardingChecklist
-
+import React, { useState, useEffect } from 'react';
+import { H1, H2, H3, H4, Body, Small } from '../components/ui/Typography';
 import {
-  ArrowPathIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
-import { ChevronDownIcon } from '@heroicons/react/20/solid';
+  BarChart3,
+  TrendingUp,
+  Users,
+  Mail,
+  Eye,
+  MousePointer,
+  Calendar,
+  Download,
+  Filter,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  Target,
+  Zap,
+  Award,
+  CalendarDays
+} from 'lucide-react';
+import { toast } from 'react-toastify';
+import AdvancedAnalytics from '../components/AdvancedAnalytics';
+import analyticsService from '../services/analyticsService';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import OnboardingChecklist from '../components/OnboardingChecklist';
+import PageContainer from '../components/layout/PageContainer';
+// Removed TopBar import since it's already in the Layout component
 
-function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
-
-function Dashboard() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const location = useLocation(); // Get current location for query params
+const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
-
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState('dashboard');
+  const [quickStats, setQuickStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('Last 30 days');
-  const [handlingVerification, setHandlingVerification] = useState(false);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
 
-  const [dashboardData, setDashboardData] = useState({
-    totalActiveSubscribers: 0,
-    newSubscribersToday: 0,
-    newSubscribersThisMonth: 0,
-    newSubscribers30Days: 0,
-    unsubscribed30Days: 0,
-    emailsSent: 0,
-    opens: 0,
-    clicks: 0,
-    ctor: 0,
-    campaignsTable: [],
-    activeAutomationWorkflows: 0,
-    subscribersInQueue: 0,
-    completedSubscribers: 0,
-    automationUnsubscribed: 0,
-    activeForms: 0,
-    formSignups: 0,
-    formAvgConversionRate: 0,
-    allPublishedSites: 0,
-    siteSignups: 0,
-    siteAvgConversionRate: 0,
-  });
-
-  // Check for verification parameters first
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const verified = queryParams.get('verified');
-    const tokenError = queryParams.get('error');
-
-    if (verified || tokenError) {
-      setHandlingVerification(true);
-    }
-  }, [location.search]);
-
-  // Effect to handle email verification redirect
-  useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const verified = queryParams.get('verified');
-    const tokenError = queryParams.get('error');
-
-    if (verified === 'true') {
-      // Email verification was successful
-      if (user) {
-        // User is logged in, update their verification status
-        if (!user.isVerified) {
-          dispatch(updateUserData({ isVerified: true }));
-          toast.success('Email verified successfully! Please complete your profile.');
-        }
-      } else {
-        // User is not logged in, show success message and redirect to login
-        toast.success('Email verified successfully! Please log in to continue.');
-        navigate('/login');
-        return;
-      }
-      // Remove query parameter from URL to prevent re-triggering toast on refresh
-      navigate(location.pathname, { replace: true });
-    } else if (tokenError === 'invalid_or_expired_token') {
-      toast.error('Email verification link is invalid or expired. Please request a new one.');
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-      navigate(location.pathname, { replace: true });
-    }
-    
-    // Clear the handling verification state after processing
-    setHandlingVerification(false);
-  }, [location, user, dispatch, navigate]);
-
-  // Check if user is logged in (only if not handling verification)
-  useEffect(() => {
-    if (!handlingVerification && !user) {
-      navigate('/login');
-      return;
-    }
-  }, [user, navigate, handlingVerification]);
-
-
-  const fetchDashboardData = useCallback(async (timeframe) => {
     if (!user) {
       navigate('/login');
       return;
     }
-
-    // Only fetch main dashboard data if email is verified and profile is complete
-    // Or if we are explicitly on the dashboard and need to show the checklist
-    if (!user.isVerified || !user.isProfileComplete) {
-      setLoading(false);
-      return; // Skip fetching data if onboarding is not complete
+    if (user.isVerified) {
+      loadQuickStats();
+    } else {
+      setLoading(false); // stop loading spinner if present
     }
+  }, [selectedTimeframe, user, navigate]);
 
+  const loadQuickStats = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      // Try to fetch campaign stats and campaigns, but handle gracefully if they fail
-      let campaignStats = {
-        emailsSent: 0,
-        opens: 0,
-        clicks: 0,
-        CTOR: 0,
-        totalActiveSubscribers: 0,
-        totalUnsubscribed: 0
-      };
-      let allCampaigns = [];
-
-      try {
-        campaignStats = await campaignService.getDashboardStats(timeframe);
-      } catch (statsError) {
-        console.log('No campaign stats available yet:', statsError.message);
-        // Use default values for new users
+      const data = await analyticsService.getDashboardOverview(selectedTimeframe);
+      setQuickStats(data);
+    } catch (error) {
+      const status = error?.response?.status;
+      if (status === 403) {
+        // Silently ignore; user not verified yet
+        return;
       }
-
-      try {
-        allCampaigns = await campaignService.getCampaigns(timeframe);
-      } catch (campaignsError) {
-        console.log('No campaigns available yet:', campaignsError.message);
-        // Use empty array for new users
-      }
-
-      const transformedCampaignsTable = allCampaigns.map(campaign => {
-          const sent = campaign.emailsSuccessfullySent || 0;
-          const opened = campaign.opensCount || 0;
-          const clicked = campaign.clicksCount || 0;
-          const unsubscribed = campaign.unsubscribedCount || 0;
-          const spamComplaints = campaign.spamComplaintsCount || 0;
-
-          return {
-            _id: campaign._id,
-            month: new Date(campaign.createdAt).toLocaleString('en-US', { month: 'short', year: 'numeric' }),
-            campaigns: 1,
-            emailsSent: sent,
-            opened: { count: opened, percent: sent > 0 ? (opened / sent * 100).toFixed(2) : 0 },
-            clicked: { count: clicked, percent: opened > 0 ? (clicked / opened * 100).toFixed(2) : 0 },
-            unsubscribed: { count: unsubscribed, percent: sent > 0 ? (unsubscribed / sent * 100).toFixed(2) : 0 },
-            spamComplaints: { count: spamComplaints, percent: sent > 0 ? (spamComplaints / sent * 100).toFixed(2) : 0 },
-          };
-      });
-
-      setDashboardData({
-        emailsSent: campaignStats.emailsSent || 0,
-        opens: campaignStats.opens || 0,
-        clicks: campaignStats.clicks || 0,
-        ctor: campaignStats.CTOR || 0,
-        campaignsTable: transformedCampaignsTable,
-
-        totalActiveSubscribers: campaignStats.totalActiveSubscribers || 0,
-
-        newSubscribersToday: Math.floor(Math.random() * 5),
-        newSubscribersThisMonth: Math.floor(Math.random() * 50) + 1,
-        newSubscribers30Days: Math.floor(Math.random() * 20) + 1,
-        unsubscribed30Days: campaignStats.totalUnsubscribed || Math.floor(Math.random() * 5),
-        activeAutomationWorkflows: Math.floor(Math.random() * 5) + 1,
-        subscribersInQueue: Math.floor(Math.random() * 10),
-        completedSubscribers: Math.floor(Math.random() * 100) + 10,
-        automationUnsubscribed: Math.floor(Math.random() * 3),
-        activeForms: Math.floor(Math.random() * 3) + 1,
-        formSignups: Math.floor(Math.random() * 50),
-        allPublishedSites: Math.floor(Math.random() * 2) + 1,
-        siteSignups: Math.floor(Math.random() * 20),
-        formAvgConversionRate: Math.floor(Math.random() * 100).toFixed(2),
-        siteAvgConversionRate: Math.floor(Math.random() * 100).toFixed(2),
-      });
-
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      // Don't set error for new users with no data - just use default values
-      if (err.response?.status === 404 || err.response?.status === 500) {
-        console.log('Using default dashboard data for new user');
-        setDashboardData({
-          emailsSent: 0,
-          opens: 0,
-          clicks: 0,
-          ctor: 0,
-          campaignsTable: [],
-          totalActiveSubscribers: 0,
-          newSubscribersToday: 0,
-          newSubscribersThisMonth: 0,
-          newSubscribers30Days: 0,
-          unsubscribed30Days: 0,
-          activeAutomationWorkflows: 0,
-          subscribersInQueue: 0,
-          completedSubscribers: 0,
-          automationUnsubscribed: 0,
-          activeForms: 0,
-          formSignups: 0,
-          allPublishedSites: 0,
-          siteSignups: 0,
-          formAvgConversionRate: 0,
-          siteAvgConversionRate: 0,
-        });
-      } else {
-        setError(err.response?.data?.message || 'Failed to load dashboard data.');
-      }
+      console.error('Error loading quick stats:', error);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
     }
-  }, [user, navigate]);
+  };
 
-  useEffect(() => {
-    fetchDashboardData(selectedTimeframe);
-  }, [fetchDashboardData, selectedTimeframe]);
+  const renderQuickStatCard = (title, value, change, icon, format = 'number', color = 'primary-red', description = '') => {
+    const formattedValue = analyticsService.formatMetric(value, format);
+    const changeColor = change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-600';
+    const ChangeIcon = change > 0 ? ArrowUpRight : ArrowDownRight;
 
-  // Determine if onboarding is complete
-  const isOnboardingComplete = user?.isVerified && user?.isProfileComplete;
-
-  // Show loading state when handling verification
-  if (handlingVerification) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] bg-gray-50">
-        <ArrowPathIcon className="h-16 w-16 text-primary-red animate-spin" />
-        <p className="mt-4 text-lg text-dark-gray">Processing verification...</p>
+      <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <Small className="font-medium text-gray-600 mb-1 flex items-center">
+              {icon && React.createElement(icon, { className: "h-4 w-4 mr-2 text-gray-500" })}
+              {title}
+            </Small>
+            <p className="text-3xl font-bold text-gray-900 mb-2">{formattedValue}</p>
+            {description && (
+              <Small className="text-gray-500">{description}</Small>
+            )}
+            {change !== undefined && (
+              <div className={`flex items-center ${changeColor}`}>
+                <ChangeIcon className="h-4 w-4 mr-1" />
+                <Small className="font-medium">
+                  {Math.abs(change).toFixed(1)}% vs previous period
+                </Small>
+              </div>
+            )}
+          </div>
+          <div className={`p-4 bg-${color} bg-opacity-10 rounded-xl`}>
+            {icon && React.createElement(icon, { className: `h-8 w-8 text-${color}` })}
+          </div>
+        </div>
       </div>
     );
-  }
+  };
 
-  // Show loading state when user is not logged in (but not handling verification)
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] bg-gray-50">
-        <ArrowPathIcon className="h-16 w-16 text-primary-red animate-spin" />
-        <p className="mt-4 text-lg text-dark-gray">Redirecting to login...</p>
-      </div>
-    );
-  }
+  const renderRecentActivity = () => {
+    if (!quickStats?.recentActivity) return null;
 
-  if (loading && isOnboardingComplete) { // Only show full loading spinner if we expect data
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] bg-gray-50">
-        <ArrowPathIcon className="h-16 w-16 text-primary-red animate-spin" />
-        <p className="mt-4 text-lg text-dark-gray">Loading dashboard data...</p>
-      </div>
-    );
-  }
-
-  if (error && isOnboardingComplete) { // Only show full error if we expect data
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] bg-gray-50 p-4">
-        <div role="alert" className="flex flex-col items-center p-8 bg-lighter-red border border-primary-red text-dark-gray rounded-lg shadow-md text-center max-w-lg mx-auto">
-          <XCircleIcon className="w-12 h-12 text-primary-red mb-4" />
-          <h3 className="text-2xl font-semibold mb-2">Error!</h3>
-          <p className="text-lg mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-2 bg-primary-red text-white rounded-md shadow-md hover:bg-custom-red-hover transition-colors duration-200 text-base font-medium"
-          >
-            Go to Login
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <H3 className="mb-0">Recent Activity</H3>
+          <button className="text-sm text-primary-red hover:text-red-600">
+            View All
           </button>
+        </div>
+        <div className="space-y-3">
+          {quickStats.recentActivity.slice(0, 5).map((activity, index) => (
+            <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-2 h-2 bg-primary-red rounded-full"></div>
+              <div className="flex-1">
+                <Body className="font-medium text-gray-900">
+                  Analytics generated for {activity.entityId?.name || 'Unknown Entity'}
+                </Body>
+                <Small className="text-gray-600">
+                  {new Date(activity.createdAt).toLocaleString()}
+                </Small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTopCampaigns = () => {
+    if (!quickStats?.topCampaigns || quickStats.topCampaigns.length === 0) return null;
+
+    return (
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <H3 className="mb-0">Top Performing Campaigns</H3>
+          <button className="text-sm text-primary-red hover:text-red-600">
+            View All
+          </button>
+        </div>
+        <div className="space-y-4">
+          {quickStats.topCampaigns.slice(0, 5).map((campaign, index) => (
+            <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 mb-1">
+                  {campaign.entityId?.name || 'Unknown Campaign'}
+                </h4>
+                <Body className="text-gray-600 mb-2">
+                  {campaign.entityId?.subject}
+                </Body>
+                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                  <span>Sent: {analyticsService.formatMetric(campaign.metrics?.sent || 0)}</span>
+                  <span>Delivered: {analyticsService.formatMetric(campaign.metrics?.delivered || 0)}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-primary-red mb-1">
+                  {analyticsService.formatMetric(campaign.rates?.openRate || 0, 'percentage')}
+                </div>
+                <div className="text-xs text-gray-600">Open Rate</div>
+                <Body className="font-medium text-gray-900 mt-1">
+                  {analyticsService.formatMetric(campaign.rates?.clickRate || 0, 'percentage')} CTR
+                </Body>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPerformanceInsights = () => {
+    if (!quickStats?.overview) return null;
+
+    const insights = [];
+    const overview = quickStats.overview;
+
+    // Generate insights based on performance
+    if (overview.avgOpenRate > 25) {
+      insights.push({
+        type: 'success',
+        title: 'Excellent Open Rate',
+        description: `Your average open rate of ${overview.avgOpenRate.toFixed(1)}% is above industry average.`,
+        icon: Eye,
+        value: overview.avgOpenRate
+      });
+    } else if (overview.avgOpenRate < 15) {
+      insights.push({
+        type: 'warning',
+        title: 'Low Open Rate',
+        description: `Your open rate of ${overview.avgOpenRate.toFixed(1)}% could be improved with better subject lines.`,
+        icon: Eye,
+        value: overview.avgOpenRate
+      });
+    }
+
+    if (overview.avgClickRate > 3) {
+      insights.push({
+        type: 'success',
+        title: 'Great Click Rate',
+        description: `Your click rate of ${overview.avgClickRate.toFixed(1)}% shows strong engagement.`,
+        icon: MousePointer,
+        value: overview.avgClickRate
+      });
+    }
+
+    if (overview.avgUnsubscribeRate < 0.5) {
+      insights.push({
+        type: 'success',
+        title: 'Low Unsubscribe Rate',
+        description: `Your unsubscribe rate of ${overview.avgUnsubscribeRate.toFixed(2)}% is healthy.`,
+        icon: Users,
+        value: overview.avgUnsubscribeRate
+      });
+    }
+
+    if (insights.length === 0) {
+      insights.push({
+        type: 'info',
+        title: 'Keep Growing',
+        description: 'Your campaigns are performing well. Consider A/B testing to optimize further.',
+        icon: BarChart3,
+        value: null
+      });
+    }
+
+    return (
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+  <H3 className="mb-4">Performance Insights</H3>
+        <div className="space-y-4">
+          {insights.map((insight, index) => {
+            const Icon = insight.icon;
+            const colorClasses = {
+              success: 'bg-green-100 text-green-800 border-green-200',
+              warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+              info: 'bg-blue-100 text-blue-800 border-blue-200'
+            };
+
+            return (
+              <div key={index} className={`p-4 rounded-lg border ${colorClasses[insight.type]}`}>
+                <div className="flex items-start space-x-3">
+                  <Icon className="h-5 w-5 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium mb-1">{insight.title}</h4>
+                    <Body className="opacity-90">{insight.description}</Body>
+                    {insight.value !== null && (
+                      <div className="mt-2 text-xs font-medium">
+                        Current value: {insight.value.toFixed(2)}{typeof insight.value === 'number' && insight.title.includes('Rate') ? '%' : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderIndustryBenchmarks = () => {
+    if (!quickStats?.overview) return null;
+
+    const benchmarks = [
+      {
+        metric: 'Open Rate',
+        current: quickStats.overview.avgOpenRate,
+        industry: '15-25',
+        description: 'Percentage of delivered emails opened',
+        icon: Eye
+      },
+      {
+        metric: 'Click Rate',
+        current: quickStats.overview.avgClickRate,
+        industry: '2-5',
+        description: 'Percentage of delivered emails clicked',
+        icon: MousePointer
+      },
+      {
+        metric: 'Unsubscribe Rate',
+        current: quickStats.overview.avgUnsubscribeRate,
+        industry: '<1',
+        description: 'Percentage of unsubscribes',
+        icon: Users
+      }
+    ];
+
+    return (
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+  <H3 className="mb-4">Industry Benchmarks</H3>
+        <div className="space-y-4">
+          {benchmarks.map((benchmark, index) => {
+            const Icon = benchmark.icon;
+            const performance = benchmark.current > 25 ? 'excellent' : 
+                              benchmark.current > 15 ? 'good' : 
+                              benchmark.current > 10 ? 'average' : 'poor';
+            const performanceColor = performance === 'excellent' ? 'text-green-600' : 
+                                   performance === 'good' ? 'text-blue-600' : 
+                                   performance === 'average' ? 'text-yellow-600' : 'text-red-600';
+
+            return (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Icon className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <p className="font-medium text-gray-900">{benchmark.metric}</p>
+                    <Small className="text-gray-500">{benchmark.description}</Small>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Body className="font-medium text-gray-900">
+                    {analyticsService.formatMetric(benchmark.current, 'percentage')}
+                  </Body>
+                  <Small className={performanceColor}>
+                    {performance.charAt(0).toUpperCase() + performance.slice(1)} performance
+                  </Small>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1">
+        {/* Removed TopBar since it's already in the Layout component */}
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-red"></div>
         </div>
       </div>
     );
   }
 
+  // Show onboarding (welcome + checklist) until user verified and profile complete
+  if (!user?.isVerified || !user?.isProfileComplete) {
+    return (
+      <PageContainer>
+  <H1 className="mb-6">Dashboard</H1>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-8 rounded-xl border border-gray-200 flex flex-col justify-center shadow-sm">
+            <H2 className="mb-4">
+              Welcome to <span className="text-primary-red">EmailXP</span>!
+            </H2>
+            <Body className="text-gray-700 leading-relaxed">
+              You're just a step away from starting to build your campaigns, automations, forms, and more.
+              Complete the checklist to unlock full analytics and platform features.
+            </Body>
+          </div>
+          <OnboardingChecklist />
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1">
-      <TopBar />
+    <PageContainer>
+  <H1 className="mb-6">Dashboard</H1>
+      <div className="space-y-6">
+        {/* Timeframe selector moved to top right of page */}
+        <div className="flex justify-end">
+          <select
+            value={selectedTimeframe}
+            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-red focus:border-transparent"
+          >
+            {analyticsService.getDateRangeOptions().map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={loadQuickStats}
+            className="ml-2 p-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            title="Refresh Data"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
 
-      <h1 className="text-3xl font-bold text-dark-gray mb-8">Dashboard</h1>
+        {/* View Toggle */}
+        <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveView('dashboard')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeView === 'dashboard'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveView('advanced')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeView === 'advanced'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Advanced Analytics
+          </button>
+        </div>
 
-      {/* Conditionally render Onboarding Checklist or Dashboard Content */}
-      {!isOnboardingComplete ? (
-        <OnboardingChecklist />
-      ) : (
-        <>
-          {/* Performance Overview Section */}
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-dark-gray">Performance overview</h2>
-              <Menu as="div" className="relative inline-block text-left">
-                <div>
-                  <Menu.Button className="inline-flex justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                    {selectedTimeframe}
-                    <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  </Menu.Button>
-                </div>
-                <Transition
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    <div className="py-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={() => setSelectedTimeframe('Last 7 days')}
-                            className={classNames(
-                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                              'block px-4 py-2 text-sm w-full text-left'
-                            )}
-                          >
-                            Last 7 days
-                          </button>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={() => setSelectedTimeframe('Last 30 days')}
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm w-full text-left'
-                            )}
-                          >
-                            Last 30 days
-                          </button>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={() => setSelectedTimeframe('Last 90 days')}
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm w-full text-left'
-                            )}
-                          >
-                            Last 90 days
-                          </button>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={() => setSelectedTimeframe('All Time')}
-                            className={classNames(
-                              active ? 'bg-gray-100' : '',
-                              'block px-4 py-2 text-sm w-full text-left'
-                            )}
-                          >
-                            All Time
-                          </button>
-                        )}
-                      </Menu.Item>
-                    </div>
-                  </Menu.Items>
-                </Transition>
-              </Menu>
+        {/* Dashboard View */}
+        {activeView === 'dashboard' && quickStats && (
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {renderQuickStatCard(
+                'Total Emails Sent',
+                quickStats.overview.totalSent,
+                undefined,
+                Mail,
+                'number',
+                'primary-red',
+                'Total emails sent in selected period'
+              )}
+              {renderQuickStatCard(
+                'Total Delivered',
+                quickStats.overview.totalDelivered,
+                undefined,
+                Users,
+                'number',
+                'green-600',
+                'Successfully delivered emails'
+              )}
+              {renderQuickStatCard(
+                'Average Open Rate',
+                quickStats.overview.avgOpenRate,
+                undefined,
+                Eye,
+                'percentage',
+                'blue-600',
+                'Percentage of delivered emails opened'
+              )}
+              {renderQuickStatCard(
+                'Average Click Rate',
+                quickStats.overview.avgClickRate,
+                undefined,
+                MousePointer,
+                'percentage',
+                'purple-600',
+                'Percentage of delivered emails clicked'
+              )}
             </div>
 
-            {/* Subscribers Section */}
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold text-dark-gray mb-4 flex items-center">
-                <i className="fas fa-users mr-2"></i> Subscribers
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Total active subscribers</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.totalActiveSubscribers}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">Want more subscribers? Grow your email group with signup forms</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">New subscribers today</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.newSubscribersToday}
-                  </p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">New subscribers this month</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.newSubscribersThisMonth}
-                  </p>
-                </div>
-              </div>
-
-              {/* New/Unsubscribed Summary */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="h-3 w-3 rounded-full bg-green-500 mr-2"></span>
-                    <span className="text-base text-dark-gray">New</span>
-                  </div>
-                  <span className="text-lg font-bold text-dark-gray">
-                    {dashboardData.newSubscribers30Days}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2">Last 30 days</span>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="h-3 w-3 rounded-full bg-primary-red mr-2"></span>
-                    <span className="text-base text-dark-gray">Unsubscribed</span>
-                  </div>
-                  <span className="text-lg font-bold text-dark-gray">
-                    {dashboardData.unsubscribed30Days}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2">Last 30 days</span>
-                </div>
-              </div>
-              {/* Subscriber Growth Chart Placeholder */}
-              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-8" style={{ minHeight: '300px' }}>
-                <h3 className="text-xl font-semibold text-dark-gray mb-4">Subscriber Growth</h3>
-                <div className="h-64 flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <p>[Chart Placeholder - Subscriber Growth (e.g., Line Chart)]
-                  </p>
-                  </div>
-                </div>
-              </div>
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {renderQuickStatCard(
+                'Avg. Unsubscribe Rate',
+                quickStats.overview.avgUnsubscribeRate,
+                undefined,
+                Users,
+                'percentage',
+                'yellow-600',
+                'Percentage of unsubscribes'
+              )}
+              {renderQuickStatCard(
+                'Bounce Rate',
+                (quickStats.overview.totalSent > 0 
+                  ? (quickStats.overview.totalSent - quickStats.overview.totalDelivered) / quickStats.overview.totalSent * 100 
+                  : 0),
+                undefined,
+                Mail,
+                'percentage',
+                'red-600',
+                'Percentage of bounced emails'
+              )}
+              {renderQuickStatCard(
+                'Click-to-Open Rate',
+                (quickStats.overview.avgOpenRate > 0 
+                  ? (quickStats.overview.avgClickRate / quickStats.overview.avgOpenRate) * 100 
+                  : 0),
+                undefined,
+                Target,
+                'percentage',
+                'indigo-600',
+                'Clicks relative to opens'
+              )}
+              {renderQuickStatCard(
+                'Delivery Rate',
+                (quickStats.overview.totalSent > 0 
+                  ? quickStats.overview.totalDelivered / quickStats.overview.totalSent * 100 
+                  : 0),
+                undefined,
+                Zap,
+                'percentage',
+                'teal-600',
+                'Percentage of emails successfully delivered'
+              )}
             </div>
 
-            {/* Campaigns Section */}
-            <div>
-              <h3 className="text-xl font-semibold text-dark-gray mb-4 flex items-center">
-                <i className="fas fa-envelope mr-2"></i> Campaigns
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mb-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Emails sent</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.emailsSent}
-                  </p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Opens</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.opens}
-                  </p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Clicks</p>
-                  <p className="text-4xl font-bold text-dark-gray">
-                    {dashboardData.clicks}
-                  </p>
-                </div>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column - 2/3 width */}
+              <div className="lg:col-span-2 space-y-6">
+                {renderTopCampaigns()}
+                {renderRecentActivity()}
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                <h4 className="text-lg font-semibold mb-4 text-dark-gray">Campaigns Breakdown</h4>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Month
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Campaigns
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Emails Sent
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Opened
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Clicked
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Unsubscribed
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Spam Complaints
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {dashboardData.campaignsTable.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan="7"
-                            className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500"
-                          >
-                            No campaigns data available.
-                          </td>
-                        </tr>
-                      )}
-                      {dashboardData.campaignsTable.map((row) => (
-                        <tr key={row._id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-dark-gray">
-                            {row.month}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.campaigns}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.emailsSent}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.opened.count} ({row.opened.percent}%)
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.clicked.count} ({row.clicked.percent}%)
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.unsubscribed.count} ({row.unsubscribed.percent}%)
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-dark-gray">
-                            {row.spamComplaints.count} ({row.spamComplaints.percent}%)
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {/* Right Column - 1/3 width */}
+              <div className="space-y-6">
+                {renderPerformanceInsights()}
+                {renderIndustryBenchmarks()}
+                
+                {/* Quick Actions */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <H3 className="mb-4">Quick Actions</H3>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setActiveView('advanced')}
+                      className="w-full flex items-center justify-between p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <BarChart3 className="h-5 w-5 text-primary-red" />
+                        <span className="font-medium text-gray-900">Advanced Analytics</span>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const data = [{
+                          metric: 'Total Sent',
+                          value: quickStats.overview.totalSent,
+                          timeframe: selectedTimeframe
+                        }];
+                        analyticsService.exportToCSV(data, `dashboard-${selectedTimeframe}.csv`);
+                        toast.success('Dashboard data exported');
+                      }}
+                      className="w-full flex items-center justify-between p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Download className="h-5 w-5 text-primary-red" />
+                        <span className="font-medium text-gray-900">Export Data</span>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        {/* Advanced Analytics View */}
+        {activeView === 'advanced' && (
+          <AdvancedAnalytics />
+        )}
+      </div>
+    </PageContainer>
   );
-}
+};
 
 export default Dashboard;

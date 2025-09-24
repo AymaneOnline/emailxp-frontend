@@ -1,0 +1,6 @@
+        .replace(/\s+/g, ' ')                 // Collapse multiple spaces
+        .replace(/([a-zA-Z])\s+([a-zA-Z])\s+([a-zA-Z])\s+([a-zA-Z])/g, '$1$2$3$4')  // Fix longer spaced words
+        .replace(/
+\s*
+/g, '
+

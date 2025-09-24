@@ -2,29 +2,18 @@ import axios from 'axios';
 
 const API_URL = '/api/subscribers';
 
-// Create axios instance with default config
-const subscriberAPI = axios.create({
-    baseURL: API_URL,
-});
-
-// Add auth token to requests
-subscriberAPI.interceptors.request.use((config) => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const token = user && user.token ? user.token : null;
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
 // Get all subscribers with filtering and pagination
 const getSubscribers = async (params = {}) => {
     try {
         console.log('Calling getSubscribers with params:', params);
-        const response = await subscriberAPI.get('/', { params });
+        const response = await axios.get(API_URL, { params });
         console.log('getSubscribers response:', response.data);
-        return response.data;
+        return response.data.subscribers || response.data;
     } catch (error) {
+        if (error?.response?.status === 403) {
+            // Unverified / onboarding state – return empty list silently
+            return [];
+        }
         console.error('getSubscribers error:', error.response?.data || error.message);
         throw error;
     }
@@ -33,8 +22,9 @@ const getSubscribers = async (params = {}) => {
 // Get subscribers by group (for backward compatibility)
 const getSubscribersByGroup = async (groupId, params = {}) => {
     if (groupId) {
-        const response = await subscriberAPI.get(`/group/${groupId}`, { params });
-        return response.data;
+        const response = await axios.get(`${API_URL}/group/${groupId}`, { params });
+        // Return just the subscribers array, not the entire response object
+        return response.data.subscribers || response.data;
     }
     // If no groupId, get all subscribers
     return getSubscribers(params);
@@ -42,7 +32,7 @@ const getSubscribersByGroup = async (groupId, params = {}) => {
 
 // Get single subscriber
 const getSubscriber = async (id) => {
-    const response = await subscriberAPI.get(`/${id}`);
+    const response = await axios.get(`${API_URL}/${id}`);
     return response.data;
 };
 
@@ -50,7 +40,7 @@ const getSubscriber = async (id) => {
 const createSubscriber = async (subscriberData) => {
     try {
         console.log('Creating subscriber with data:', subscriberData);
-        const response = await subscriberAPI.post('/', subscriberData);
+        const response = await axios.post(API_URL, subscriberData);
         console.log('createSubscriber response:', response.data);
         return response.data;
     } catch (error) {
@@ -61,40 +51,37 @@ const createSubscriber = async (subscriberData) => {
 
 // Update subscriber
 const updateSubscriber = async (id, subscriberData) => {
-    const response = await subscriberAPI.put(`/${id}`, subscriberData);
+    const response = await axios.put(`${API_URL}/${id}`, subscriberData);
     return response.data;
 };
 
 // Delete subscriber
 const deleteSubscriber = async (id) => {
-    const response = await subscriberAPI.delete(`/${id}`);
+    const response = await axios.delete(`${API_URL}/${id}`);
     return response.data;
 };
 
 // Add subscriber to a group
 const addSubscriberToGroup = async (subscriberId, groupId) => {
-    const response = await subscriberAPI.post(`/${subscriberId}/groups/${groupId}`);
+    const response = await axios.post(`${API_URL}/${subscriberId}/groups/${groupId}`);
     return response.data;
 };
 
 // Remove subscriber from a group
 const removeSubscriberFromGroup = async (subscriberId, groupId) => {
-    const response = await subscriberAPI.delete(`/${subscriberId}/groups/${groupId}`);
+    const response = await axios.delete(`${API_URL}/${subscriberId}/groups/${groupId}`);
     return response.data;
 };
 
 // Bulk import subscribers
-const bulkImportSubscribers = async ({ subscribers, groupIds = [], tagNames = [], overwriteExisting = false }) => {
+const bulkImportSubscribers = async ({ subscribers, groupIds = [], overwriteExisting = false }) => {
     try {
-        const response = await subscriberAPI.post('/import', {
+        const response = await axios.post(`${API_URL}/import`, {
             subscribers: subscribers.map(sub => ({
                 ...sub,
-                status: sub.status || 'subscribed',
-                // Ensure tags are always an array
-                tags: Array.isArray(sub.tags) ? sub.tags : (typeof sub.tags === 'string' ? sub.tags.split(';').map(t => t.trim()) : [])
+                status: sub.status || 'subscribed'
             })),
             groupIds,
-            tagNames,
             overwriteExisting
         });
         return response.data;
@@ -106,20 +93,27 @@ const bulkImportSubscribers = async ({ subscribers, groupIds = [], tagNames = []
 
 // Get subscriber statistics
 const getSubscriberStats = async () => {
-    const response = await subscriberAPI.get('/stats');
-    return response.data;
+    try {
+        const response = await axios.get(`${API_URL}/stats`);
+        return response.data;
+    } catch (error) {
+        if (error?.response?.status === 403) {
+            return null;
+        }
+        throw error;
+    }
 };
 
 // Export subscribers (to CSV format)
 const exportSubscribers = async (params = {}) => {
-    const { subscribers } = await getSubscribers({ ...params, limit: 1000 });
+    const subscribers = await getSubscribers({ ...params, limit: 1000 });
     
     if (subscribers.length === 0) {
         throw new Error('No subscribers to export');
     }
 
     // Convert to CSV format
-    const headers = ['Email', 'First Name', 'Last Name', 'Status', 'Subscription Date', 'Tags', 'Groups'];
+    const headers = ['Email', 'First Name', 'Last Name', 'Status', 'Subscription Date', 'Groups'];
     const csvData = [
         headers.join(','),
         ...subscribers.map(subscriber => [
@@ -128,7 +122,6 @@ const exportSubscribers = async (params = {}) => {
             subscriber.lastName || '',
             subscriber.status,
             new Date(subscriber.subscriptionDate).toLocaleDateString(),
-            subscriber.tags ? subscriber.tags.join(';') : '',
             subscriber.groups ? subscriber.groups.map(g => g.name || g).join(';') : ''
         ].map(field => `"${field}"`).join(','))
     ].join('\n');
@@ -150,7 +143,7 @@ const exportSubscribers = async (params = {}) => {
 
 // Get subscriber activity
 const getSubscriberActivity = async (id) => {
-    const response = await subscriberAPI.get(`/${id}/activity`);
+    const response = await axios.get(`${API_URL}/${id}/activity`);
     return response.data;
 };
 
@@ -173,7 +166,7 @@ const parseCSV = (csvText) => {
     const firstNameIndex = headers.findIndex(h => h.includes('first') && h.includes('name'));
     const lastNameIndex = headers.findIndex(h => h.includes('last') && h.includes('name'));
     const statusIndex = headers.findIndex(h => h.includes('status'));
-    const tagsIndex = headers.findIndex(h => h.includes('tag'));
+    // tags removed
     const groupsIndex = headers.findIndex(h => h.includes('group'));
 
     const subscribers = [];
@@ -194,22 +187,20 @@ const parseCSV = (csvText) => {
                 continue;
             }
 
-            const tagsValue = tagsIndex >= 0 ? values[tagsIndex] : '';
-            console.log('Processing tags value:', tagsValue);
+            // tags removed
             
             const subscriber = {
                 email,
                 firstName: firstNameIndex >= 0 ? values[firstNameIndex] : '',
                 lastName: lastNameIndex >= 0 ? values[lastNameIndex] : '',
                 status: statusIndex >= 0 ? values[statusIndex] : 'subscribed',
-                tags: tagsIndex >= 0 ? values[tagsIndex].split(';').map(t => t.trim()).filter(t => t) : [],
                 groups: groupsIndex >= 0 ? values[groupsIndex].split(';').map(g => g.trim()).filter(g => g) : []
             };
             
             console.log('Processed subscriber:', subscriber);
 
             // Validate status
-            if (!['subscribed', 'unsubscribed', 'bounced', 'complained'].includes(subscriber.status)) {
+            if (!['subscribed', 'unsubscribed'].includes(subscriber.status)) {
                 subscriber.status = 'subscribed';
             }
 
@@ -225,7 +216,7 @@ const parseCSV = (csvText) => {
 // Segment subscribers (advanced filter)
 const segmentSubscribers = async (body = {}) => {
     try {
-        const response = await subscriberAPI.post('/segment', body);
+        const response = await axios.post(`${API_URL}/segment`, body);
         return response.data;
     } catch (error) {
         console.error('segmentSubscribers error:', error.response?.data || error.message);
@@ -248,10 +239,27 @@ const subscriberService = {
     getSubscriberActivity,
     addSubscriberToGroup,
     removeSubscriberFromGroup,
+    bulkUpdateStatus: async (ids, status) => {
+        const response = await axios.post(`${API_URL}/bulk/status`, { ids, status });
+        return response.data;
+    },
+    exportSelected: async (ids) => {
+        const response = await axios.post(`${API_URL}/bulk/export`, { ids }, { responseType: 'blob' });
+        const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `subscribers_selected_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        return { message: 'Selected subscribers exported' };
+    },
     // Test function
     testAPI: async () => {
         try {
-            const response = await subscriberAPI.get('/test');
+            const response = await axios.get(`${API_URL}/test`);
             console.log('Test API response:', response.data);
             return response.data;
         } catch (error) {

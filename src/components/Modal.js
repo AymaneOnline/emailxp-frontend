@@ -1,24 +1,24 @@
 // emailxp/frontend/src/components/Modal.js
 
 import React from 'react';
-import { FaTimes } from 'react-icons/fa'; // Ensure react-icons is installed
-
-import './Modal.css'; // Import modal specific styles
 
 const Modal = ({ isOpen, onClose, children, title }) => {
-    if (!isOpen) return null; // Don't render if not open
+    if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
-                    {title && <h3 className="modal-title">{title}</h3>}
-                    <button className="modal-close-button" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
-                <div className="modal-body">
-                    {children} {/* This will render the content passed into the modal */}
+        <div className="modal modal-open">
+            <div className="modal-box relative">
+                {title && <h3 className="text-lg font-bold">{title}</h3>}
+                <button
+                    className="btn btn-sm btn-ghost btn-circle absolute right-2 top-2"
+                    onClick={onClose}
+                    aria-label="Close"
+                >
+                    ✕
+                </button>
+
+                <div className="mt-4">
+                    {children}
                 </div>
             </div>
         </div>

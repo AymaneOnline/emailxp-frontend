@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import LoadingOverlay from './ui/LoadingOverlay';
 
 /**
  * The main application layout component.
@@ -43,9 +44,9 @@ function Layout() {
       
       {/* The main content area. 'flex-1' allows it to grow and fill the remaining space.
           'overflow-y-auto' is applied here to make this specific area scrollable. */}
-      <main className="flex-1 p-8 bg-gray-50 relative overflow-y-auto">
-        <TopBar />
-        <div className="relative">
+  <main className="flex-1 bg-gray-50 relative overflow-y-auto">
+  <TopBar />
+  <div className="relative">
         
         {/* Onboarding overlay. This is absolutely positioned to cover the main content. */}
         {shouldDisableContent && (
@@ -66,7 +67,11 @@ function Layout() {
         {/* The Outlet container. We conditionally apply 'pointer-events-none'
             to prevent user interaction when the overlay is active. */}
         <div className={shouldDisableContent ? 'pointer-events-none' : ''}>
-          <Outlet /> {/* Renders the current nested route component */}
+          <div className="relative">
+            <Outlet /> {/* Renders the current nested route component */}
+            {/* Loading overlay scoped to main content */}
+            <LoadingOverlay fullscreen={false} message="Loading" />
+          </div>
         </div>
         </div>
       </main>

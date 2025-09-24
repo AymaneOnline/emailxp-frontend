@@ -39,46 +39,39 @@ function Header() {
                   )}
                 </Disclosure.Button>
               </div>
-              <div className="flex flex-1 items-center justify-center md:items-stretch md:justify-start">
-                <div className="flex flex-shrink-0 items-center">
+              <div className="flex flex-1 items-center justify-between">
+                {/* Logo */}
+                <div className="flex flex-shrink-0 items-center w-1/4">
                   <Link to="/" className="text-2xl font-bold text-dark-gray">
                     Email<span className="text-primary-red">XP</span>
                   </Link>
                 </div>
-                <div className="hidden md:ml-6 md:block">
+                {/* Navigation - Centered */}
+                <div className="hidden md:flex flex-1 justify-center">
                     <div className="flex space-x-6 text-gray-600 font-medium">
-                        <button className="hover:text-primary-red transition duration-300">Features</button>
-                        <button className="hover:text-primary-red transition duration-300">Pricing</button>
-                        <button className="hover:text-primary-red transition duration-300">Testimonials</button>
-                        <button className="hover:text-primary-red transition duration-300">FAQ</button>
+                        <button onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })} className="hover:text-primary-red transition duration-300">Features</button>
+                        <button onClick={() => document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' })} className="hover:text-primary-red transition duration-300">Pricing</button>
+                        <button onClick={() => document.getElementById('faq').scrollIntoView({ behavior: 'smooth' })} className="hover:text-primary-red transition duration-300">FAQ</button>
                     </div>
                 </div>
-              </div>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 md:static md:inset-auto md:ml-6 md:pr-0">
-                <div className="hidden md:flex space-x-4 items-center">
-                  {user ? (
-                    <button 
-                      onClick={handleAuthClick}
-                      className="text-gray-600 hover:text-primary-red transition duration-300"
-                    >
-                      Dashboard
-                    </button>
-                  ) : (
-                    <Link to="/login" className="text-gray-600 hover:text-primary-red transition duration-300">
-                      Login
-                    </Link>
-                  )}
+                {/* Auth Buttons */}
+                <div className="hidden md:flex w-1/4 justify-end">
                   {user ? (
                     <button 
                       onClick={() => navigate('/dashboard')}
                       className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300"
                     >
-                      Go to App
+                      Dashboard
                     </button>
                   ) : (
-                    <Link to="/register" className="bg-primary-red text-white px-6 py-2 rounded-lg shadow-md hover:bg-custom-red-hover transition duration-300">
-                      Sign up
-                    </Link>
+                    <>
+                      <Link to="/login" className="text-gray-600 hover:text-primary-red transition duration-300 mr-4 self-center">
+                        Log in
+                      </Link>
+                      <Link to="/register" className="bg-primary-red text-white px-6 py-2 rounded-lg font-medium hover:bg-red-600 transition duration-300">
+                        Sign up
+                      </Link>
+                    </>
                   )}
                 </div>
               </div>
@@ -87,10 +80,9 @@ function Header() {
 
           <Disclosure.Panel className={`md:hidden bg-white py-2 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
             <div className="flex flex-col items-center space-y-2 text-gray-600 font-medium">
-                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Features</Disclosure.Button>
-                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Pricing</Disclosure.Button>
-                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Testimonials</Disclosure.Button>
-                <Disclosure.Button as="button" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">FAQ</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => { document.getElementById('features').scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Features</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => { document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">Pricing</Disclosure.Button>
+                <Disclosure.Button as="button" onClick={() => { document.getElementById('faq').scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }} className="block px-4 py-2 hover:bg-gray-100 w-full text-center text-gray-600">FAQ</Disclosure.Button>
                 {user ? (
                   <Disclosure.Button 
                     as="button" 

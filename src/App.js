@@ -11,32 +11,42 @@ import { verifyAuth } from './store/slices/authSlice';
 // Import your pages/components
 import Login from './pages/Login';
 import Register from './pages/Register';
-import EnhancedDashboard from './pages/EnhancedDashboard';
+import DashboardNew from './pages/DashboardNew';
+import RequireOnboardingComplete from './components/RequireOnboardingComplete';
 import CampaignManagement from './pages/CampaignManagement';
-import EnhancedCampaignManagement from './pages/EnhancedCampaignManagement';
 // CampaignForm removed - using CampaignWizard for both create and edit
 import CampaignDetails from './pages/CampaignDetails';
 import CampaignWizard from './pages/CampaignWizard';
-import EnhancedCampaignWizard from './pages/EnhancedCampaignWizard';
 import SubscriberManagement from './pages/SubscriberManagement';
+import SubscriberDetails from './pages/SubscriberDetails';
 import SubscriberForm from './pages/SubscriberForm';
 
 import TemplateManagement from './pages/TemplateManagement';
-import TemplateEditor from './pages/TemplateEditor';
+import TemplateForm from './pages/TemplateForm';
 import TemplatePreview from './pages/TemplatePreview';
 import SubscriberImport from './pages/SubscriberImport';
-import TestDragDrop from './components/TestDragDrop';
-import DebugTemplate from './components/DebugTemplate';
 import ErrorBoundary from './components/ErrorBoundary';
-import TestTemplatePreview from './pages/TestTemplatePreview';
 import ProfileSettings from './pages/ProfileSettings';
 import GroupForm from './pages/GroupForm';
 import GroupManagement from './pages/GroupManagement';
 import SubscribersForGroup from './pages/SubscribersForGroup';
 import LandingPage from './pages/LandingPage';
+// Removed standalone RecommendationsManager import (will integrate into subscriber UI)
+import AutomationBuilderPage from './pages/AutomationBuilderPage';
+import AutomationManagement from './pages/AutomationManagement';
+import FileManagement from './pages/FileManagement';
+// import AnalyticsDashboard from './pages/AnalyticsDashboard'; // Removed this import
+import SitesPage from './pages/SitesPage'; // Add this import
+import FormsPage from './pages/FormsPage'; // Add this import
+import FormBuilder from './pages/FormBuilder'; // Add this import
+import FormSubmissions from './pages/FormSubmissions'; // Add this import
+// Removed standalone ABTesting page import (A/B tests integrated into Campaigns)
+import PublicLandingPage from './pages/PublicLandingPage'; // Add this import
+import VerifyEmail from './pages/VerifyEmail';
 
 // Import the Layout component
 import Layout from './components/Layout';
+import { startGlobalLoading } from './hooks/useGlobalLoading';
 
 // Define your routes
 const router = createBrowserRouter([
@@ -55,23 +65,38 @@ const router = createBrowserRouter([
     element: <Register />,
   },
   {
+    path: '/verify-email',
+    element: <VerifyEmail />,
+  },
+  {
     path: '/dashboard',
     element: <Layout />,
     children: [
       {
-        path: '',
-        element: <EnhancedDashboard />,
+        index: true,
+        element: <DashboardNew />,
       },
     ],
   },
+  // Removed the analytics route
+  // {
+  //   path: '/analytics',
+  //   element: <Layout />,
+  //   children: [
+  //     {
+  //       path: '',
+  //       element: <AnalyticsDashboard />,
+  //     },
+  //   ],
+  // },
   {
     path: '/campaigns',
     element: <Layout />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, element: <EnhancedCampaignManagement /> },
-      { path: 'new', element: <EnhancedCampaignWizard /> },
-      { path: 'edit/:id', element: <EnhancedCampaignWizard /> },
+  { index: true, element: <RequireOnboardingComplete><CampaignManagement /></RequireOnboardingComplete> },
+  { path: 'new', element: <RequireOnboardingComplete><CampaignWizard /></RequireOnboardingComplete> },
+  { path: 'edit/:id', element: <RequireOnboardingComplete><CampaignWizard /></RequireOnboardingComplete> },
     ],
   },
   {
@@ -80,7 +105,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <CampaignDetails />,
+  element: <RequireOnboardingComplete><CampaignDetails /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -90,8 +115,12 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <SubscriberManagement />,
+  element: <RequireOnboardingComplete><SubscriberManagement /></RequireOnboardingComplete>,
       },
+      {
+        path: ':id',
+        element: <RequireOnboardingComplete><SubscriberDetails /></RequireOnboardingComplete>
+      }
     ],
   },
   {
@@ -100,7 +129,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <SubscriberForm />,
+  element: <RequireOnboardingComplete><SubscriberForm /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -110,7 +139,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <SubscriberForm />,
+  element: <RequireOnboardingComplete><SubscriberForm /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -120,7 +149,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <SubscriberImport />,
+  element: <RequireOnboardingComplete><SubscriberImport /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -130,10 +159,10 @@ const router = createBrowserRouter([
     element: <Layout />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, element: <TemplateManagement /> },
-      { path: 'new', element: <TemplateEditor /> },
-      { path: 'edit/:id', element: <TemplateEditor /> },
-      { path: 'preview/:id', element: <TemplatePreview /> },
+  { index: true, element: <RequireOnboardingComplete><TemplateManagement /></RequireOnboardingComplete> },
+  { path: 'new', element: <RequireOnboardingComplete><TemplateForm /></RequireOnboardingComplete> },
+  { path: 'edit/:id', element: <RequireOnboardingComplete><TemplateForm /></RequireOnboardingComplete> },
+  { path: 'preview/:id', element: <RequireOnboardingComplete><TemplatePreview /></RequireOnboardingComplete> },
     ],
   },
   {
@@ -142,7 +171,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <GroupForm />,
+  element: <RequireOnboardingComplete><GroupForm /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -152,7 +181,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <GroupManagement />,
+  element: <RequireOnboardingComplete><GroupManagement /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -162,7 +191,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <GroupForm />,
+  element: <RequireOnboardingComplete><GroupForm /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -172,7 +201,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <GroupForm />,
+  element: <RequireOnboardingComplete><GroupForm /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -182,7 +211,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <SubscribersForGroup />,
+  element: <RequireOnboardingComplete><SubscribersForGroup /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -190,10 +219,7 @@ const router = createBrowserRouter([
     path: '/settings',
     element: <Layout />,
     children: [
-      {
-        path: '',
-        element: <ProfileSettings />,
-      },
+      { index: true, element: <RequireOnboardingComplete><ProfileSettings /></RequireOnboardingComplete> },
     ],
   },
   {
@@ -202,7 +228,19 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <div>Forms Page Content</div>,
+  element: <RequireOnboardingComplete><FormsPage /></RequireOnboardingComplete>,
+      },
+      {
+        path: 'new',
+  element: <RequireOnboardingComplete><FormBuilder /></RequireOnboardingComplete>,
+      },
+      {
+        path: 'edit/:id',
+  element: <RequireOnboardingComplete><FormBuilder /></RequireOnboardingComplete>,
+      },
+      {
+        path: ':id/submissions',
+  element: <RequireOnboardingComplete><FormSubmissions /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -212,7 +250,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <div>Sites Page Content</div>,
+  element: <RequireOnboardingComplete><SitesPage /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -222,7 +260,21 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <div>Automation Page Content</div>,
+  element: <RequireOnboardingComplete><AutomationManagement /></RequireOnboardingComplete>,
+      },
+      {
+        path: 'builder',
+  element: <RequireOnboardingComplete><AutomationBuilderPage /></RequireOnboardingComplete>,
+      },
+    ],
+  },
+  {
+    path: '/files',
+    element: <Layout />,
+    children: [
+      {
+        path: '',
+        element: <RequireOnboardingComplete><FileManagement /></RequireOnboardingComplete>,
       },
     ],
   },
@@ -232,31 +284,24 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
-        element: <div>Integrations Page Content</div>,
+  element: <RequireOnboardingComplete><div>Integrations Page Content</div></RequireOnboardingComplete>,
       },
     ],
   },
+  // Standalone routes for behavioral triggers, recommendations, and A/B testing removed; features embedded in parent sections
   {
     path: '/upgrade-plan',
     element: <Layout />,
     children: [
       {
         path: '',
-        element: <div>Upgrade Plan Page Content</div>,
+  element: <RequireOnboardingComplete><div>Upgrade Plan Page Content</div></RequireOnboardingComplete>,
       },
     ],
   },
   {
-    path: '/test-dragdrop',
-    element: <TestDragDrop />,
-  },
-  {
-    path: '/debug-templates',
-    element: <DebugTemplate />,
-  },
-  {
-    path: '/test-template-preview',
-    element: <TestTemplatePreview />,
+    path: '/landing/:slug',
+    element: <PublicLandingPage />,
   },
 ]);
 
@@ -280,8 +325,28 @@ function App() {
     }
   }, [dispatch, user?.token]);
 
+  // Basic route change listener: since createBrowserRouter does not expose direct events here,
+  // we can optimistically start loading on navigation link clicks via capturing clicks on anchor tags.
+  // (Future enhancement: migrate to data routers useNavigation hook in a Layout wrapper.)
+  React.useEffect(() => {
+    const handler = (e) => {
+      const anchor = e.target.closest('a');
+      if (anchor && anchor.href && anchor.target !== '_blank' && anchor.origin === window.location.origin) {
+        const end = startGlobalLoading();
+        // Heuristic: stop after next paint + small delay; real data routers would tie to loader completion.
+        requestAnimationFrame(() => {
+          setTimeout(() => end(), 600);
+        });
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, []);
+
   return (
-    <RouterProvider router={router} />
+    <>
+      <RouterProvider router={router} />
+    </>
   );
 }
 

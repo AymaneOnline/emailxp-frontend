@@ -3,84 +3,76 @@
 import axios from 'axios';
 
 const CAMPAIGN_API_PATH = '/api/campaigns';
-
-// Create axios instance with default config and auth
-const campaignAPI = axios.create({
-  baseURL: CAMPAIGN_API_PATH,
-});
-
-campaignAPI.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  const token = user && user.token ? user.token : null;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+const RECOMMENDATIONS_API_PATH = '/api/recommendations';
 
 // Get dashboard stats
 const getDashboardStats = async (timeframe) => {
-  const response = await campaignAPI.get('/dashboard-stats', { params: { timeframe } });
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/dashboard-stats`, { params: { timeframe } });
   return response.data;
 };
 
 // Get all campaigns
 const getCampaigns = async (timeframe) => {
-  const response = await campaignAPI.get('/', { params: { timeframe } });
-  return response.data;
+  try {
+    const response = await axios.get(CAMPAIGN_API_PATH, { params: { timeframe } });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 403) return [];
+    throw error;
+  }
 };
 
 // Get single campaign by ID
 const getCampaignById = async (campaignId) => {
-  const response = await campaignAPI.get(`/${campaignId}`);
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}`);
   return response.data;
 };
 
 // Create new campaign
 const createCampaign = async (campaignData) => {
-  const response = await campaignAPI.post('/', campaignData);
+  const response = await axios.post(CAMPAIGN_API_PATH, campaignData);
   return response.data;
 };
 
 // Update campaign
 const updateCampaign = async (campaignId, campaignData) => {
-  const response = await campaignAPI.put(`/${campaignId}`, campaignData);
+  const response = await axios.put(`${CAMPAIGN_API_PATH}/${campaignId}`, campaignData);
   return response.data;
 };
 
 // Delete campaign
 const deleteCampaign = async (campaignId) => {
-  const response = await campaignAPI.delete(`/${campaignId}`);
+  const response = await axios.delete(`${CAMPAIGN_API_PATH}/${campaignId}`);
   return response.data;
 };
 
 // Send test email for a campaign
 const sendTestEmail = async (campaignId, recipientEmail) => {
-  const response = await campaignAPI.post(`/${campaignId}/send-test`, { recipientEmail });
+  const response = await axios.post(`${CAMPAIGN_API_PATH}/${campaignId}/send-test`, { recipientEmail });
   return response.data;
 };
 
 // Send campaign
 const sendCampaign = async (campaignId) => {
-  const response = await campaignAPI.post(`/${campaignId}/send`, {});
+  const response = await axios.post(`${CAMPAIGN_API_PATH}/${campaignId}/send`, {});
   return response.data;
 };
 
 // Get dashboard statistics for a specific campaign
 const getCampaignAnalytics = async (campaignId) => {
-  const response = await campaignAPI.get(`/${campaignId}/analytics`);
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}/analytics`);
   return response.data;
 };
 
 // Fetch time-series analytics for a specific campaign
 const getCampaignAnalyticsTimeSeries = async (campaignId, timeframe = '7days') => {
-  const response = await campaignAPI.get(`/${campaignId}/analytics/time-series`, { params: { timeframe } });
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}/analytics/time-series`, { params: { timeframe } });
   return response.data;
 };
 
 // Export campaign report
 const exportCampaignReport = async (campaignId, format = 'csv') => {
-  const response = await campaignAPI.get(`/${campaignId}/export`, {
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}/export`, {
     params: { format },
     responseType: 'blob'
   });
@@ -89,31 +81,31 @@ const exportCampaignReport = async (campaignId, format = 'csv') => {
 
 // Duplicate campaign
 const duplicateCampaign = async (campaignId) => {
-  const response = await campaignAPI.post(`/${campaignId}/duplicate`);
+  const response = await axios.post(`${CAMPAIGN_API_PATH}/${campaignId}/duplicate`);
   return response.data;
 };
 
 // Schedule campaign
 const scheduleCampaign = async (campaignId, scheduleData) => {
-  const response = await campaignAPI.post(`/${campaignId}/schedule`, scheduleData);
+  const response = await axios.post(`${CAMPAIGN_API_PATH}/${campaignId}/schedule`, scheduleData);
   return response.data;
 };
 
 // Cancel scheduled campaign
 const cancelScheduledCampaign = async (campaignId) => {
-  const response = await campaignAPI.post(`/${campaignId}/cancel-schedule`);
+  const response = await axios.post(`${CAMPAIGN_API_PATH}/${campaignId}/cancel-schedule`);
   return response.data;
 };
 
 // Get campaign recipients
 const getCampaignRecipients = async (campaignId, params = {}) => {
-  const response = await campaignAPI.get(`/${campaignId}/recipients`, { params });
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}/recipients`, { params });
   return response.data;
 };
 
 // Get campaign activity
 const getCampaignActivity = async (campaignId, params = {}) => {
-  const response = await campaignAPI.get(`/${campaignId}/activity`, { params });
+  const response = await axios.get(`${CAMPAIGN_API_PATH}/${campaignId}/activity`, { params });
   return response.data;
 };
 
@@ -134,6 +126,54 @@ const campaignService = {
   cancelScheduledCampaign,
   getCampaignRecipients,
   getCampaignActivity,
+
+  // Get recommended campaigns for a subscriber
+  getRecommendedCampaigns: async (subscriberId, limit = 5) => {
+    try {
+      const response = await axios.get(`${RECOMMENDATIONS_API_PATH}/subscriber/${subscriberId}`, {
+        params: { limit, contentType: 'campaign' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recommended campaigns:', error);
+      throw error;
+    }
+  },
+
+  // Get personalized campaign for a subscriber
+  getPersonalizedCampaign: async (subscriberId) => {
+    try {
+      const response = await axios.get(`${RECOMMENDATIONS_API_PATH}/personalized/${subscriberId}`, {
+        params: { contentType: 'campaign' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching personalized campaign:', error);
+      throw error;
+    }
+  },
+
+  // Record feedback for campaign recommendations
+  recordCampaignFeedback: async (feedbackData) => {
+    try {
+      const response = await axios.post(`${RECOMMENDATIONS_API_PATH}/feedback`, feedbackData);
+      return response.data;
+    } catch (error) {
+      console.error('Error recording campaign feedback:', error);
+      throw error;
+    }
+  },
+
+  // Get subscriber engagement profile
+  getSubscriberEngagementProfile: async (subscriberId) => {
+    try {
+      const response = await axios.get(`${RECOMMENDATIONS_API_PATH}/profile/${subscriberId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching subscriber engagement profile:', error);
+      throw error;
+    }
+  }
 };
 
 export default campaignService;

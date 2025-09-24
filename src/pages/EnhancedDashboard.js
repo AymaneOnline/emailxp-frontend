@@ -7,13 +7,15 @@ import groupService from '../services/groupService';
 import { updateUserData } from '../store/slices/authSlice';
 import { toast } from 'react-toastify';
 
+import BehavioralTriggerStats from '../components/BehavioralTriggerStats';
+import RecommendationStats from '../components/RecommendationStats';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 
 import {
   ArrowPathIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
-import { Search, Filter, Users, Mail, Calendar, TrendingUp, Download } from 'lucide-react';
+import { Search, Users, Mail, Calendar, TrendingUp, Download } from 'lucide-react';
 
 function EnhancedDashboard() {
   const navigate = useNavigate();
@@ -201,7 +203,7 @@ function EnhancedDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, navigate]);
 
   useEffect(() => {
     fetchDashboardData(selectedTimeframe);
@@ -397,7 +399,7 @@ function EnhancedDashboard() {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <Users className="w-8 h-8 text-blue-500 mr-3" />
@@ -445,6 +447,13 @@ function EnhancedDashboard() {
                 </div>
               </div>
             </div>
+            
+            <BehavioralTriggerStats />
+          </div>
+
+          {/* Recommendation Engine Stats */}
+          <div className="mb-8">
+            <RecommendationStats />
           </div>
 
           {/* Performance Overview Section */}

@@ -23,91 +23,61 @@ import {
   GitBranch,
   Timer,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import automationService from '../services/automationService';
 
-const TRIGGER_TYPES = [
-  { id: 'subscriber_added', label: 'Subscriber Added', icon: Users, description: 'When someone subscribes to a list' },
-  { id: 'tag_added', label: 'Tag Added', icon: Target, description: 'When a tag is added to a subscriber' },
-  { id: 'date_based', label: 'Date Based', icon: Calendar, description: 'On a specific date or anniversary' },
-  { id: 'behavior', label: 'Behavior', icon: Zap, description: 'Based on subscriber behavior' },
-  { id: 'api_trigger', label: 'API Trigger', icon: Settings, description: 'Triggered via API call' }
-];
-
-const ACTION_TYPES = [
-  { id: 'send_email', label: 'Send Email', icon: Mail, description: 'Send an email campaign' },
-  { id: 'wait', label: 'Wait', icon: Clock, description: 'Wait for a specified time' },
-  { id: 'add_tag', label: 'Add Tag', icon: Target, description: 'Add a tag to subscriber' },
-  { id: 'remove_tag', label: 'Remove Tag', icon: Target, description: 'Remove a tag from subscriber' },
-  { id: 'condition', label: 'Condition', icon: GitBranch, description: 'Branch based on conditions' }
-];
-
-const CONDITION_TYPES = [
-  { id: 'tag_exists', label: 'Has Tag', description: 'Check if subscriber has a specific tag' },
-  { id: 'opened_email', label: 'Opened Email', description: 'Check if subscriber opened a specific email' },
-  { id: 'clicked_link', label: 'Clicked Link', description: 'Check if subscriber clicked a link' },
-  { id: 'custom_field', label: 'Custom Field', description: 'Check custom field value' }
-];
-
 const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
+  const navigate = useNavigate();
+
   const [automation, setAutomation] = useState({
     name: '',
     description: '',
-    trigger: null,
-    actions: [],
     isActive: false,
-    settings: {
-      timezone: 'UTC',
-      sendTime: '09:00',
-      respectUnsubscribe: true,
-      respectFrequencyCap: true
-    }
+    trigger: null,
+    actions: []
   });
-  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [draggedItem, setDraggedItem] = useState(null);
+
   const [showActionModal, setShowActionModal] = useState(false);
   const [editingAction, setEditingAction] = useState(null);
   const [selectedActionType, setSelectedActionType] = useState(null);
 
-  // Load automation if editing
-  useEffect(() => {
-    if (automationId) {
-      loadAutomation();
-    }
-  }, [automationId]);
+  const TRIGGER_TYPES = [
+    { id: 'subscriber_added', label: 'Subscriber Added', description: 'When someone subscribes to a list', icon: Users },
+    { id: 'tag_added', label: 'Tag Added', description: 'When a tag is added', icon: Target },
+    { id: 'date_based', label: 'Date Based', description: 'On a specific date', icon: Calendar },
+    { id: 'behavior', label: 'Behavior', description: 'Based on subscriber behavior', icon: Zap },
+    { id: 'api_trigger', label: 'API Trigger', description: 'Triggered via API', icon: Settings }
+  ];
 
-  const loadAutomation = async () => {
-    try {
-      setLoading(true);
-      const data = await automationService.getAutomation(automationId);
-      setAutomation(data);
-    } catch (error) {
-      console.error('Failed to load automation:', error);
-      toast.error('Failed to load automation');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const ACTION_TYPES = [
+    { id: 'send_email', label: 'Send Email', description: 'Send an email campaign', icon: Mail },
+    { id: 'wait', label: 'Wait', description: 'Wait for a specified time', icon: Clock },
+    { id: 'add_tag', label: 'Add Tag', description: 'Add a tag to subscriber', icon: Target },
+    { id: 'remove_tag', label: 'Remove Tag', description: 'Remove a tag from subscriber', icon: Target },
+    { id: 'condition', label: 'Condition', description: 'Branch based on conditions', icon: GitBranch }
+  ];
 
   const saveAutomation = async () => {
     try {
       setSaving(true);
-      
-      if (!automation.name.trim()) {
+
+      if (!automation.name?.trim()) {
         toast.error('Please enter an automation name');
         return;
       }
-      
+
       if (!automation.trigger) {
         toast.error('Please select a trigger');
         return;
       }
-      
-      if (automation.actions.length === 0) {
+
+      if (!automation.actions || automation.actions.length === 0) {
         toast.error('Please add at least one action');
         return;
       }
@@ -540,6 +510,27 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Notice about new visual builder */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <Eye className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              Try our new Visual Automation Builder
+            </h3>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              We've created a new visual workflow builder with drag-and-drop functionality. 
+              <button 
+                onClick={() => navigate('/automation')}
+                className="ml-1 font-medium text-blue-900 dark:text-blue-100 underline hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                Try it now
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

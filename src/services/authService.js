@@ -1,23 +1,36 @@
 // emailxp/frontend/src/services/authService.js
 
-import axios from 'axios'; // Now import plain axios, it will be configured globally
+import axios from 'axios'; // Create a specific instance for auth
 
-const USERS_API_PATH = '/users';
+const authAPI = axios.create({
+  baseURL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000',
+});
 
-// Register user (does not need interceptor as user is not yet logged in, but uses global baseURL)
+const USERS_API_PATH = '/api/users';
+
+// Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {
-  const response = await axios.post(USERS_API_PATH + '/register', userData);
+  const response = await authAPI.post(USERS_API_PATH + '/register', userData);
   if (response.data) {
+    // Registration defaults to persistent storage; user can later choose session via login
     localStorage.setItem('user', JSON.stringify(response.data));
+    sessionStorage.removeItem('user');
   }
   return response.data;
 };
 
-// Login user (does not need interceptor as token is only available AFTER login, but uses global baseURL)
+// Login user (does not need interceptor as token is only available AFTER login)
 const login = async (userData) => {
-  const response = await axios.post(USERS_API_PATH + '/login', userData);
+  const { remember, ...payload } = userData;
+  const response = await authAPI.post(USERS_API_PATH + '/login', payload);
   if (response.data) {
-    localStorage.setItem('user', JSON.stringify(response.data));
+    if (remember) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      sessionStorage.removeItem('user');
+    } else {
+      sessionStorage.setItem('user', JSON.stringify(response.data));
+      localStorage.removeItem('user');
+    }
   }
   return response.data;
 };
@@ -25,6 +38,7 @@ const login = async (userData) => {
 // Logout user
 const logout = () => {
   localStorage.removeItem('user');
+  sessionStorage.removeItem('user');
 };
 
 // Send verification email (requires authentication, uses global axios with interceptor)
@@ -35,6 +49,13 @@ const sendVerificationEmail = async () => {
 
 const verifyAuth = async () => {
   const response = await axios.get(USERS_API_PATH + '/profile');
+  // Update whichever storage currently holds the user
+  const existingLocal = localStorage.getItem('user');
+  if (existingLocal) {
+    localStorage.setItem('user', JSON.stringify(response.data));
+  } else if (sessionStorage.getItem('user')) {
+    sessionStorage.setItem('user', JSON.stringify(response.data));
+  }
   return response.data;
 };
 

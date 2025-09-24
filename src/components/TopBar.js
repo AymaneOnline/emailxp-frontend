@@ -5,7 +5,6 @@ import { logout, reset } from '../store/slices/authSlice'; // Assuming these act
 
 import {
   BellIcon,
-  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
@@ -35,39 +34,30 @@ function TopBar() {
 
   return (
     // The main container for the top bar. Background is white as requested.
-    <div className="flex justify-end items-center py-4 px-6 bg-white shadow-sm rounded-xl border border-gray-200 mb-8">
+  <div className="flex justify-end items-center h-16 px-6 bg-white border-b border-gray-200">
       {/* The title will NOT be here, it remains in each individual page component */}
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center">
         {/* Notification Icon */}
-        <button className="relative rounded-full p-1 text-gray-600 hover:text-primary-red focus:outline-none focus:ring-2 focus:ring-primary-red focus:ring-offset-2 focus:ring-offset-gray-50">
+        <button className="relative rounded-full p-1 text-gray-600 hover:text-primary-red focus:outline-none focus:ring-2 focus:ring-primary-red focus:ring-offset-2 focus:ring-offset-gray-50 mr-4">
           <span className="sr-only">View notifications</span>
           <BellIcon className="h-6 w-6" aria-hidden="true" />
           <span className="absolute -top-0 -right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-primary-red rounded-full">1</span>
         </button>
 
-        {/* User Avatar and Info */}
-        <div className="flex items-center space-x-2">
-          {user?.profilePicture ? (
-            <img
-              src={user.profilePicture}
-              alt="Profile"
-              className="h-8 w-8 rounded-full object-cover border-2 border-gray-200"
-            />
-          ) : (
-            <UserCircleIcon className="h-8 w-8 rounded-full text-gray-600" />
-          )}
-          <div>
-            <p className="text-sm font-medium text-dark-gray">{user?.name || 'Username'}</p>
-            <p className="text-xs text-gray-500">{user?.email || 'user@email.com'}</p>
+        {/* User Info (avatar removed) */}
+	<div className="flex items-center mr-2">
+          <div className="flex flex-col items-end text-right leading-tight">
+            <p className="text-sm font-medium text-dark-gray truncate max-w-[180px]">{user?.name || 'User'}</p>
+            <p className="text-xs text-gray-500 truncate max-w-[180px]">{user?.email || ''}</p>
           </div>
         </div>
 
         {/* User Dropdown Menu */}
-        <Menu as="div" className="relative">
+  <Menu as="div" className="relative">
           <Menu.Button className="flex items-center text-gray-600 hover:text-primary-red focus:outline-none focus:ring-2 focus:ring-primary-red focus:ring-offset-2 focus:ring-offset-gray-50">
             <span className="sr-only">Open user menu</span>
-            <ChevronDownIcon className="h-5 w-5 ml-1" aria-hidden="true" />
+            <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
           </Menu.Button>
           <Transition
             as={Fragment}

@@ -2,7 +2,7 @@
 
 import axios from 'axios'; // Now import plain axios
 
-const USERS_API_PATH = '/users';
+const USERS_API_PATH = '/api/users';
 
 // Get user profile
 const getUserProfile = async () => {
