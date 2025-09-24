@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { isOnboardingComplete } from '../utils/onboarding';
+import { getBackendUrl } from '../utils/getBackendUrl';
 
 // Consumes /api/stream SSE and patches React Query caches
 // Events:
@@ -18,8 +19,9 @@ export default function useDashboardLiveUpdates(enabled=true){
   if(!enabled || !user || !isOnboardingComplete(user) || !user.isVerified || !user.token) return;
     // Avoid duplicate connections
     if(sourceRef.current) return;
-    const url = `${process.env.REACT_APP_API_BASE || ''}/api/stream`;
-    const es = new EventSource(url, { withCredentials: true });
+  const base = (getBackendUrl() || '').replace(/\/$/, '');
+  const url = `${base}/api/stream`;
+  const es = new EventSource(url, { withCredentials: true });
     sourceRef.current = es;
 
     es.addEventListener('metric.snapshot', (e)=>{
