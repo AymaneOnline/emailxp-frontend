@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const base = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
 const SEGMENTS_API = base ? `${base}/api/segments` : '/api/segments';
 // Create axios instance with default config and auth
 const segmentAPI = axios.create({ baseURL: SEGMENTS_API });

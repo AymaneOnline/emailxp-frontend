@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
 const TAG_API = base ? `${base}/api/tags` : '/api/tags';
 const tagAPI = axios.create({ baseURL: TAG_API });
 

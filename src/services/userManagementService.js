@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const base = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
 const USER_API = base ? `${base}/api/user-management` : '/api/user-management';
 const ORG_API = base ? `${base}/api/organizations` : '/api/organizations';
 

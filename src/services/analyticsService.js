@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (import.meta.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
 const ANALYTICS_API = base ? `${base}/api/analytics` : '/api/analytics';
 
 // Create axios instance with default config and auth
