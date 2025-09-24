@@ -1,7 +1,7 @@
 // emailxp/frontend/src/pages/CampaignWizard.js
 
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import EnhancedCampaignBuilder from '../components/EnhancedCampaignBuilder';
 import PageContainer from '../components/layout/PageContainer';
 import { ArrowLeft } from 'lucide-react';
@@ -9,6 +9,8 @@ import { ArrowLeft } from 'lucide-react';
 const CampaignWizard = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+  const selectedTemplate = location.state?.selectedTemplate;
 
   const handleSave = (campaign) => {
     navigate('/campaigns');
@@ -35,6 +37,7 @@ const CampaignWizard = () => {
 
         <EnhancedCampaignBuilder
           campaignId={id}
+          selectedTemplate={selectedTemplate}
           onSave={handleSave}
           onCancel={handleCancel}
           fullscreenModal={false}

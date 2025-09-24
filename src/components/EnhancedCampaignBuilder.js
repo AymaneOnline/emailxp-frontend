@@ -740,7 +740,7 @@ const ContentDesignStep = ({ data, onChange, editorRef }) => {
                   ) : (
                     <UnlayerEmailEditor
                       ref={editorRef}
-                      initialDesign={data?.design || null}
+                      initialDesign={data?.design || selectedTemplate?.design || null}
                       onSave={handleSaveFromEditor}
                       onHtmlChange={handleUnlayerHtmlChange}
                       onDesignChange={handleUnlayerDesignChange}
@@ -1173,7 +1173,7 @@ const stepsMeta = [
   { id: 'schedule-review', title: 'Review & Schedule', component: ScheduleReviewStep },
 ];
 
-const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp }) => {
+const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp, selectedTemplate }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [campaignData, setCampaignData] = useState(() => ({}));
   const [dirty, setDirty] = useState(false);

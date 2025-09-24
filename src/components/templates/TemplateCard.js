@@ -1,7 +1,7 @@
 import React from 'react';
-import { Eye, Trash2, Star } from 'lucide-react';
+import { Eye, Trash2, Star, Play } from 'lucide-react';
 
-export default function TemplateCard({ template, categories, onPreview, onDelete, unlayerTemplateService }) {
+export default function TemplateCard({ template, categories, onPreview, onDelete, onUse, unlayerTemplateService }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" aria-label={`template-card-${template.id || template._id}`}> 
       <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 relative group rounded-lg overflow-hidden">
@@ -36,6 +36,16 @@ export default function TemplateCard({ template, categories, onPreview, onDelete
           />
         )}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-3">
+          {onUse && (
+            <button
+              onClick={() => onUse(template)}
+              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+              title="Use this template"
+              aria-label={`Use template ${template.name}`}
+            >
+              <Play className="h-5 w-5" />
+            </button>
+          )}
           <button
             onClick={() => onPreview(template)}
             className="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
@@ -44,14 +54,16 @@ export default function TemplateCard({ template, categories, onPreview, onDelete
           >
             <Eye className="h-5 w-5" />
           </button>
-          <button
-            onClick={() => onDelete(template)}
-            className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-            title="Delete template"
-            aria-label={`Delete template ${template.name}`}
-          >
-            <Trash2 className="h-5 w-5" />
-          </button>
+          {onDelete && (
+            <button
+              onClick={() => onDelete(template)}
+              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+              title="Delete template"
+              aria-label={`Delete template ${template.name}`}
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          )}
         </div>
       </div>
       <div className="p-4">
