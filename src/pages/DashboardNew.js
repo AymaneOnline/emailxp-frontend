@@ -102,8 +102,7 @@ export default function DashboardNew() {
     { key: 'subscribers', label: 'Subscribers' },
     { key: 'forms', label: 'Forms' },
     { key: 'sites', label: 'Sites' },
-    { key: 'automation', label: 'Automation' },
-    { key: 'deliverability', label: 'Deliverability' }
+    { key: 'automation', label: 'Automation' }
   ];
 
   const OverviewPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/OverviewPanel')) : null;
@@ -112,7 +111,6 @@ export default function DashboardNew() {
   const FormsPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/FormsPanel')) : null;
   const SitesPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/SitesPanel')) : null;
   const AutomationPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/AutomationPanel')) : null;
-  const DeliverabilityPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/DeliverabilityPanel')) : null;
 
   function renderOverview() { if(!OverviewPanel) return null; return <PanelErrorBoundary><OverviewPanel overview={overview} subscriberStats={subscriberStats} quickStats={quickStats} metricsLoading={metricsLoading} setActiveTab={setActiveTab} /></PanelErrorBoundary>; }
   function renderCampaigns() { if(!CampaignsPanel) return null; return <PanelErrorBoundary><CampaignsPanel overview={overview} topCampaigns={topCampaignsMemo} recentActivity={quickStats?.recentActivity||[]} metricsLoading={metricsLoading} navigate={navigate} setActiveTab={setActiveTab} /></PanelErrorBoundary>; }
@@ -120,7 +118,6 @@ export default function DashboardNew() {
   function renderForms() { if(!FormsPanel) return null; return <PanelErrorBoundary><FormsPanel formStats={formStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
   function renderSites() { if(!SitesPanel) return null; return <PanelErrorBoundary><SitesPanel siteStats={siteStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
   function renderAutomation() { if(!AutomationPanel) return null; return <PanelErrorBoundary><AutomationPanel automationStats={automationStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
-  function renderDeliverability(){ if(!DeliverabilityPanel) return null; return <DeliverabilityPanel />; }
 
   let body;
   switch (activeTab) {
@@ -130,7 +127,6 @@ export default function DashboardNew() {
     case 'forms': body = renderForms(); break;
     case 'sites': body = renderSites(); break;
     case 'automation': body = renderAutomation(); break;
-    case 'deliverability': body = renderDeliverability(); break;
     default: body = null;
   }
 

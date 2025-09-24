@@ -19,6 +19,7 @@ export default function ListHealthPanel({ days=30 }){
   const churn = (counts.unsubscribed||0)+(counts.bounced||0)+(counts.complained||0);
   const churnRate = total? ((churn/total)*100).toFixed(2): null;
 
+  const growth = data.growth || { new: 0, unsubscribed: 0, net: 0 };
   const inactivity = data.inactivityBuckets || {};
   const inactivityOrder = ['0-30','31-60','61-90','91-180','>180'];
 
@@ -40,8 +41,8 @@ export default function ListHealthPanel({ days=30 }){
       <div className="grid md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <h4 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Growth (Net)</h4>
-          <p className="text-2xl font-semibold">{data.growth.net}</p>
-          <p className="text-xs text-gray-500 mt-1">New {data.growth.new} | Unsub {data.growth.unsubscribed}</p>
+          <p className="text-2xl font-semibold">{growth.net}</p>
+          <p className="text-xs text-gray-500 mt-1">New {growth.new} | Unsub {growth.unsubscribed}</p>
         </div>
         <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <h4 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Churn Rate</h4>
