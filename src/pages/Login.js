@@ -18,25 +18,14 @@ function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
-    (state) => state.auth
-  );
-
-  const [submitted, setSubmitted] = useState(false);
+  const { user, isLoading } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (isError) {
-      toast.error(message);
-    }
-
-    // Only navigate when the login was triggered by this form submission.
-    if (submitted && isSuccess && user) {
-      setSubmitted(false);
-      navigate('/dashboard');
-    }
-
-    dispatch(reset());
-  }, [user, isError, isSuccess, message, navigate, dispatch]);
+    // Clear any previous async flags when this component mounts/unmounts
+    return () => {
+      dispatch(reset());
+    };
+  }, [dispatch]);
 
   const onChange = (e) => {
     setFormData((prevState) => ({
@@ -45,11 +34,21 @@ function Login() {
     }));
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     const userData = { email, password, remember };
-    setSubmitted(true);
-    dispatch(login(userData));
+    try {
+      // dispatch returns a promise; unwrap will throw if the thunk rejects
+      await dispatch(login(userData)).unwrap();
+      // navigation only after successful login
+      navigate('/dashboard');
+    } catch (err) {
+      // The thunk already sets error state; show toast for immediate feedback
+      const msg = err?.response?.data?.message || err?.message || 'Login failed';
+      toast.error(msg);
+      // ensure auth slice flags are reset for future attempts
+      dispatch(reset());
+    }
   };
 
   if (isLoading) {
