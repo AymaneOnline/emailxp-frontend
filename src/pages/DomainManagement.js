@@ -538,6 +538,29 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 </div>
 
                 <div className="space-y-4">
+                  {/* Cloudflare-specific instructions */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Cloudflare DNS Setup</h4>
+                        <p className="text-sm text-blue-800 mb-2">
+                          Download the CSV file and import it directly into Cloudflare, or add records manually:
+                        </p>
+                        <ol className="text-sm text-blue-800 list-decimal list-inside space-y-1">
+                          <li>Go to your Cloudflare Dashboard</li>
+                          <li>Select your domain (mail.aymaneonline.dev)</li>
+                          <li>Go to DNS → Records</li>
+                          <li>Click "Import" and upload the downloaded CSV, or add records manually</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
                   <DnsRow
                     label="DKIM"
                     type={showDnsFor.dkim?.type || showDnsFor.dkimRecord?.type || "CNAME"}
@@ -566,20 +589,54 @@ export default function DomainManagement({ embedded = false, active = true, onLo
 
                 <div className="mt-8 flex items-center justify-end space-x-3">
                   <button
+                    onClick={() => {
+                      // Generate DNS records in Cloudflare CSV import format
+                      // Format: Name,Type,Content,TTL,Proxy status
+                      const dkimName = showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`;
+                      const dkimValue = showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`;
+                      const spfName = showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain;
+                      const spfValue = showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all';
+                      const trackingName = showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`;
+                      const trackingValue = showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com';
+
+                      const records = [
+                        `${dkimName},CNAME,${dkimValue},AUTO,OFF`,
+                        `${spfName},TXT,"${spfValue}",AUTO,OFF`,
+                        `${trackingName},CNAME,${trackingValue},AUTO,OFF`
+                      ].join('\n');
+
+                      const blob = new Blob([records], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${showDnsFor.domain.replace(/\./g, '-')}-dns-records.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download CSV
+                  </button>
+                  <button
                     onClick={() => setShowDnsFor(null)}
                     className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
                   >
                     I'll do this later
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (showDnsFor?._id) {
                         const id = showDnsFor._id;
                         setShowDnsFor(null);
-                        handleVerify(id);
+                        await handleVerify(id);
                       }
                     }}
-                    className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                    className="inline-flex items-center px-6 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                   >
                     Done, Verify Now
                   </button>
