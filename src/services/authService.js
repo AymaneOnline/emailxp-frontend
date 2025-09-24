@@ -6,7 +6,7 @@ const USERS_API_PATH = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, 
 
 // Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {
-  const response = await authAPI.post(USERS_API_PATH + '/register', userData);
+  const response = await axios.post(USERS_API_PATH + '/register', userData);
   if (response.data) {
     // Registration defaults to persistent storage; user can later choose session via login
     localStorage.setItem('user', JSON.stringify(response.data));
@@ -18,7 +18,7 @@ const register = async (userData) => {
 // Login user (does not need interceptor as token is only available AFTER login)
 const login = async (userData) => {
   const { remember, ...payload } = userData;
-  const response = await authAPI.post(USERS_API_PATH + '/login', payload);
+  const response = await axios.post(USERS_API_PATH + '/login', payload);
   if (response.data) {
     if (remember) {
       localStorage.setItem('user', JSON.stringify(response.data));
