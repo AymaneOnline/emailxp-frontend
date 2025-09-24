@@ -34,7 +34,7 @@ const SubscriberForm = () => {
   const handleAddExistingGroup = async (g) => { setFormData(prev => ({ ...prev, groupIds: [...new Set([...(prev.groupIds||[]), g._id])] })); setShowGroupDropdown(false); setGroupQuery(''); try { if (isEditing) await subscriberService.addSubscriberToGroup(id, g._id); await loadGroups(); } catch (e) { console.error(e); } };
   const handleCreateGroup = async (name) => { if (!name) return; try { const created = await groupService.createGroup({ name }); const cg = created && created._id ? created : (created?.group || created); setGroups(prev => [...prev, cg]); setFormData(prev => ({ ...prev, groupIds: [...new Set([...(prev.groupIds||[]), cg._id || cg.id])] })); setShowGroupDropdown(false); setGroupQuery(''); if (isEditing) await subscriberService.addSubscriberToGroup(id, cg._id || cg.id); } catch (e) { console.error(e); toast.error('Failed to create group'); } };
 
-  const handleSubmit = async (e) => { e.preventDefault(); setLoading(true); try { if (isEditing) await subscriberService.updateSubscriber(id, formData); else await subscriberService.createSubscriber(formData); toast.success('Saved'); navigate('/subscribers'); } catch (e) { console.error(e); toast.error('Save failed'); } finally { setLoading(false); } };
+  const handleSubmit = async (e) => { e.preventDefault(); setLoading(true); try { if (isEditing) await subscriberService.updateSubscriber(id, formData); else await subscriberService.createSubscriber(formData); toast.success('Saved'); navigate('/subscribers'); } catch (e) { console.error(e); const errorMessage = e.response?.data?.message || e.message || 'Save failed'; toast.error(errorMessage); } finally { setLoading(false); } };
 
   return (
     <PageContainer>

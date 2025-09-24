@@ -142,7 +142,8 @@ function RecommendationsManager() {
       fetchSubscribers(); // Refresh the subscriber list
     } catch (err) {
       console.error('Failed to create subscriber:', err);
-      setError('Failed to create subscriber: ' + err.message);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create subscriber';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
