@@ -1,17 +1,34 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { MiniBarChart } from './charts';
 
 export default function SitesPanel({ siteStats, metricsLoading }) {
+  const statusChartData = useMemo(() => {
+    if (!siteStats?.statuses) return [];
+    return Object.entries(siteStats.statuses).map(([status, count]) => ({
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+      value: count
+    }));
+  }, [siteStats]);
+
   if (metricsLoading) return <Skeleton />;
   return (
     <div aria-label="sites-panel" className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sites & Landing Pages</h2>
       {!siteStats ? <p className="text-sm text-gray-500">No site data.</p> : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Metric label="Total Pages" value={siteStats.total} />
-          <Metric label="Active" value={siteStats.active} />
-          <Metric label="Draft" value={siteStats.draft} />
-          <Metric label="Recently Updated" value={siteStats.recent} />
-        </div>
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Metric label="Total Pages" value={siteStats.total} />
+            <Metric label="Active" value={siteStats.active} />
+            <Metric label="Draft" value={siteStats.draft} />
+            <Metric label="Recently Updated" value={siteStats.recent} />
+          </div>
+          {statusChartData.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4" aria-label="site-status-chart">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Page Status Distribution</h3>
+              <MiniBarChart data={statusChartData} />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
