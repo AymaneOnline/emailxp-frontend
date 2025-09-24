@@ -45,9 +45,9 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
     fetchDomains();
   }, []); // Only run once on mount
 
-  // Set default from address when domains are loaded
+  // Set default from address when domains are loaded (only for new campaigns without from address)
   React.useEffect(() => {
-    if (!loadingDomains && domains.length > 0) {
+    if (!loadingDomains && domains.length > 0 && !from && !campaignId) {
       // Find primary domain or first verified domain
       const primaryDomain = domains.find(d => d.isPrimary);
       const verifiedDomain = domains.find(d => d.status === 'verified');
@@ -56,11 +56,7 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
 
       if (defaultDomain) {
         const expectedFromAddress = `no-reply@${defaultDomain.domain}`;
-
-        // For new campaigns or campaigns with empty/mismatched from address, set it
-        if (!from || (!campaignId && from !== expectedFromAddress) || (campaignId && !from.startsWith('no-reply@'))) {
-          onChange({ from: expectedFromAddress });
-        }
+        onChange({ from: expectedFromAddress });
       }
     }
   }, [domains, loadingDomains, from, onChange, campaignId]);
@@ -112,27 +108,28 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
                   aria-required="true"
                   aria-invalid={fromError || fromInvalid}
                   value={from}
-                  readOnly
+                  onChange={(e) => onChange({ from: e.target.value })}
+                  onBlur={() => setTouched((s) => ({ ...s, from: true }))}
                   className={`block w-full px-4 py-3 border-2 rounded-lg shadow-sm transition-all duration-200 ${
                     fromError || fromInvalid
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-200 bg-gray-50 text-gray-500'
-                  } focus:ring-2 focus:ring-opacity-20`}
-                  placeholder="Will be set automatically based on your verified domain"
+                      : 'border-gray-200 focus:border-red-500 focus:ring-red-500 hover:border-gray-300'
+                  } focus:ring-2 focus:ring-opacity-20 bg-white`}
+                  placeholder="your-email@example.com"
                 />
                 {loadingDomains ? (
                   <p className="mt-2 text-sm text-gray-500">Loading your verified domains...</p>
-                ) : domains.length === 0 ? (
-                  <p className="mt-2 text-sm text-amber-600">
-                    No verified domains found. Please add and verify a domain in{' '}
-                    <a href="/settings#domains" className="text-red-600 hover:text-red-800 underline">
-                      Settings → Domains
-                    </a>{' '}
-                    to enable sending.
+                ) : domains.length > 0 ? (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Tip: Use an address from your verified domains for better deliverability (e.g., no-reply@{domains.find(d => d.isPrimary || d.status === 'verified')?.domain || 'yourdomain.com'})
                   </p>
                 ) : (
-                  <p className="mt-2 text-sm text-gray-500">
-                    From address is automatically set based on your verified domain and cannot be changed.
+                  <p className="mt-2 text-sm text-amber-600">
+                    No verified domains found. You can still send from any email address, but verified domains provide better deliverability.{' '}
+                    <a href="/settings#domains" className="text-red-600 hover:text-red-800 underline">
+                      Add a domain
+                    </a>{' '}
+                    for optimal results.
                   </p>
                 )}
                 {fromError && <p className="mt-2 text-sm text-red-600 flex items-center">
