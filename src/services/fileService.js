@@ -3,7 +3,9 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const API_URL = base ? `${base}/api/files` : '/api/files';
 
 // Helper to get auth header

@@ -1,8 +1,9 @@
 // emailxp/frontend/src/services/authService.js
 
 import axios from 'axios'; // Uses global axios configured in configureAxios
+import { getBackendUrl } from '../utils/getBackendUrl';
 
-const USERS_API_PATH = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '') + '/api/users';
+const USERS_API_PATH = (getBackendUrl() || '').replace(/\/$/, '') + '/api/users';
 
 // Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {

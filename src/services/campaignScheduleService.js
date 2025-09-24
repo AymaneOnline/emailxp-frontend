@@ -2,7 +2,9 @@
 
 import axios from 'axios';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const SCHEDULE_API = base ? `${base}/api/campaign-schedules` : '/api/campaign-schedules';
 // Create axios instance with default config and auth
 const scheduleAPI = axios.create({ baseURL: SCHEDULE_API });

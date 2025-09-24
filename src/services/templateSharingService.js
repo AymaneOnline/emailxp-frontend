@@ -2,7 +2,9 @@
 
 import axios from 'axios';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const SHARING_API = base ? `${base}/api/template-sharing` : '/api/template-sharing';
 // Create axios instance with default config and auth
 const sharingAPI = axios.create({ baseURL: SHARING_API });

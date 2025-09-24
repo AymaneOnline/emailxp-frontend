@@ -2,7 +2,9 @@
 
 import axios from 'axios';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const UNLAYER_TEMPLATES_API = base ? `${base}/api/unlayer-templates` : '/api/unlayer-templates';
 // Create axios instance with default config and auth
 const unlayerAPI = axios.create({ baseURL: UNLAYER_TEMPLATES_API });

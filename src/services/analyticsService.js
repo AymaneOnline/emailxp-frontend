@@ -3,7 +3,9 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const base = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+import { getBackendUrl } from '../utils/getBackendUrl';
+
+const base = (getBackendUrl() || '').replace(/\/$/, '');
 const ANALYTICS_API = base ? `${base}/api/analytics` : '/api/analytics';
 
 // Create axios instance with default config and auth
