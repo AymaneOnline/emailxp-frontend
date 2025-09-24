@@ -19,17 +19,28 @@ const register = async (userData) => {
 // Login user (does not need interceptor as token is only available AFTER login)
 const login = async (userData) => {
   const { remember, ...payload } = userData;
-  const response = await axios.post(USERS_API_PATH + '/login', payload);
-  if (response.data) {
+  try {
+    const response = await axios.post(USERS_API_PATH + '/login', payload);
+
+    // Basic validation: ensure we received an object containing a token
+    const data = response && response.data;
+    if (!data || typeof data !== 'object' || !data.token) {
+      throw new Error('Invalid login response from server');
+    }
+
     if (remember) {
-      localStorage.setItem('user', JSON.stringify(response.data));
+      localStorage.setItem('user', JSON.stringify(data));
       sessionStorage.removeItem('user');
     } else {
-      sessionStorage.setItem('user', JSON.stringify(response.data));
+      sessionStorage.setItem('user', JSON.stringify(data));
       localStorage.removeItem('user');
     }
+
+    return data;
+  } catch (err) {
+    // Re-throw so the thunk can handle the rejection and set proper error state
+    throw err;
   }
-  return response.data;
 };
 
 // Logout user
