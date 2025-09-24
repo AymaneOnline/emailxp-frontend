@@ -22,12 +22,16 @@ function Login() {
     (state) => state.auth
   );
 
+  const [submitted, setSubmitted] = useState(false);
+
   useEffect(() => {
     if (isError) {
       toast.error(message);
     }
 
-    if (isSuccess && user) {
+    // Only navigate when the login was triggered by this form submission.
+    if (submitted && isSuccess && user) {
+      setSubmitted(false);
       navigate('/dashboard');
     }
 
@@ -44,6 +48,7 @@ function Login() {
   const onSubmit = (e) => {
     e.preventDefault();
     const userData = { email, password, remember };
+    setSubmitted(true);
     dispatch(login(userData));
   };
 
