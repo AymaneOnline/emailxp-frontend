@@ -740,7 +740,7 @@ const ContentDesignStep = ({ data, onChange, editorRef }) => {
                   ) : (
                     <UnlayerEmailEditor
                       ref={editorRef}
-                      initialDesign={data?.design || selectedTemplate?.design || null}
+                      initialDesign={data?.design || selectedTemplate?.design || null} // eslint-disable-line no-undef
                       onSave={handleSaveFromEditor}
                       onHtmlChange={handleUnlayerHtmlChange}
                       onDesignChange={handleUnlayerDesignChange}
