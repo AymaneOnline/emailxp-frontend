@@ -1,12 +1,8 @@
 // emailxp/frontend/src/services/authService.js
 
-import axios from 'axios'; // Create a specific instance for auth
+import axios from 'axios'; // Uses global axios configured in configureAxios
 
-const authAPI = axios.create({
-  baseURL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000',
-});
-
-const USERS_API_PATH = '/api/users';
+const USERS_API_PATH = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '') + '/api/users';
 
 // Register user (does not need interceptor as user is not yet logged in)
 const register = async (userData) => {

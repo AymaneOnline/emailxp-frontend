@@ -6,9 +6,9 @@ import { getAuthToken } from '../utils/authToken';
 const ADVANCED_SEGMENTATION_API_PATH = '/api/advanced-segmentation';
 
 // Create axios instance with default config and auth
-const advancedSegmentationAPI = axios.create({
-  baseURL: ADVANCED_SEGMENTATION_API_PATH,
-});
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const ADVANCED_SEGMENTATION_API = base ? `${base}/api/advanced-segmentation` : '/api/advanced-segmentation';
+const advancedSegmentationAPI = axios.create({ baseURL: ADVANCED_SEGMENTATION_API });
 
 advancedSegmentationAPI.interceptors.request.use((config) => {
   const token = getAuthToken();

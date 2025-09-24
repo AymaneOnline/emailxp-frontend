@@ -2,12 +2,10 @@
 
 import axios from 'axios';
 
-const SEGMENTS_API_PATH = '/api/segments';
-
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const SEGMENTS_API = base ? `${base}/api/segments` : '/api/segments';
 // Create axios instance with default config and auth
-const segmentAPI = axios.create({
-  baseURL: SEGMENTS_API_PATH,
-});
+const segmentAPI = axios.create({ baseURL: SEGMENTS_API });
 
 segmentAPI.interceptors.request.use((config) => {
   const user = JSON.parse(localStorage.getItem('user'));

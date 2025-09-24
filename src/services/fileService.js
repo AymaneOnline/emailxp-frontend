@@ -3,9 +3,8 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL
-    ? `${process.env.REACT_APP_BACKEND_URL}/api/files`
-    : 'http://localhost:5000/api/files';
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const API_URL = base ? `${base}/api/files` : '/api/files';
 
 // Helper to get auth header
 const getAuthHeader = () => {

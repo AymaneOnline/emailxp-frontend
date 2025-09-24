@@ -2,12 +2,10 @@
 
 import axios from 'axios';
 
-const SCHEDULE_API_PATH = '/api/campaign-schedules';
-
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const SCHEDULE_API = base ? `${base}/api/campaign-schedules` : '/api/campaign-schedules';
 // Create axios instance with default config and auth
-const scheduleAPI = axios.create({
-  baseURL: SCHEDULE_API_PATH,
-});
+const scheduleAPI = axios.create({ baseURL: SCHEDULE_API });
 
 scheduleAPI.interceptors.request.use((config) => {
   const user = JSON.parse(localStorage.getItem('user'));

@@ -2,12 +2,10 @@
 
 import axios from 'axios';
 
-const SHARING_API_PATH = '/api/template-sharing';
-
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const SHARING_API = base ? `${base}/api/template-sharing` : '/api/template-sharing';
 // Create axios instance with default config and auth
-const sharingAPI = axios.create({
-  baseURL: SHARING_API_PATH,
-});
+const sharingAPI = axios.create({ baseURL: SHARING_API });
 
 sharingAPI.interceptors.request.use((config) => {
   const user = JSON.parse(localStorage.getItem('user'));

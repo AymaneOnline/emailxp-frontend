@@ -5,8 +5,11 @@ import { logout, reset } from '../store/slices/authSlice';
 
 // This function will be called once from index.js
 const configureAxios = (store) => {
-  // Set the base URL for all axios requests
-  axios.defaults.baseURL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'; // Use env var or fallback to backend URL
+  // Set the base URL for all axios requests.
+  // If `REACT_APP_BACKEND_URL` is set at build time, use it (strip trailing slash).
+  // Otherwise use a relative base (empty string) so requests go to the same origin.
+  const rawBackend = process.env.REACT_APP_BACKEND_URL;
+  axios.defaults.baseURL = rawBackend ? rawBackend.replace(/\/$/, '') : '';
 
   // Request interceptor
   axios.interceptors.request.use(

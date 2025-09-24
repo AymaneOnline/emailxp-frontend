@@ -2,17 +2,14 @@
 
 import axios from 'axios';
 
-const USER_API_PATH = '/api/user-management';
-const ORG_API_PATH = '/api/organizations';
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const USER_API = base ? `${base}/api/user-management` : '/api/user-management';
+const ORG_API = base ? `${base}/api/organizations` : '/api/organizations';
 
 // Create axios instance with default config and auth
-const userAPI = axios.create({
-  baseURL: USER_API_PATH,
-});
+const userAPI = axios.create({ baseURL: USER_API });
 
-const orgAPI = axios.create({
-  baseURL: ORG_API_PATH,
-});
+const orgAPI = axios.create({ baseURL: ORG_API });
 
 // Add auth interceptor
 [userAPI, orgAPI].forEach(api => {

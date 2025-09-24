@@ -1,11 +1,9 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const TAG_API_PATH = '/api/tags';
-
-const tagAPI = axios.create({
-  baseURL: TAG_API_PATH,
-});
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const TAG_API = base ? `${base}/api/tags` : '/api/tags';
+const tagAPI = axios.create({ baseURL: TAG_API });
 
 // Add auth token to requests
 tagAPI.interceptors.request.use((config) => {

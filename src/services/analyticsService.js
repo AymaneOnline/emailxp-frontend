@@ -3,11 +3,12 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const ANALYTICS_API_PATH = '/api/analytics';
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const ANALYTICS_API = base ? `${base}/api/analytics` : '/api/analytics';
 
 // Create axios instance with default config and auth
 const analyticsAPI = axios.create({
-  baseURL: ANALYTICS_API_PATH,
+  baseURL: ANALYTICS_API,
 });
 
 analyticsAPI.interceptors.request.use((config) => {

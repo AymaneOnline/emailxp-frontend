@@ -2,12 +2,10 @@
 
 import axios from 'axios';
 
-const UNLAYER_TEMPLATES_API_PATH = '/api/unlayer-templates';
-
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const UNLAYER_TEMPLATES_API = base ? `${base}/api/unlayer-templates` : '/api/unlayer-templates';
 // Create axios instance with default config and auth
-const unlayerAPI = axios.create({
-  baseURL: UNLAYER_TEMPLATES_API_PATH,
-});
+const unlayerAPI = axios.create({ baseURL: UNLAYER_TEMPLATES_API });
 
 unlayerAPI.interceptors.request.use((config) => {
   const user = JSON.parse(localStorage.getItem('user'));

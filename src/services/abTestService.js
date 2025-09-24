@@ -3,12 +3,11 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/authToken';
 
-const AB_TEST_API_PATH = '/api/ab-tests';
+const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+const ABTEST_API = base ? `${base}/api/ab-tests` : '/api/ab-tests';
 
 // Create axios instance with default config and auth
-const abTestAPI = axios.create({
-  baseURL: AB_TEST_API_PATH,
-});
+const abTestAPI = axios.create({ baseURL: ABTEST_API });
 
 abTestAPI.interceptors.request.use((config) => {
   const token = getAuthToken();
