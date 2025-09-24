@@ -38,9 +38,11 @@ export async function listDomains({ force } = {}) {
     return domainCache;
   }
   const { data } = await request(()=>api.get(API_BASE));
-  domainCache = data;
+  // Ensure we always return an array
+  const domains = Array.isArray(data) ? data : [];
+  domainCache = domains;
   domainCacheTs = now;
-  return data;
+  return domains;
 }
 
 export async function createDomain(domain) {

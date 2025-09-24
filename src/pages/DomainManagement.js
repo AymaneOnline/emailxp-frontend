@@ -26,9 +26,10 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     setLoading(true);
     try {
       const data = await listDomains();
-      setDomains(data);
+      setDomains(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e.response?.data?.message || e.message);
+      setDomains([]); // Ensure domains is always an array
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     }
   };
 
-  const primary = domains.find(d => d.isPrimary);
+  const primary = Array.isArray(domains) ? domains.find(d => d.isPrimary) : null;
 
   return (
     <PageContainer>
@@ -131,11 +132,11 @@ export default function DomainManagement({ embedded = false, active = true, onLo
             ))}
           </div>
         </div>
-      ) : active && domains.length === 0 ? (
+      ) : active && Array.isArray(domains) && domains.length === 0 ? (
   <Body className="text-gray-600">No domains yet. Add your first subdomain above.</Body>
       ) : active ? (
         <div className="space-y-4" aria-live="polite">
-          {domains.map(d => (
+          {Array.isArray(domains) && domains.map(d => (
             <div key={d._id} className="bg-white shadow-sm border border-gray-200 rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
