@@ -1,15 +1,164 @@
 // emailxp/frontend/src/pages/DomainManagement.js
 import React, { useEffect, useState, useCallback } from 'react';
 import PageContainer from '../components/layout/PageContainer';
-import { H1, H2, H3, Body, Muted, Small } from '../components/ui/Typography';
+import { H1, H2, Muted } from '../components/ui/Typography';
 import { listDomains, createDomain, verifyDomain, regenerateDkim } from '../services/domainService';
-import { CheckCircle, AlertCircle, RefreshCcw, PlusCircle, Globe2, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info } from 'lucide-react';
 
 function StatusBadge({ domain }) {
-  const base = 'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium';
-  if (domain.status === 'verified') return <span className={`${base} bg-green-100 text-green-800`}>Verified</span>;
-  if (domain.status === 'partially_verified') return <span className={`${base} bg-yellow-100 text-yellow-800`}>Partial</span>;
-  return <span className={`${base} bg-gray-100 text-gray-700`}>Pending</span>;
+  const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200';
+  if (domain.status === 'verified') {
+    return (
+      <span className={`${base} bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200 shadow-sm`}>
+        <CheckCircle className="w-3 h-3 mr-1.5" />
+        Verified
+      </span>
+    );
+  }
+  if (domain.status === 'partially_verified') {
+    return (
+      <span className={`${base} bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200 shadow-sm`}>
+        <AlertCircle className="w-3 h-3 mr-1.5" />
+        Partial
+      </span>
+    );
+  }
+  return (
+    <span className={`${base} bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200 shadow-sm`}>
+      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+      Pending
+    </span>
+  );
+}
+
+function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns }) {
+  const isVerified = domain.status === 'verified';
+  const isPartiallyVerified = domain.status === 'partially_verified';
+  const isVerifying = verifyingId === domain._id;
+
+  return (
+    <div className={`relative bg-white rounded-xl shadow-sm border-2 transition-all duration-300 hover:shadow-lg ${
+      isVerified ? 'border-green-200 hover:border-green-300' :
+      isPartiallyVerified ? 'border-amber-200 hover:border-amber-300' :
+      'border-gray-200 hover:border-gray-300'
+    } overflow-hidden group`}>
+
+      {/* Primary badge */}
+      {domain.isPrimary && (
+        <div className="absolute top-4 right-4 z-10">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg">
+            <Target className="w-3 h-3 mr-1" />
+            Primary
+          </span>
+        </div>
+      )}
+
+      <div className="p-6">
+        {/* Domain header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className={`p-2 rounded-lg ${
+              isVerified ? 'bg-green-100' :
+              isPartiallyVerified ? 'bg-amber-100' :
+              'bg-gray-100'
+            }`}>
+              <Globe2 className={`w-5 h-5 ${
+                isVerified ? 'text-green-600' :
+                isPartiallyVerified ? 'text-amber-600' :
+                'text-gray-500'
+              }`} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 break-all">{domain.domain}</h3>
+              <StatusBadge domain={domain} />
+            </div>
+          </div>
+        </div>
+
+        {/* Verification status grid */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+            domain.dkimVerified
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-600">DKIM</span>
+              {domain.dkimVerified ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600" />
+              )}
+            </div>
+          </div>
+
+          <div className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+            domain.spfVerified
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-600">SPF</span>
+              {domain.spfVerified ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600" />
+              )}
+            </div>
+          </div>
+
+          <div className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+            domain.trackingVerified
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-600">Tracking</span>
+              {domain.trackingVerified ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Last checked info */}
+        {domain.lastCheckedAt && (
+          <div className="flex items-center text-xs text-gray-500 mb-4">
+            <Info className="w-3 h-3 mr-1" />
+            Last checked {new Date(domain.lastCheckedAt).toLocaleString()}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <VerifyAction
+              domain={domain}
+              onVerify={onVerify}
+              verifying={isVerifying}
+            />
+            <button
+              onClick={() => onRegenerateDkim(domain._id)}
+              className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
+            >
+              <RefreshCcw className="w-3 h-3 mr-1.5" />
+              Regenerate DKIM
+            </button>
+          </div>
+
+          <button
+            onClick={() => onShowDns(domain)}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            View DNS
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function DomainManagement({ embedded = false, active = true, onLoaded }) {
@@ -19,8 +168,9 @@ export default function DomainManagement({ embedded = false, active = true, onLo
   const [newDomain, setNewDomain] = useState('');
   const [error, setError] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
-  const [showDnsFor, setShowDnsFor] = useState(null); // domain object for which we show DNS records
-  const [copyState, setCopyState] = useState(null); // which record recently copied
+  const [showDnsFor, setShowDnsFor] = useState(null);
+  const [copyState, setCopyState] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,23 +179,33 @@ export default function DomainManagement({ embedded = false, active = true, onLo
       setDomains(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e.response?.data?.message || e.message);
-      setDomains([]); // Ensure domains is always an array
+      setDomains([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { if (active) { load().then(()=>{ onLoaded && onLoaded(); }); } }, [active, load, onLoaded]);
+  useEffect(() => {
+    if (active) {
+      load().then(() => { onLoaded && onLoaded(); });
+    }
+  }, [active, load, onLoaded]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newDomain) return;
-    setCreating(true); setError(null);
+    if (!newDomain.trim()) return;
+
+    setCreating(true);
+    setError(null);
     try {
-      const created = await createDomain(newDomain);
+      const created = await createDomain(newDomain.trim());
       setNewDomain('');
+      setSuccessMessage(`Domain "${created.domain}" added successfully!`);
       await load();
-      setShowDnsFor(created); // show DNS records panel for new domain
+      setShowDnsFor(created);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (e) {
       setError(e.response?.data?.message || e.message);
     } finally {
@@ -55,9 +215,14 @@ export default function DomainManagement({ embedded = false, active = true, onLo
 
   const handleVerify = async (id) => {
     setVerifyingId(id);
+    setError(null);
     try {
       await verifyDomain(id);
+      setSuccessMessage('Domain verification completed!');
       await load();
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (e) {
       setError(e.response?.data?.message || e.message);
     } finally {
@@ -65,179 +230,498 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     }
   };
 
+  const handleRegenerateDkim = async (id) => {
+    try {
+      await regenerateDkim(id);
+      setSuccessMessage('DKIM key regenerated successfully!');
+      await load();
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message);
+    }
+  };
+
   const primary = Array.isArray(domains) ? domains.find(d => d.isPrimary) : null;
+  const verifiedCount = domains.filter(d => d.status === 'verified').length;
 
   return (
     <PageContainer>
-    <div className={embedded ? '' : 'max-w-5xl mx-auto'} role={embedded ? undefined : 'main'} aria-labelledby={embedded ? undefined : 'domains-heading'}>
-      {!embedded && (
-        <>
-          <div className="flex items-center mb-4 space-x-3">
-            <Globe2 className="w-7 h-7 text-primary-red" />
-            <H1 id="domains-heading" className="!mb-0">Sending Domains</H1>
-          </div>
-          <Body className="mb-8 max-w-3xl">Add and verify a dedicated subdomain to send emails. A domain is fully verified when DKIM, SPF and tracking records are detected. Only verified domains can be used for sending. Use a subdomain like <code className="bg-gray-100 px-1 rounded">mail.example.com</code>.</Body>
-        </>
-      )}
-      {embedded && (
-        <div className="mb-6">
-          <H2 className="flex items-center gap-2 text-gray-900"><Globe2 className="w-5 h-5 text-primary-red" /> Sending Domains</H2>
-          <Muted className="mt-1">Add and verify a subdomain (DKIM, SPF, tracking) to enable sending.</Muted>
-        </div>
-      )}
+      <div className={embedded ? '' : 'max-w-6xl mx-auto'} role={embedded ? undefined : 'main'} aria-labelledby={embedded ? undefined : 'domains-heading'}>
 
-      <form onSubmit={handleCreate} className="mb-10 bg-white shadow rounded-lg p-4 flex items-end space-x-4 border border-gray-200" aria-label="Add domain form">
-        <div className="flex-1">
-          <Small className="block font-medium text-gray-700 mb-1">New Subdomain</Small>
-          <input
-            type="text"
-            value={newDomain}
-            onChange={e => setNewDomain(e.target.value)}
-            placeholder="mail.yourdomain.com"
-            className="w-full rounded-md border-gray-300 focus:ring-primary-red focus:border-primary-red text-sm"
-            aria-required="true"
-          />
-          <Small className="mt-1 text-gray-500">Must be a subdomain (at least 3 parts, e.g. <strong>mail.example.com</strong>).</Small>
-        </div>
-        <button type="submit" disabled={creating} className="inline-flex items-center px-4 py-2 bg-primary-red text-white text-sm font-medium rounded-md shadow hover:bg-primary-red-darker focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red disabled:opacity-60">
-          <PlusCircle className="w-4 h-4 mr-2" />
-          {creating ? 'Adding...' : 'Add Domain'}
-        </button>
-      </form>
-
-  {error && <Small role="alert" className="mb-6 p-3 rounded bg-red-50 border border-red-200 text-red-700 flex items-start"><AlertCircle className="w-4 h-4 mr-2 mt-0.5" />{error}</Small>}
-
-      {active && loading ? (
-        <div className="space-y-4" aria-live="polite" aria-busy="true">
-          <div className="h-4 w-52 bg-gray-200 rounded animate-pulse" />
-          <div className="space-y-3">
-            {[1,2].map(i => (
-              <div key={i} className="bg-white shadow-sm border border-gray-200 rounded-md p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-3 w-36 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 w-14 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+        {/* Header Section */}
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Globe2 className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex flex-wrap gap-3 mt-1">
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-400 border border-gray-200">DKIM</span>
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-400 border border-gray-200">SPF</span>
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-400 border border-gray-200">Tracking</span>
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded bg-gray-50 text-gray-300 border border-dashed border-gray-300">Last check…</span>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-7 w-32 bg-gray-200 rounded animate-pulse" />
+                <div>
+                  <H1 id="domains-heading" className="!mb-1 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    Sending Domains
+                  </H1>
+                  <p className="text-gray-600 text-lg">Manage your verified domains for professional email delivery</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      ) : active && Array.isArray(domains) && domains.length === 0 ? (
-  <Body className="text-gray-600">No domains yet. Add your first subdomain above.</Body>
-      ) : active ? (
-        <div className="space-y-4" aria-live="polite">
-          {Array.isArray(domains) && domains.map(d => (
-            <div key={d._id} className="bg-white shadow-sm border border-gray-200 rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-gray-900 break-all">{d.domain}</span>
-                  {d.isPrimary && <span className="text-[10px] uppercase tracking-wide bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Primary</span>}
-                  <StatusBadge domain={d} />
+
+              {/* Stats */}
+              <div className="flex items-center space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{domains.length}</div>
+                  <div className="text-sm text-gray-500">Total Domains</div>
                 </div>
-                <div className="mt-1 text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
-                  <span className={d.dkimVerified ? 'text-green-600 flex items-center space-x-1' : 'flex items-center space-x-1'}>
-                    {d.dkimVerified ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}<span>DKIM</span>
-                  </span>
-                  <span className={d.spfVerified ? 'text-green-600 flex items-center space-x-1' : 'flex items-center space-x-1'}>
-                    {d.spfVerified ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}<span>SPF</span>
-                  </span>
-                  <span className={d.trackingVerified ? 'text-green-600 flex items-center space-x-1' : 'flex items-center space-x-1'}>
-                    {d.trackingVerified ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}<span>Tracking</span>
-                  </span>
-                  {d.lastCheckedAt && <span>Checked {new Date(d.lastCheckedAt).toLocaleTimeString()}</span>}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{verifiedCount}</div>
+                  <div className="text-sm text-gray-500">Verified</div>
                 </div>
-              </div>
-              <div className="mt-3 md:mt-0 flex items-center space-x-2">
-                <VerifyAction
-                  domain={d}
-                  onVerify={() => handleVerify(d._id)}
-                  verifying={verifyingId === d._id}
-                />
-                <button onClick={() => regenerateDkim(d._id).then(load).catch(e=>setError(e.response?.data?.message||e.message))} className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 hover:bg-gray-50 inline-flex items-center space-x-1">
-                  <RefreshCcw className="w-3 h-3" /> <span>Regenerate DKIM</span>
-                </button>
               </div>
             </div>
-          ))}
-        </div>
-      ) : null}
 
-      {showDnsFor && (
-        <div className="mt-10 bg-white border border-indigo-200 rounded-md shadow-sm p-5" aria-live="polite">
-          <div className="flex items-start justify-between mb-3">
-            <H3 className="flex items-center gap-2 mb-0">DNS Records for {showDnsFor.domain}</H3>
-            <Small as="button" onClick={()=>setShowDnsFor(null)} className="cursor-pointer text-gray-500 hover:text-gray-700">Dismiss</Small>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+              <div className="flex items-start space-x-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Info className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Why verify domains?</h3>
+                  <p className="text-gray-700 mb-3">
+                    Verified domains improve deliverability and build trust with email providers.
+                    Use subdomains like <code className="bg-white px-2 py-1 rounded border text-sm">mail.yourcompany.com</code> for best results.
+                  </p>
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="w-4 h-4 text-green-600" />
+                      <span className="text-gray-600">DKIM Authentication</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Target className="w-4 h-4 text-blue-600" />
+                      <span className="text-gray-600">SPF Protection</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Zap className="w-4 h-4 text-purple-600" />
+                      <span className="text-gray-600">Tracking Analytics</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <Muted className="mb-4 normal-case !text-gray-600">Add these DNS records at your DNS provider. Verification may take a few minutes after propagation.</Muted>
-          <div className="space-y-4">
-            <DnsRow label="DKIM" type="CNAME" host={showDnsFor.dkimHost || `dkim._domainkey.${showDnsFor.domain}`} value={showDnsFor.dkimValue || `dkim.${showDnsFor.domain}` } setCopyState={setCopyState} copyState={copyState} />
-            <DnsRow label="SPF" type="TXT" host={showDnsFor.domain} value={showDnsFor.spfValue || 'v=spf1 include:emailxp.net ~all'} setCopyState={setCopyState} copyState={copyState} />
-            <DnsRow label="Tracking" type="CNAME" host={showDnsFor.trackingHost || `track.${showDnsFor.domain}`} value={showDnsFor.trackingValue || 'tracking.emailxp.net'} setCopyState={setCopyState} copyState={copyState} />
+        )}
+
+        {embedded && (
+          <div className="mb-6">
+            <H2 className="flex items-center gap-3 text-gray-900">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                <Globe2 className="w-5 h-5 text-white" />
+              </div>
+              Sending Domains
+            </H2>
+            <Muted className="mt-2">Add and verify subdomains for professional email delivery</Muted>
           </div>
-          <div className="mt-5 flex items-center gap-3">
-            <button onClick={()=>{ if(showDnsFor?._id){ const id = showDnsFor._id; setShowDnsFor(null); handleVerify(id); } }} className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary-red text-white hover:bg-primary-red-darker">
-              <Small className="!text-white font-medium">Done, Verify</Small>
-            </button>
-            <button onClick={()=>setShowDnsFor(null)} className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 hover:bg-gray-50">
-              <Small className="font-medium text-gray-700">Later</Small>
-            </button>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="p-1 bg-green-100 rounded-full">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <p className="text-green-800 font-medium">{successMessage}</p>
+            </div>
           </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl shadow-sm">
+            <div className="flex items-start space-x-3">
+              <div className="p-1 bg-red-100 rounded-full mt-0.5">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-red-800 font-medium">Error</p>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Domain Form */}
+        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Add New Domain</h3>
+            <div className="text-sm text-gray-500">
+              {domains.length} of 10 domains used
+            </div>
+          </div>
+
+          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label htmlFor="new-domain" className="block text-sm font-medium text-gray-700 mb-2">
+                Subdomain
+              </label>
+              <input
+                id="new-domain"
+                type="text"
+                value={newDomain}
+                onChange={e => setNewDomain(e.target.value)}
+                placeholder="mail.yourcompany.com"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                aria-required="true"
+                disabled={creating}
+              />
+              <p className="mt-2 text-sm text-gray-600">
+                Must be a subdomain with at least 3 parts (e.g., <strong>mail.example.com</strong>)
+              </p>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={creating || !newDomain.trim()}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Add Domain
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-      {active && primary ? (
-        <Small className="mt-10 text-gray-600 bg-gray-50 border border-gray-200 rounded p-4 block">
-          Emails will be sent from <code className="bg-white px-1 rounded border">no-reply@{primary.domain}</code>. In future you will be able to set a custom default From name/address.
-        </Small>
-      ) : active ? (
-        <Small className="mt-10 text-amber-700 bg-amber-50 border border-amber-200 rounded p-4 block">
-          No verified domain yet. Add DNS records for DKIM, SPF and tracking then click Verify.
-        </Small>
-      ) : null}
-    </div>
+
+        {/* Domains List */}
+        {active && loading ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Your Domains</h3>
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="animate-pulse space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                      <div className="space-y-2">
+                        <div className="w-32 h-4 bg-gray-200 rounded"></div>
+                        <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[1, 2, 3].map(j => (
+                        <div key={j} className="h-12 bg-gray-200 rounded-lg"></div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="w-20 h-8 bg-gray-200 rounded"></div>
+                      <div className="w-24 h-8 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : active && Array.isArray(domains) && domains.length === 0 ? (
+          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+            <div className="max-w-md mx-auto">
+              <div className="p-4 bg-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Globe2 className="w-8 h-8 text-gray-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No domains yet</h3>
+              <p className="text-gray-600 mb-6">
+                Add your first subdomain above to start sending professional emails with proper authentication.
+              </p>
+              <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4" />
+                  <span>DKIM</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Target className="w-4 h-4" />
+                  <span>SPF</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4" />
+                  <span>Tracking</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : active ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Your Domains</h3>
+              <div className="text-sm text-gray-500">
+                {verifiedCount} of {domains.length} verified
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.isArray(domains) && domains.map(d => (
+                <DomainCard
+                  key={d._id}
+                  domain={d}
+                  onVerify={() => handleVerify(d._id)}
+                  verifyingId={verifyingId}
+                  onRegenerateDkim={handleRegenerateDkim}
+                  onShowDns={setShowDnsFor}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* DNS Records Modal */}
+        {showDnsFor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">DNS Records for {showDnsFor.domain}</h3>
+                      <p className="text-blue-100 text-sm">Add these records to your DNS provider</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDnsFor(null)}
+                    className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-96">
+                <div className="mb-6">
+                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-blue-800 font-medium">Important</p>
+                      <p className="text-blue-700 text-sm mt-1">
+                        DNS changes may take up to 24 hours to propagate. Verification may take a few minutes after propagation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <DnsRow
+                    label="DKIM"
+                    type="CNAME"
+                    host={showDnsFor.dkimHost || `dkim._domainkey.${showDnsFor.domain}`}
+                    value={showDnsFor.dkimValue || `dkim.${showDnsFor.domain}`}
+                    setCopyState={setCopyState}
+                    copyState={copyState}
+                  />
+                  <DnsRow
+                    label="SPF"
+                    type="TXT"
+                    host={showDnsFor.domain}
+                    value={showDnsFor.spfValue || 'v=spf1 include:emailxp.net ~all'}
+                    setCopyState={setCopyState}
+                    copyState={copyState}
+                  />
+                  <DnsRow
+                    label="Tracking"
+                    type="CNAME"
+                    host={showDnsFor.trackingHost || `track.${showDnsFor.domain}`}
+                    value={showDnsFor.trackingValue || 'tracking.emailxp.net'}
+                    setCopyState={setCopyState}
+                    copyState={copyState}
+                  />
+                </div>
+
+                <div className="mt-8 flex items-center justify-end space-x-3">
+                  <button
+                    onClick={() => setShowDnsFor(null)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                  >
+                    I'll do this later
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (showDnsFor?._id) {
+                        const id = showDnsFor._id;
+                        setShowDnsFor(null);
+                        handleVerify(id);
+                      }
+                    }}
+                    className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    Done, Verify Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer Information */}
+        {active && primary ? (
+          <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+            <div className="flex items-start space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-green-900 mb-2">Ready to Send!</h4>
+                <p className="text-green-800 mb-3">
+                  Your emails will be sent from <code className="bg-white px-2 py-1 rounded border text-sm font-mono">no-reply@{primary.domain}</code>
+                </p>
+                <p className="text-green-700 text-sm">
+                  This address is automatically configured based on your verified domain for optimal deliverability.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : active ? (
+          <div className="mt-8 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-200">
+            <div className="flex items-start space-x-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-amber-900 mb-2">Domain Verification Required</h4>
+                <p className="text-amber-800 mb-3">
+                  Add DNS records for DKIM, SPF, and tracking, then click "Verify DNS" to enable sending.
+                </p>
+                <div className="flex items-center space-x-4 text-sm text-amber-700">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="w-4 h-4" />
+                    <span>Authentication</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Target className="w-4 h-4" />
+                    <span>Deliverability</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Zap className="w-4 h-4" />
+                    <span>Analytics</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </PageContainer>
   );
 }
 
-// Inline component for DNS rows
-function DnsRow({ label, type, host, value, setCopyState, copyState }){
+// Enhanced DNS Row Component
+function DnsRow({ label, type, host, value, setCopyState, copyState }) {
   const id = label.toLowerCase();
   const copy = async (text, which) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopyState({ which, ts: Date.now() });
-      setTimeout(()=>{ setCopyState(cs => (cs && cs.which===which ? null : cs)); }, 2000);
-    } catch {}
+      setTimeout(() => {
+        setCopyState(cs => (cs && cs.which === which ? null : cs));
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
   };
-  const active = copyState && copyState.which===id;
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'CNAME': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'TXT': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'MX': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getIcon = (label) => {
+    switch (label) {
+      case 'DKIM': return <Shield className="w-4 h-4" />;
+      case 'SPF': return <Target className="w-4 h-4" />;
+      case 'Tracking': return <Zap className="w-4 h-4" />;
+      default: return <Globe2 className="w-4 h-4" />;
+    }
+  };
+
   return (
-    <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <span className="text-xs font-semibold text-gray-700">{label}</span>
-        <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-200">{type}</span>
-      </div>
-      <div className="grid md:grid-cols-2 gap-3 text-[11px] font-mono break-all">
-        <div>
-          <span className="block text-gray-500 mb-0.5">Host / Name</span>
-          <div className="flex items-center gap-2">
-            <code className="bg-white rounded px-1 py-0.5 border border-gray-200 flex-1 overflow-hidden">{host}</code>
-            <button type="button" onClick={()=>copy(host,id+'-host')} className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-[10px] font-medium">{active && copyState.which===id+'-host' ? 'Copied' : 'Copy'}</button>
+    <div className="bg-white rounded-xl border-2 border-gray-200 p-5 hover:border-gray-300 transition-all duration-200 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-gray-100 rounded-lg">
+            {getIcon(label)}
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-900">{label}</h4>
+            <p className="text-sm text-gray-600">DNS Record</p>
           </div>
         </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(type)}`}>
+          {type}
+        </span>
+      </div>
+
+      <div className="space-y-4">
         <div>
-          <span className="block text-gray-500 mb-0.5">Value</span>
-          <div className="flex items-center gap-2">
-            <code className="bg-white rounded px-1 py-0.5 border border-gray-200 flex-1 overflow-hidden">{value}</code>
-            <button type="button" onClick={()=>copy(value,id+'-value')} className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-[10px] font-medium">{active && copyState.which===id+'-value' ? 'Copied' : 'Copy'}</button>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Host / Name</label>
+          <div className="flex items-center space-x-2">
+            <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-900 break-all">
+              {host}
+            </code>
+            <button
+              type="button"
+              onClick={() => copy(host, `${id}-host`)}
+              className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+            >
+              {copyState && copyState.which === `${id}-host` ? (
+                <Check className="w-4 h-4 text-green-600" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+              <span className="ml-2">
+                {copyState && copyState.which === `${id}-host` ? 'Copied!' : 'Copy'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Value</label>
+          <div className="flex items-center space-x-2">
+            <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-900 break-all">
+              {value}
+            </code>
+            <button
+              type="button"
+              onClick={() => copy(value, `${id}-value`)}
+              className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+            >
+              {copyState && copyState.which === `${id}-value` ? (
+                <Check className="w-4 h-4 text-green-600" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+              <span className="ml-2">
+                {copyState && copyState.which === `${id}-value` ? 'Copied!' : 'Copy'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
