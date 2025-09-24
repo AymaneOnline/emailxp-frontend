@@ -34,9 +34,11 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
       try {
         setLoadingDomains(true);
         const userDomains = await listDomains();
-        setDomains(userDomains);
+        // Ensure we always set domains to an array
+        setDomains(Array.isArray(userDomains) ? userDomains : []);
       } catch (error) {
         console.error('Failed to fetch domains:', error);
+        setDomains([]); // Set to empty array on error
       } finally {
         setLoadingDomains(false);
       }
@@ -47,7 +49,7 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
 
   // Set default from address when domains are loaded (only for new campaigns without from address)
   React.useEffect(() => {
-    if (!loadingDomains && domains.length > 0 && !from && !campaignId) {
+    if (!loadingDomains && domains && Array.isArray(domains) && domains.length > 0 && !from && !campaignId) {
       // Find primary domain or first verified domain
       const primaryDomain = domains.find(d => d.isPrimary);
       const verifiedDomain = domains.find(d => d.status === 'verified');
@@ -119,9 +121,9 @@ const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId 
                 />
                 {loadingDomains ? (
                   <p className="mt-2 text-sm text-gray-500">Loading your verified domains...</p>
-                ) : domains.length > 0 ? (
+                ) : (domains && Array.isArray(domains) && domains.length > 0) ? (
                   <p className="mt-2 text-sm text-gray-500">
-                    Tip: Use an address from your verified domains for better deliverability (e.g., no-reply@{domains.find(d => d.isPrimary || d.status === 'verified')?.domain || 'yourdomain.com'})
+                    Tip: Use an address from your verified domains for better deliverability (e.g., no-reply@{(domains.find(d => d.isPrimary || d.status === 'verified') || {}).domain || 'yourdomain.com'})
                   </p>
                 ) : (
                   <p className="mt-2 text-sm text-amber-600">
