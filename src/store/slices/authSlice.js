@@ -129,6 +129,13 @@ export const authSlice = createSlice({
         state.message = action.payload;
         state.user = null;
         state.isSuccess = false;
+        // Remove any persisted user to avoid stale tokens causing unexpected redirects
+        try {
+          localStorage.removeItem('user');
+          sessionStorage.removeItem('user');
+        } catch (e) {
+          // ignore (some environments may restrict storage)
+        }
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
