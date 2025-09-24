@@ -28,21 +28,50 @@ async function request(fn){
       err.original = e;
       throw err;
     }
+    // Handle rate limiting
+    if(status === 429){
+      const err = new Error('RATE_LIMITED');
+      err.original = e;
+      err.retryAfter = e.response?.headers?.['retry-after'];
+      throw err;
+    }
+    // Handle validation errors
+    if(status === 400 && e.response?.data?.message){
+      const err = new Error(e.response.data.message);
+      err.original = e;
+      throw err;
+    }
     throw e;
   }
 }
 
-export async function listDomains({ force } = {}) {
+export async function listDomains({ force, page = 1, limit = 20, search, status } = {}) {
   const now = Date.now();
-  if(!force && domainCache && (now - domainCacheTs) < CACHE_TTL_MS){
+  if(!force && domainCache && (now - domainCacheTs) < CACHE_TTL_MS && !search && !status && page === 1){
     return domainCache;
   }
-  const { data } = await request(()=>api.get(API_BASE));
-  // Ensure we always return an array
-  const domains = Array.isArray(data) ? data : [];
+
+  const params = new URLSearchParams();
+  if (page && page !== 1) params.append('page', page);
+  if (limit && limit !== 20) params.append('limit', limit);
+  if (search) params.append('search', search);
+  if (status) params.append('status', status);
+
+  const queryString = params.toString();
+  const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
+
+  const { data } = await request(()=>api.get(url));
+
+  // Ensure we always return an array for backward compatibility
+  const domains = data.domains || data || [];
   domainCache = domains;
   domainCacheTs = now;
   return domains;
+}
+
+export async function getDomainStats() {
+  const { data } = await request(()=>api.get(`${API_BASE}/stats`));
+  return data;
 }
 
 export async function createDomain(domain) {
@@ -69,12 +98,25 @@ export async function verifyDomain(id) {
   return data;
 }
 
+export async function setPrimaryDomain(id) {
+  const { data } = await request(()=>api.put(`${API_BASE}/${id}/primary`));
+  domainCache = null; // Invalidate cache
+  return data;
+}
+
+export async function deleteDomain(id) {
+  const { data } = await request(()=>api.delete(`${API_BASE}/${id}`));
+  domainCache = null; // Invalidate cache
+  return data;
+}
+
 const domainService = {
   listDomains,
   createDomain,
   getDomain,
   regenerateDkim,
   verifyDomain,
+  getDomainStats,
+  setPrimaryDomain,
+  deleteDomain,
 };
-
-export default domainService;
