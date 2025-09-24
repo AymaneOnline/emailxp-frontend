@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { Mail, Users, MousePointer, Eye } from 'lucide-react';
-import { Sparkline } from './charts';
 import { useEngagementFunnel } from '../../hooks/useEngagementFunnel';
 import EngagementFunnel from '../../components/charts/EngagementFunnel';
 import useCampaignTrends from '../../hooks/useCampaignTrends';
@@ -37,11 +36,9 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
         <MetricCard title="Unsub Rate" value={`${unsubRate.toFixed(2)}%`} icon={Users} description="Avg unsub" loading={metricsLoading} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-unsub-rate" />
         <MetricCard title="Subs" value={subscriberStats?.total || subscriberStats?.totalSubscribers || 0} icon={Users} description="Total" loading={!subscriberStats} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-subs" />
       </div>
-      <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <TrendCard label="Open Trend" data={trendData.open} color="#DC2626" />
-        <TrendCard label="Click Trend" data={trendData.click} color="#2563EB" />
-        <TrendCard label="Unsub Trend" data={trendData.unsub} color="#6B7280" />
-        <TrendCard label="Delivered Trend" data={trendData.delivered} color="#16A34A" />
+      <div className="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4" aria-label="performance-trends">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Performance Trends (30d)</h3>
+        <PerformanceTrendsChart trendData={trendData} />
       </div>
       <div className="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4" aria-label="engagement-funnel">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Engagement Funnel (30d)</h3>
@@ -53,11 +50,93 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
   );
 }
 
-function TrendCard({ label, data, color }) {
+function PerformanceTrendsChart({ trendData }) {
+  const { open = [], click = [], unsub = [] } = trendData;
+  const maxLength = Math.max(open.length, click.length, unsub.length);
+  
+  if (!maxLength) {
+    return <div className="text-xs text-gray-500">No trend data available.</div>;
+  }
+
+  // Normalize data to same length
+  const normalizeData = (data, length) => {
+    if (data.length === length) return data;
+    if (data.length > length) return data.slice(-length);
+    return [...Array(length - data.length).fill(0), ...data];
+  };
+
+  const openData = normalizeData(open, maxLength);
+  const clickData = normalizeData(click, maxLength);
+  const unsubData = normalizeData(unsub, maxLength);
+
+  // Calculate scales
+  const allValues = [...openData, ...clickData, ...unsubData];
+  const maxValue = Math.max(...allValues, 1);
+  const minValue = Math.min(...allValues, 0);
+
+  // Create SVG paths
+  const createPath = (data, color) => {
+    if (!data.length) return '';
+    const points = data.map((d, i) => {
+      const x = (i / (data.length - 1)) * 100;
+      const y = maxValue === minValue ? 50 : 100 - ((d - minValue) / (maxValue - minValue)) * 100;
+      return `${x},${y}`;
+    }).join(' ');
+    return points;
+  };
+
+  const openPath = createPath(openData, '#DC2626');
+  const clickPath = createPath(clickData, '#2563EB');
+  const unsubPath = createPath(unsubData, '#6B7280');
+
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3" aria-label={`trend-${label.toLowerCase().replace(/\s/g,'-')}`}> 
-      <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <Sparkline data={data||[]} stroke={color} />
+    <div className="space-y-2">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-32" aria-label="performance-trends-chart">
+        {openPath && (
+          <polyline 
+            fill="none" 
+            stroke="#DC2626" 
+            strokeWidth="2" 
+            strokeLinejoin="round" 
+            strokeLinecap="round" 
+            points={openPath} 
+          />
+        )}
+        {clickPath && (
+          <polyline 
+            fill="none" 
+            stroke="#2563EB" 
+            strokeWidth="2" 
+            strokeLinejoin="round" 
+            strokeLinecap="round" 
+            points={clickPath} 
+          />
+        )}
+        {unsubPath && (
+          <polyline 
+            fill="none" 
+            stroke="#6B7280" 
+            strokeWidth="2" 
+            strokeLinejoin="round" 
+            strokeLinecap="round" 
+            points={unsubPath} 
+          />
+        )}
+      </svg>
+      <div className="flex justify-center space-x-6 text-xs">
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-0.5 bg-red-600"></div>
+          <span>Open Rate</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-0.5 bg-blue-600"></div>
+          <span>Click Rate</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-0.5 bg-gray-500"></div>
+          <span>Unsub Rate</span>
+        </div>
+      </div>
     </div>
   );
 }
