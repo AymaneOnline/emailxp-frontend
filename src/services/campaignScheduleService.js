@@ -10,7 +10,11 @@ const SCHEDULE_API = base ? `${base}/api/campaign-schedules` : '/api/campaign-sc
 const scheduleAPI = axios.create({ baseURL: SCHEDULE_API });
 
 scheduleAPI.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  // Get user from localStorage first, then sessionStorage as fallback (same as authSlice)
+  let user = JSON.parse(localStorage.getItem('user'));
+  if (!user) {
+    user = JSON.parse(sessionStorage.getItem('user'));
+  }
   const token = user && user.token ? user.token : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
