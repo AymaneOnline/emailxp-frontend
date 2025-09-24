@@ -34,7 +34,7 @@ export function getBackendUrl() {
       }
     }
 
-    console.warn('getBackendUrl: VITE_BACKEND_URL is empty');
+  console.warn('getBackendUrl: no backend URL found (checked window.__BACKEND_URL__, VITE and REACT_APP envs)');
     return '';
   } catch (e) {
     return '';
