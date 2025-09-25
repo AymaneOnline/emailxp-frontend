@@ -35,17 +35,17 @@ function OnboardingChecklist({ compact = false }) {
 
   // Analytics & focus handling
   useEffect(() => {
-    const doneStates = { verified: !!user?.isVerified, profile: !!user?.isProfileComplete };
-    const completedCount = [true, doneStates.verified, doneStates.profile].filter(Boolean).length;
+    const doneStates = { verified: !!user?.isVerified, profile: !!user?.isProfileComplete, domain: !!user?.hasVerifiedDomain };
+    const completedCount = [true, doneStates.verified, doneStates.profile, doneStates.domain].filter(Boolean).length;
     if (previousCompletionRef.current !== completedCount) {
-      track('onboarding_progress_change', { completed: completedCount, total: 3 });
-      if (completedCount === 3) track('onboarding_complete');
+      track('onboarding_progress_change', { completed: completedCount, total: 4 });
+      if (completedCount === 4) track('onboarding_complete');
       previousCompletionRef.current = completedCount;
     }
     if (activeStepHeadingRef.current) {
       activeStepHeadingRef.current.focus({ preventScroll: true });
     }
-  }, [user?.isVerified, user?.isProfileComplete]);
+  }, [user?.isVerified, user?.isProfileComplete, user?.hasVerifiedDomain]);
 
   const remainingMs = Math.max(0, cooldownEndsAt - now);
   const remainingSec = Math.ceil(remainingMs / 1000);
@@ -114,8 +114,8 @@ function OnboardingChecklist({ compact = false }) {
   <div className={`bg-white ${compact ? 'p-5' : 'p-6'} rounded-xl shadow-md border border-gray-200`}>
       {/* Progress Indicator */}
       {(() => {
-  const total = 3;
-  const done = [true, !!user?.isVerified, !!user?.isProfileComplete].filter(Boolean).length;
+  const total = 4;
+  const done = [true, !!user?.isVerified, !!user?.isProfileComplete, !!user?.hasVerifiedDomain].filter(Boolean).length;
         const percentage = (done / total) * 100;
         return (
           <div className="mb-5" aria-live="polite" ref={progressLiveRef}>
@@ -206,27 +206,27 @@ function OnboardingChecklist({ compact = false }) {
         )}
 
         {renderStep(
-          3,
-          'Complete Profile',
-          'Finish details so we can personalize sending.',
-          user?.isProfileComplete,
-          user?.isVerified && !user?.isProfileComplete,
-          user?.isProfileComplete ? (
+          4,
+          'Setup Domain',
+          'Add your domain to enable professional email sending and landing pages.',
+          user?.hasVerifiedDomain,
+          user?.isVerified && user?.isProfileComplete && !user?.hasVerifiedDomain,
+          user?.hasVerifiedDomain ? (
             <span className="text-sm font-semibold text-green-600 flex items-center">
               Done <ChevronRightIcon className="h-5 w-5 ml-1" />
             </span>
           ) : (
             <button
               type="button"
-              onClick={handleCompleteProfileClick}
-              disabled={!user?.isVerified}
+              onClick={() => navigate('/settings#domains')}
+              disabled={!user?.isVerified || !user?.isProfileComplete}
               className={`inline-flex items-center rounded-md text-sm font-medium px-4 py-2 border shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-red
-                ${!user?.isVerified
+                ${!user?.isVerified || !user?.isProfileComplete
                   ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
               `}
             >
-              Complete <ChevronRightIcon className="h-5 w-5 ml-1" />
+              Setup <ChevronRightIcon className="h-5 w-5 ml-1" />
             </button>
           )
         )}

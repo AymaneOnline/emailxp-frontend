@@ -1,4 +1,4 @@
 export function isOnboardingComplete(user){
   if(!user) return false;
-  return !!(user.isVerified && user.isProfileComplete);
+  return !!(user.isVerified && user.isProfileComplete && user.hasVerifiedDomain);
 }

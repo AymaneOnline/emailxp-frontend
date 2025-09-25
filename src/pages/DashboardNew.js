@@ -40,7 +40,8 @@ export default function DashboardNew() {
   // Distinguish between email verification and profile completion so we can tailor UI
   const needsEmailVerification = !!user && !user.isVerified;
   const needsProfileCompletion = !!user && user.isVerified && !user.isProfileComplete;
-  const onboardingIncomplete = needsEmailVerification || needsProfileCompletion;
+  const needsDomainSetup = !!user && user.isVerified && user.isProfileComplete && !user.hasVerifiedDomain;
+  const onboardingIncomplete = needsEmailVerification || needsProfileCompletion || needsDomainSetup;
   const domainNeedsAttention = !!user && user.isVerified && !user.hasVerifiedDomain;
 
   // Defer panel lazy imports until onboarding complete to reduce initial bundle
@@ -62,6 +63,9 @@ export default function DashboardNew() {
               )}
               {needsProfileCompletion && (
                 <p className="text-sm text-gray-600">Complete your profile to unlock live metrics, segmentation insights, automation analytics & deliverability monitoring.</p>
+              )}
+              {needsDomainSetup && (
+                <p className="text-sm text-gray-600">Add your domain to enable professional email sending with proper authentication and deliverability.</p>
               )}
             </div>
           </div>
@@ -85,6 +89,9 @@ export default function DashboardNew() {
                 )}
                 {needsProfileCompletion && (
                   <p className="text-[11px] text-gray-500 leading-relaxed">Almost there — finish profile details to unlock the full dashboard experience.</p>
+                )}
+                {needsDomainSetup && (
+                  <p className="text-[11px] text-gray-500 leading-relaxed">One more step — add your domain to start sending professional emails.</p>
                 )}
               </div>
             </div>

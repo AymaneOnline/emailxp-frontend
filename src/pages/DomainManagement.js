@@ -166,6 +166,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newDomain, setNewDomain] = useState('');
+  const [rootDomain, setRootDomain] = useState('');
   const [error, setError] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
   const [showDnsFor, setShowDnsFor] = useState(null);
@@ -242,6 +243,54 @@ export default function DomainManagement({ embedded = false, active = true, onLo
       setError(e.response?.data?.message || e.message);
     }
   };
+
+  const handleQuickSetup = async () => {
+    if (!rootDomain.trim()) return;
+
+    setCreating(true);
+    setError(null);
+    try {
+      const subdomains = [
+        `mail.${rootDomain.trim()}`,
+        `pages.${rootDomain.trim()}`,
+        `forms.${rootDomain.trim()}`,
+        `track.${rootDomain.trim()}`
+      ];
+
+      const createdDomains = [];
+      for (const subdomain of subdomains) {
+        try {
+          const created = await createDomain(subdomain);
+          createdDomains.push(created);
+        } catch (e) {
+          // If one fails, continue with others but show warning
+          console.warn(`Failed to create ${subdomain}:`, e.message);
+        }
+      }
+
+      if (createdDomains.length > 0) {
+        setSuccessMessage(`Successfully created ${createdDomains.length} subdomains! Configure DNS records to complete setup.`);
+        await load();
+        setShowDnsFor(createdDomains[0]); // Show DNS for the first created domain
+      } else {
+        setError('Failed to create any subdomains. Please try again.');
+      }
+
+      setRootDomain('');
+
+      // Clear success message after 10 seconds (longer for multiple domains)
+      setTimeout(() => setSuccessMessage(null), 10000);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const hasRootDomain = domains.some(d => !d.domain.includes('.')) || domains.some(d => {
+    const parts = d.domain.split('.');
+    return parts.length === 2; // Simple check for root domains
+  });
 
   const primary = Array.isArray(domains) ? domains.find(d => d.isPrimary) : null;
   const verifiedCount = domains.filter(d => d.status === 'verified').length;
@@ -357,6 +406,71 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               {domains.length} of 10 domains used
             </div>
           </div>
+
+          {/* Quick Setup Section */}
+          {!hasRootDomain && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Quick Domain Setup</h4>
+                  <p className="text-sm text-blue-800 mb-3">
+                    Enter your root domain and we'll automatically create the recommended subdomains for professional email marketing:
+                  </p>
+                  <ul className="text-sm text-blue-800 space-y-1 mb-4">
+                    <li>• <strong>mail.yourdomain.com</strong> - Email sending</li>
+                    <li>• <strong>pages.yourdomain.com</strong> - Landing pages</li>
+                    <li>• <strong>forms.yourdomain.com</strong> - Form collection</li>
+                    <li>• <strong>track.yourdomain.com</strong> - Email tracking</li>
+                  </ul>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <label htmlFor="root-domain" className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Root Domain
+                      </label>
+                      <input
+                        id="root-domain"
+                        type="text"
+                        value={rootDomain}
+                        onChange={e => setRootDomain(e.target.value)}
+                        placeholder="yourcompany.com"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                        disabled={creating}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={handleQuickSetup}
+                        disabled={creating || !rootDomain.trim()}
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                      >
+                        {creating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Setting up...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4 mr-2" />
+                            Quick Setup
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-blue-700">
+                    💡 This creates 4 subdomains automatically following email marketing best practices.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-gray-200 pt-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">Or Add Individual Domains</h4>
 
           <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
