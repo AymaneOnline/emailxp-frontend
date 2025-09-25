@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import { H1, H2, Muted } from '../components/ui/Typography';
-import { listDomains, createDomain, getDomain, verifyDomain, regenerateDkim } from '../services/domainService';
+import { listDomains, createDomain, getDomain, verifyDomain, regenerateDkim, deleteDomain } from '../services/domainService';
 import { CheckCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info, AlertCircle, X } from 'lucide-react';
 
 function StatusBadge({ domain }) {
@@ -31,7 +31,7 @@ function StatusBadge({ domain }) {
   );
 }
 
-function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns }) {
+function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns, onDelete }) {
   const isVerified = domain.status === 'verified';
   const isPartiallyVerified = domain.status === 'partially_verified';
   const isVerifying = verifyingId === domain._id;
@@ -146,6 +146,14 @@ function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns
               <RefreshCcw className="w-3 h-3 mr-1.5" />
               Regenerate DKIM
             </button>
+              <button
+                onClick={() => onDelete && onDelete(domain._id)}
+                className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm"
+                title="Delete domain"
+              >
+                <X className="w-3 h-3 mr-1.5" />
+                Delete
+              </button>
           </div>
 
           <button
@@ -244,6 +252,20 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this domain? This action cannot be undone.')) return;
+    setError(null);
+    try {
+      await deleteDomain(id);
+      setSuccessMessage('Domain deleted successfully');
+      await load();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message);
+    }
+  };
+
   const handleQuickSetup = async () => {
     if (!rootDomain.trim()) return;
 
@@ -310,13 +332,14 @@ export default function DomainManagement({ embedded = false, active = true, onLo
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              </tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <tr>
-                <td colSpan="2" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan="3" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   <div className="flex flex-col items-center">
                     <p className="text-sm">No domains configured yet</p>
                     <p className="text-xs text-gray-400 mt-1">Add your first domain to get started</p>
@@ -346,6 +369,15 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <StatusBadge domain={domain} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => handleDelete(domain._id)}
+                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-red-300 text-red-700 bg-white hover:bg-red-50 transition-colors"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -663,6 +695,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                       setShowDnsFor(domain);
                     }
                   }}
+                  onDelete={() => handleDelete(d._id)}
                 />
               ))}
             </div>
