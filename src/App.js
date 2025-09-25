@@ -43,6 +43,7 @@ import FormSubmissions from './pages/FormSubmissions'; // Add this import
 // Removed standalone ABTesting page import (A/B tests integrated into Campaigns)
 import PublicLandingPage from './pages/PublicLandingPage'; // Add this import
 import VerifyEmail from './pages/VerifyEmail';
+import ConfirmAccountDeletion from './pages/ConfirmAccountDeletion';
 
 // Import the Layout component
 import Layout from './components/Layout';
@@ -221,6 +222,10 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <RequireOnboardingComplete><ProfileSettings /></RequireOnboardingComplete> },
     ],
+  },
+  {
+    path: '/settings/account/delete/:token',
+    element: <ConfirmAccountDeletion />,
   },
   {
     path: '/forms',

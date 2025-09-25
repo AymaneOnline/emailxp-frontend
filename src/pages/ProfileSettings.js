@@ -51,18 +51,31 @@ function ProfileSettings() {
   const [websiteError, setWebsiteError] = useState('');
   const [websitePreview, setWebsitePreview] = useState('');
 
+  // Account deletion state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   const industries = [
     "Technology", "Marketing", "E-commerce", "Education", "Healthcare", "Non-profit", "Other"
   ];
 
-  // Tab state synced with hash (#profile | #domains) – must be before any early returns
-  const initialTab = (typeof window !== 'undefined' && window.location.hash === '#domains') ? 'domains' : 'profile';
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // Tab state synced with hash (#profile | #domains | #account) – must be before any early returns
+  const getInitialTab = () => {
+    if (typeof window === 'undefined') return 'profile';
+    if (window.location.hash === '#domains') return 'domains';
+    if (window.location.hash === '#account') return 'account';
+    return 'profile';
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [domainsLoaded, setDomainsLoaded] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const onHashChange = () => {
-        setActiveTab(window.location.hash === '#domains' ? 'domains' : 'profile');
+        if (window.location.hash === '#domains') setActiveTab('domains');
+        else if (window.location.hash === '#account') setActiveTab('account');
+        else setActiveTab('profile');
       };
       window.addEventListener('hashchange', onHashChange);
       const onOpenDomains = () => {
@@ -86,13 +99,13 @@ function ProfileSettings() {
   const switchTab = useCallback((tab) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
-      const targetHash = tab === 'domains' ? '#domains' : '#profile';
+      const targetHash = tab === 'domains' ? '#domains' : tab === 'account' ? '#account' : '#profile';
       if (window.location.hash !== targetHash) {
         window.history.replaceState({}, '', targetHash);
       }
       // Maintain current scroll position; only move focus (no scrolling)
       requestAnimationFrame(() => {
-        const id = tab === 'domains' ? 'domains-section' : 'profile-section';
+        const id = tab === 'domains' ? 'domains-section' : tab === 'account' ? 'account-section' : 'profile-section';
         const el = document.getElementById(id);
         if (el) {
           try { el.focus({ preventScroll: true }); } catch { el.focus?.(); }
@@ -336,7 +349,7 @@ function ProfileSettings() {
       aria-label="Settings sections"
       className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-2 flex items-center gap-2 text-sm font-medium"
       onKeyDown={(e)=>{
-        const order=['profile','domains'];
+        const order=['profile','domains','account'];
         const currentIndex = order.indexOf(activeTab);
         if(currentIndex===-1) return;
         if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){
@@ -357,6 +370,7 @@ function ProfileSettings() {
     >
       <button id="settings-tab-profile" role="tab" aria-selected={activeTab==='profile'} aria-controls="profile-section" tabIndex={activeTab==='profile'?0:-1} onClick={()=>switchTab('profile')} className={(activeTab==='profile' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Profile</button>
       <button id="settings-tab-domains" role="tab" aria-selected={activeTab==='domains'} aria-controls="domains-section" tabIndex={activeTab==='domains'?0:-1} onClick={()=>switchTab('domains')} className={(activeTab==='domains' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Domains</button>
+      <button id="settings-tab-account" role="tab" aria-selected={activeTab==='account'} aria-controls="account-section" tabIndex={activeTab==='account'?0:-1} onClick={()=>switchTab('account')} className={(activeTab==='account' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Account</button>
     </div>
   );
 
@@ -616,6 +630,77 @@ function ProfileSettings() {
     </div>
   );
 
+  const accountPanel = activeTab === 'account' && (
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 min-h-[200px] relative" id="account-section" role="tabpanel" aria-labelledby="settings-tab-account">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Account Management</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account settings and data.</p>
+        </div>
+      </div>
+
+      {/* Account Deletion Section */}
+      <div className="border border-red-200 dark:border-red-800 rounded-lg p-6 bg-red-50 dark:bg-red-900/20">
+        <div className="flex items-start space-x-4">
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">Delete Account</h3>
+            <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="text-sm text-red-700 dark:text-red-300">
+                <strong>What will be deleted:</strong>
+                <ul className="mt-1 ml-4 list-disc space-y-1">
+                  <li>All email campaigns and templates</li>
+                  <li>All subscriber lists and contact data</li>
+                  <li>All analytics and performance data</li>
+                  <li>All domain configurations</li>
+                  <li>Your account profile and settings</li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
+                <div className="flex">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Before you continue</p>
+                    <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                      Consider exporting your data first. You can download your campaigns, subscribers, and analytics from the respective sections.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 rounded-md text-sm font-medium"
+                >
+                  Delete Account
+                </button>
+                <a
+                  href="/export-data"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 rounded-md text-sm font-medium"
+                >
+                  Export Data First
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const aside = (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-5 space-y-4" aria-label="Profile completion progress">
             <div className="flex items-center justify-between">
@@ -647,6 +732,24 @@ function ProfileSettings() {
     </div>
   );
 
+  const handleInitiateDeletion = async () => {
+    if (!deletePassword.trim()) return;
+
+    setDeletingAccount(true);
+    try {
+      await userService.initiateAccountDeletion(deletePassword, deleteReason);
+      toast.success('Account deletion request sent. Please check your email for confirmation.');
+      setShowDeleteModal(false);
+      setDeletePassword('');
+      setDeleteReason('');
+    } catch (error) {
+      console.error('Failed to initiate account deletion:', error);
+      toast.error(error.response?.data?.message || 'Failed to initiate account deletion');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
   return (
     <SettingsLayout
       heading="Settings"
@@ -656,6 +759,95 @@ function ProfileSettings() {
     >
       {profilePanel}
       {domainsPanel}
+      {accountPanel}
+
+      {/* Account Deletion Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Account</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        This action cannot be undone. This will permanently delete your account and all associated data.
+                      </p>
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <label htmlFor="delete-password" className="block text-sm font-medium text-gray-700">
+                          Confirm your password
+                        </label>
+                        <input
+                          type="password"
+                          id="delete-password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                          placeholder="Enter your password"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="delete-reason" className="block text-sm font-medium text-gray-700">
+                          Reason for leaving (optional)
+                        </label>
+                        <select
+                          id="delete-reason"
+                          value={deleteReason}
+                          onChange={(e) => setDeleteReason(e.target.value)}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                        >
+                          <option value="">Select a reason</option>
+                          <option value="not-using">Not using the service</option>
+                          <option value="found-alternative">Found a better alternative</option>
+                          <option value="technical-issues">Technical issues</option>
+                          <option value="privacy-concerns">Privacy concerns</option>
+                          <option value="cost">Too expensive</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleInitiateDeletion}
+                  disabled={deletingAccount || !deletePassword.trim()}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingAccount ? 'Deleting...' : 'Delete Account'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                    setDeleteReason('');
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </SettingsLayout>
   );
 }

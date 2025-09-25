@@ -29,10 +29,31 @@ const uploadProfilePicture = async (file) => {
   return response.data;
 };
 
+// Initiate account deletion
+const initiateAccountDeletion = async (password, reason = '') => {
+  const response = await axios.post(USERS_API_PATH + '/initiate-deletion', { password, reason });
+  return response.data;
+};
+
+// Confirm account deletion
+const confirmAccountDeletion = async (token) => {
+  const response = await axios.post(USERS_API_PATH + `/confirm-deletion/${token}`);
+  return response.data;
+};
+
+// Cancel account deletion
+const cancelAccountDeletion = async () => {
+  const response = await axios.post(USERS_API_PATH + '/cancel-deletion');
+  return response.data;
+};
+
 const userService = {
   getUserProfile,
   updateUserProfile,
   uploadProfilePicture,
+  initiateAccountDeletion,
+  confirmAccountDeletion,
+  cancelAccountDeletion,
 };
 
 export default userService;
