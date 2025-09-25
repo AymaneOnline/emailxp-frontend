@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import { H1, H2, Muted } from '../components/ui/Typography';
 import { listDomains, createDomain, getDomain, verifyDomain, regenerateDkim } from '../services/domainService';
-import { CheckCircle, AlertCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info } from 'lucide-react';
+import { CheckCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info, AlertCircle, X } from 'lucide-react';
 
 function StatusBadge({ domain }) {
   const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200';
@@ -295,12 +295,69 @@ export default function DomainManagement({ embedded = false, active = true, onLo
   const primary = Array.isArray(domains) ? domains.find(d => d.isPrimary) : null;
   const verifiedCount = domains.filter(d => d.status === 'verified').length;
 
+  if (embedded) {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+        </div>
+      );
+    }
+
+    if (domains.length === 0) {
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tr>
+                <td colSpan="2" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm">No domains configured yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Add your first domain to get started</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {domains.map((domain) => (
+              <tr key={domain._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  {domain.domain}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <StatusBadge domain={domain} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   return (
     <PageContainer>
-      <div className={embedded ? '' : 'max-w-6xl mx-auto'} role={embedded ? undefined : 'main'} aria-labelledby={embedded ? undefined : 'domains-heading'}>
-
-        {/* Header Section */}
-        {!embedded && (
+      <div className="max-w-6xl mx-auto" role="main" aria-labelledby="domains-heading">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
@@ -371,7 +428,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
           </div>
         )}
 
-        {/* Success Message */}
+        <div>
         {successMessage && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-sm">
             <div className="flex items-center space-x-3">
@@ -842,6 +899,8 @@ export default function DomainManagement({ embedded = false, active = true, onLo
             </div>
           </div>
         ) : null}
+
+        </div>
       </div>
     </PageContainer>
   );

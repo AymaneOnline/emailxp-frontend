@@ -10,6 +10,7 @@ import { track } from '../services/analyticsClient';
 import { normalizeWebsiteFrontend } from '../utils/website';
 import api from '../services/api';
 import { countries } from '../constants/countries';
+import { createDomain } from '../services/domainService';
 
 
 import {
@@ -57,6 +58,11 @@ function ProfileSettings() {
   const [deleteReason, setDeleteReason] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  // Domain creation modal state
+  const [showDomainModal, setShowDomainModal] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [creatingDomain, setCreatingDomain] = useState(false);
+
   const industries = [
     "Technology", "Marketing", "E-commerce", "Education", "Healthcare", "Non-profit", "Other"
   ];
@@ -70,7 +76,6 @@ function ProfileSettings() {
     return 'general';
   };
   const [activeTab, setActiveTab] = useState(getInitialTab());
-  const [domainsLoaded, setDomainsLoaded] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const onHashChange = () => {
@@ -98,6 +103,7 @@ function ProfileSettings() {
       };
     }
   }, []);
+
   const switchTab = useCallback((tab) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
@@ -448,8 +454,7 @@ function ProfileSettings() {
           </div>
           <button
             onClick={() => {
-              // Navigate to domain management or open modal
-              window.location.href = '/settings#domains';
+              setShowDomainModal(true);
             }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-red hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red"
           >
@@ -461,37 +466,7 @@ function ProfileSettings() {
         </div>
 
         {/* Domains Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Verified</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {!domainsLoaded && (
-                <tr>
-                  <td colSpan="4" className="px-6 py-4">
-                    <div className="space-y-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {domainsLoaded && (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <DomainManagement embedded active={activeTab==='domains'} onLoaded={() => setDomainsLoaded(true)} />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DomainManagement embedded active={activeTab==='domains'} />
       </div>
 
       {/* Sites Section */}
@@ -530,9 +505,6 @@ function ProfileSettings() {
               <tr>
                 <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   <div className="flex flex-col items-center">
-                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                    </svg>
                     <p className="text-sm">No sites configured yet</p>
                     <p className="text-xs text-gray-400 mt-1">Add your first site to get started</p>
                   </div>
@@ -702,6 +674,25 @@ function ProfileSettings() {
     }
   };
 
+  const handleCreateDomain = async () => {
+    if (!newDomain.trim()) return;
+
+    setCreatingDomain(true);
+    try {
+      await createDomain(newDomain.trim());
+      toast.success('Domain added successfully! Please verify it to start sending emails.');
+      setShowDomainModal(false);
+      setNewDomain('');
+      // Optionally refresh the domains list
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to create domain:', error);
+      toast.error(error.response?.data?.message || 'Failed to add domain');
+    } finally {
+      setCreatingDomain(false);
+    }
+  };
+
   return (
     <SettingsLayout
       heading="Settings"
@@ -713,6 +704,71 @@ function ProfileSettings() {
       {accountPanel}
       {domainsPanel}
       {notificationsPanel}
+
+      {/* Domain Creation Modal */}
+      {showDomainModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Add Sending Domain</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Enter the domain you want to use for sending emails. We'll guide you through the verification process.
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <label htmlFor="domain-input" className="block text-sm font-medium text-gray-700">
+                        Domain
+                      </label>
+                      <input
+                        type="text"
+                        id="domain-input"
+                        value={newDomain}
+                        onChange={(e) => setNewDomain(e.target.value)}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="example.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleCreateDomain}
+                  disabled={creatingDomain || !newDomain.trim()}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingDomain ? 'Adding...' : 'Add Domain'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDomainModal(false);
+                    setNewDomain('');
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Account Deletion Modal */}
       {showDeleteModal && (
