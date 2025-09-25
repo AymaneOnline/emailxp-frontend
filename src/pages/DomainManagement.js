@@ -318,7 +318,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
               Sending Domains
             </H2>
-            <Muted className="mt-2">Add and verify subdomains for professional email delivery</Muted>
+            <Muted className="mt-2">Add and verify domains for professional email delivery</Muted>
           </div>
         )}
 
@@ -361,20 +361,20 @@ export default function DomainManagement({ embedded = false, active = true, onLo
           <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label htmlFor="new-domain" className="block text-sm font-medium text-gray-700 mb-2">
-                Subdomain
+                Domain
               </label>
               <input
                 id="new-domain"
                 type="text"
                 value={newDomain}
                 onChange={e => setNewDomain(e.target.value)}
-                placeholder="mail.yourcompany.com"
+                placeholder="yourcompany.com"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
                 aria-required="true"
                 disabled={creating}
               />
               <p className="mt-2 text-sm text-gray-600">
-                Must be a subdomain with at least 3 parts (e.g., <strong>mail.example.com</strong>)
+                Enter your domain name (e.g., <strong>example.com</strong>)
               </p>
             </div>
 
@@ -443,7 +443,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No domains yet</h3>
               <p className="text-gray-600 mb-6">
-                Add your first subdomain above to start sending professional emails with proper authentication.
+                Add your first domain above to start sending professional emails with proper authentication.
               </p>
               <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-2">
@@ -553,7 +553,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                         </p>
                         <ol className="text-sm text-blue-800 list-decimal list-inside space-y-1">
                           <li>Go to your Cloudflare Dashboard</li>
-                          <li>Select your domain (mail.aymaneonline.dev)</li>
+                          <li>Select your domain (aymaneonline.dev)</li>
                           <li>Go to DNS → Records</li>
                           <li>Click "Import" and upload the downloaded CSV, or add records manually</li>
                         </ol>
