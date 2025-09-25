@@ -653,7 +653,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 </div>
 
                 <div className="space-y-4">
-                  {/* Cloudflare-specific instructions */}
+                  {/* General DNS Setup Instructions */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0">
@@ -662,16 +662,25 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                         </svg>
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Cloudflare DNS Setup</h4>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-1">DNS Setup Instructions</h4>
                         <p className="text-sm text-blue-800 mb-2">
-                          Download the CSV file and import it directly into Cloudflare, or add records manually:
+                          Add these DNS records to your domain provider. Most providers support CSV import or manual entry:
                         </p>
-                        <ol className="text-sm text-blue-800 list-decimal list-inside space-y-1">
-                          <li>Go to your Cloudflare Dashboard</li>
-                          <li>Select your domain (aymaneonline.dev)</li>
-                          <li>Go to DNS → Records</li>
-                          <li>Click "Import" and upload the downloaded CSV, or add records manually</li>
-                        </ol>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Popular DNS Providers:</p>
+                            <ul className="text-sm text-blue-800 list-disc list-inside ml-4 space-y-1">
+                              <li><strong>GoDaddy:</strong> Domain Settings → DNS Management → Add Record</li>
+                              <li><strong>Namecheap:</strong> Domain List → Manage → Advanced DNS</li>
+                              <li><strong>Cloudflare:</strong> DNS → Records → Import CSV or Add Record</li>
+                              <li><strong>Route 53 (AWS):</strong> Hosted Zones → Create Record</li>
+                              <li><strong>DigitalOcean:</strong> Networking → Domains → Add Record</li>
+                            </ul>
+                          </div>
+                          <div className="mt-3 p-2 bg-blue-100 rounded text-sm text-blue-900">
+                            <strong>Tip:</strong> Copy each record individually or download the CSV file below for bulk import.
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -707,8 +716,8 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 <button
                   onClick={() => {
                     try {
-                      // Generate DNS records in Cloudflare CSV import format
-                      // Format: Name,Type,Content,TTL,Proxy status
+                      // Generate DNS records in standard CSV format compatible with most providers
+                      // Format: Name,Type,Value,TTL
                       const dkimName = showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`;
                       const dkimValue = showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`;
                       const spfName = showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain;
@@ -716,13 +725,15 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                       const trackingName = showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`;
                       const trackingValue = showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com';
 
+                      const csvHeader = 'Name,Type,Value,TTL\n';
                       const records = [
-                        `${dkimName},CNAME,${dkimValue},AUTO,OFF`,
-                        `${spfName},TXT,"${spfValue}",AUTO,OFF`,
-                        `${trackingName},CNAME,${trackingValue},AUTO,OFF`
+                        `${dkimName},CNAME,${dkimValue},300`,
+                        `${spfName},TXT,"${spfValue}",300`,
+                        `${trackingName},CNAME,${trackingValue},300`
                       ].join('\n');
 
-                      const blob = new Blob([records], { type: 'text/csv;charset=utf-8;' });
+                      const csvContent = csvHeader + records;
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
