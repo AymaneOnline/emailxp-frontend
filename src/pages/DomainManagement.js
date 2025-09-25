@@ -615,7 +615,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
 
         {/* DNS Records Modal */}
         {showDnsFor ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none overflow-hidden pointer-events-auto">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
                 <div className="flex items-center justify-between">
