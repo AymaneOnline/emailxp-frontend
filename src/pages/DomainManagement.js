@@ -616,7 +616,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
         {/* DNS Records Modal */}
         {showDnsFor ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden pointer-events-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none overflow-hidden pointer-events-auto">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -639,122 +639,139 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 </div>
               </div>
 
-              <div className="p-6 overflow-y-auto max-h-96">
-                <div className="mb-6">
-                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-blue-800 font-medium">Important</p>
-                      <p className="text-blue-700 text-sm mt-1">
-                        DNS changes may take up to 24 hours to propagate. Verification may take a few minutes after propagation.
-                      </p>
+              <div className="flex h-full">
+                {/* Left Column - DNS Records */}
+                <div className="w-1/2 p-6 border-r border-gray-200 overflow-y-auto">
+                  <div className="mb-6">
+                    <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-blue-800 font-medium">Important</p>
+                        <p className="text-blue-700 text-sm mt-1">
+                          DNS changes may take up to 24 hours to propagate. Verification may take a few minutes after propagation.
+                        </p>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">DNS Records</h4>
+                    <DnsRow
+                      label="DKIM"
+                      type={showDnsFor.dkim?.type || showDnsFor.dkimRecord?.type || "CNAME"}
+                      host={showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`}
+                      value={showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`}
+                      setCopyState={setCopyState}
+                      copyState={copyState}
+                    />
+                    <DnsRow
+                      label="SPF"
+                      type={showDnsFor.spf?.type || showDnsFor.spfRecord?.type || "TXT"}
+                      host={showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain}
+                      value={showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all'}
+                      setCopyState={setCopyState}
+                      copyState={copyState}
+                    />
+                    <DnsRow
+                      label="Tracking"
+                      type={showDnsFor.tracking?.type || showDnsFor.trackingRecord?.type || "CNAME"}
+                      host={showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`}
+                      value={showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com'}
+                      setCopyState={setCopyState}
+                      copyState={copyState}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  {/* General DNS Setup Instructions */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-blue-900 mb-1">DNS Setup Instructions</h4>
-                        <p className="text-sm text-blue-800 mb-2">
-                          Add these DNS records to your domain provider. Most providers support CSV import or manual entry:
-                        </p>
-                        <div className="space-y-2">
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Popular DNS Providers:</p>
-                            <ul className="text-sm text-blue-800 list-disc list-inside ml-4 space-y-1">
-                              <li><strong>GoDaddy:</strong> Domain Settings → DNS Management → Add Record</li>
-                              <li><strong>Namecheap:</strong> Domain List → Manage → Advanced DNS</li>
-                              <li><strong>Cloudflare:</strong> DNS → Records → Import CSV or Add Record</li>
-                              <li><strong>Route 53 (AWS):</strong> Hosted Zones → Create Record</li>
-                              <li><strong>DigitalOcean:</strong> Networking → Domains → Add Record</li>
-                            </ul>
-                          </div>
-                          <div className="mt-3 p-2 bg-blue-100 rounded text-sm text-blue-900">
-                            <strong>Tip:</strong> Copy each record individually or download the CSV file below for bulk import.
+                {/* Right Column - Instructions and Actions */}
+                <div className="w-1/2 p-6 overflow-y-auto">
+                  <div className="space-y-6">
+                    {/* General DNS Setup Instructions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-900 mb-1">DNS Setup Instructions</h4>
+                          <p className="text-sm text-blue-800 mb-2">
+                            Add these DNS records to your domain provider. Most providers support CSV import or manual entry:
+                          </p>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-sm font-medium text-blue-900">Popular DNS Providers:</p>
+                              <ul className="text-sm text-blue-800 list-disc list-inside ml-4 space-y-1">
+                                <li><strong>GoDaddy:</strong> Domain Settings → DNS Management → Add Record</li>
+                                <li><strong>Namecheap:</strong> Domain List → Manage → Advanced DNS</li>
+                                <li><strong>Cloudflare:</strong> DNS → Records → Import CSV or Add Record</li>
+                                <li><strong>Route 53 (AWS):</strong> Hosted Zones → Create Record</li>
+                                <li><strong>DigitalOcean:</strong> Networking → Domains → Add Record</li>
+                              </ul>
+                            </div>
+                            <div className="mt-3 p-2 bg-blue-100 rounded text-sm text-blue-900">
+                              <strong>Tip:</strong> Copy each record individually or download the CSV file below for bulk import.
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <DnsRow
-                    label="DKIM"
-                    type={showDnsFor.dkim?.type || showDnsFor.dkimRecord?.type || "CNAME"}
-                    host={showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`}
-                    value={showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`}
-                    setCopyState={setCopyState}
-                    copyState={copyState}
-                  />
-                  <DnsRow
-                    label="SPF"
-                    type={showDnsFor.spf?.type || showDnsFor.spfRecord?.type || "TXT"}
-                    host={showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain}
-                    value={showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all'}
-                    setCopyState={setCopyState}
-                    copyState={copyState}
-                  />
-                  <DnsRow
-                    label="Tracking"
-                    type={showDnsFor.tracking?.type || showDnsFor.trackingRecord?.type || "CNAME"}
-                    host={showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`}
-                    value={showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com'}
-                    setCopyState={setCopyState}
-                    copyState={copyState}
-                  />
+                    {/* CSV Download Section */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Bulk Import Option</h4>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Download a CSV file with all DNS records for easy bulk import into your DNS provider.
+                      </p>
+                      <button
+                        onClick={() => {
+                          try {
+                            // Generate DNS records in standard CSV format compatible with most providers
+                            // Format: Name,Type,Value,TTL
+                            const dkimName = showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`;
+                            const dkimValue = showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`;
+                            const spfName = showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain;
+                            const spfValue = showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all';
+                            const trackingName = showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`;
+                            const trackingValue = showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com';
+
+                            const csvHeader = 'Name,Type,Value,TTL\n';
+                            const records = [
+                              `${dkimName},CNAME,${dkimValue},300`,
+                              `${spfName},TXT,"${spfValue}",300`,
+                              `${trackingName},CNAME,${trackingValue},300`
+                            ].join('\n');
+
+                            const csvContent = csvHeader + records;
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${showDnsFor.domain.replace(/\./g, '-')}-dns-records.csv`;
+                            a.style.display = 'none';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch (error) {
+                            console.error('Error downloading CSV:', error);
+                            alert('Failed to download CSV. Please try again.');
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download CSV
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    try {
-                      // Generate DNS records in standard CSV format compatible with most providers
-                      // Format: Name,Type,Value,TTL
-                      const dkimName = showDnsFor.dkim?.name || showDnsFor.dkimRecord?.name || `dkim1._domainkey.${showDnsFor.domain}`;
-                      const dkimValue = showDnsFor.dkim?.value || showDnsFor.dkimRecord?.value || `dkim1.${showDnsFor.domain}`;
-                      const spfName = showDnsFor.spf?.name || showDnsFor.spfRecord?.name || showDnsFor.domain;
-                      const spfValue = showDnsFor.spf?.value || showDnsFor.spfRecord?.value || 'v=spf1 include:spf.resend.com ~all';
-                      const trackingName = showDnsFor.tracking?.name || showDnsFor.trackingRecord?.name || `track.${showDnsFor.domain}`;
-                      const trackingValue = showDnsFor.tracking?.value || showDnsFor.trackingRecord?.value || 'tracking.emailxp.com';
-
-                      const csvHeader = 'Name,Type,Value,TTL\n';
-                      const records = [
-                        `${dkimName},CNAME,${dkimValue},300`,
-                        `${spfName},TXT,"${spfValue}",300`,
-                        `${trackingName},CNAME,${trackingValue},300`
-                      ].join('\n');
-
-                      const csvContent = csvHeader + records;
-                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `${showDnsFor.domain.replace(/\./g, '-')}-dns-records.csv`;
-                      a.style.display = 'none';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    } catch (error) {
-                      console.error('Error downloading CSV:', error);
-                      alert('Failed to download CSV. Please try again.');
-                    }
-                  }}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Download CSV
-                </button>
                 <button
                   onClick={() => setShowDnsFor(null)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
