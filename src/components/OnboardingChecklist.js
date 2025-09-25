@@ -206,6 +206,32 @@ function OnboardingChecklist({ compact = false }) {
         )}
 
         {renderStep(
+          3,
+          'Complete Profile',
+          'Add your personal details and company information.',
+          user?.isProfileComplete,
+          user?.isVerified && !user?.isProfileComplete,
+          user?.isProfileComplete ? (
+            <span className="text-sm font-semibold text-green-600 flex items-center">
+              Done <ChevronRightIcon className="h-5 w-5 ml-1" />
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCompleteProfileClick}
+              disabled={!user?.isVerified}
+              className={`inline-flex items-center rounded-md text-sm font-medium px-4 py-2 border shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-red
+                ${!user?.isVerified
+                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}
+              `}
+            >
+              Complete <ChevronRightIcon className="h-5 w-5 ml-1" />
+            </button>
+          )
+        )}
+
+        {renderStep(
           4,
           'Setup Domain',
           'Add your domain to enable professional email sending and landing pages.',
