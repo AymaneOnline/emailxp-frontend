@@ -12,7 +12,7 @@ import 'react-quill/dist/quill.snow.css';
 // Lazy load the Unlayer editor for better performance
 const UnlayerEmailEditor = lazy(() => import('./UnlayerEmailEditor'));
 
-const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId }) => {
+const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId, selectedTemplate }) => {
   const name = data.name || '';
   const from = data.from || '';
   const fromName = data.fromName || '';
@@ -740,7 +740,7 @@ const ContentDesignStep = ({ data, onChange, editorRef }) => {
                   ) : (
                     <UnlayerEmailEditor
                       ref={editorRef}
-                      initialDesign={data?.design || selectedTemplate?.design || null} // eslint-disable-line no-undef
+                      initialDesign={data?.design || selectedTemplate?.design || null}
                       onSave={handleSaveFromEditor}
                       onHtmlChange={handleUnlayerHtmlChange}
                       onDesignChange={handleUnlayerDesignChange}
@@ -1537,7 +1537,7 @@ const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChang
         )}
 
         <div className="min-h-[400px] px-6 py-8">
-          <CurrentStepComponent data={campaignData} onChange={updateCampaign} editorRef={editorRef} showValidation={showSetupValidation} campaignId={campaignId} />
+          <CurrentStepComponent data={campaignData} onChange={updateCampaign} editorRef={editorRef} showValidation={showSetupValidation} campaignId={campaignId} selectedTemplate={selectedTemplate} />
         </div>
 
         <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
