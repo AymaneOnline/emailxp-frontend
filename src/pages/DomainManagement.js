@@ -611,6 +611,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
             </div>
           </div>
         ) : null}
+      </div>
 
         {/* DNS Records Modal */}
         {showDnsFor && (
@@ -812,8 +813,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
             </div>
           </div>
-        ) : null}
-      </div>
+        )}
     </PageContainer>
   );
 }

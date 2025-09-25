@@ -12,7 +12,7 @@ import 'react-quill/dist/quill.snow.css';
 // Lazy load the Unlayer editor for better performance
 const UnlayerEmailEditor = lazy(() => import('./UnlayerEmailEditor'));
 
-const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId, selectedTemplate }) => {
+const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId, selectedTemplate = null }) => {
   const name = data.name || '';
   const from = data.from || '';
   const fromName = data.fromName || '';
@@ -1173,7 +1173,7 @@ const stepsMeta = [
   { id: 'schedule-review', title: 'Review & Schedule', component: ScheduleReviewStep },
 ];
 
-const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp, selectedTemplate }) => {
+const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp, selectedTemplate = null }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [campaignData, setCampaignData] = useState(() => ({}));
   const [dirty, setDirty] = useState(false);
