@@ -31,10 +31,13 @@ const configureAxios = (store) => {
     (response) => response,
     (error) => {
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-        console.error('Authentication error caught by interceptor:', error.response.status);
-        store.dispatch(logout());
-        store.dispatch(reset());
-        window.location.href = '/login';
+        // Don't redirect for login/register endpoints - let the components handle the error
+        if (!error.config.url.includes('/login') && !error.config.url.includes('/register')) {
+          console.error('Authentication error caught by interceptor:', error.response.status);
+          store.dispatch(logout());
+          store.dispatch(reset());
+          window.location.href = '/login';
+        }
       }
       return Promise.reject(error);
     }

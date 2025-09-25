@@ -13,6 +13,8 @@ function Login() {
     remember: false,
   });
 
+  const [formError, setFormError] = useState('');
+
   const { email, password, remember } = formData;
 
   const navigate = useNavigate();
@@ -32,6 +34,10 @@ function Login() {
       ...prevState,
       [e.target.name]: e.target.value,
     }));
+    // Clear form error when user starts typing
+    if (formError) {
+      setFormError('');
+    }
   };
 
   const onSubmit = async (e) => {
@@ -44,8 +50,21 @@ function Login() {
       navigate('/dashboard');
     } catch (err) {
       // The thunk already sets error state; show toast for immediate feedback
-      const msg = err?.response?.data?.message || err?.message || 'Login failed';
-      toast.error(msg);
+      const errorMessage = err?.response?.data?.message;
+      let userFriendlyMessage = 'Login failed. Please try again.';
+      
+      if (errorMessage === 'Invalid credentials') {
+        userFriendlyMessage = 'Invalid email or password. Please check your credentials and try again.';
+        setFormError('The email or password you entered is incorrect.');
+      } else if (errorMessage) {
+        userFriendlyMessage = errorMessage;
+        setFormError(errorMessage);
+      } else if (err?.message) {
+        userFriendlyMessage = err.message;
+        setFormError(err.message);
+      }
+      
+      toast.error(userFriendlyMessage);
       // ensure auth slice flags are reset for future attempts
       dispatch(reset());
     }
@@ -134,6 +153,21 @@ function Login() {
                 Forgot your password?
               </button>
             </div>
+
+            {formError && (
+              <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{formError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
