@@ -515,7 +515,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
         </div>
 
         {/* Domains List */}
-        {active && loading ? (
+        {(active && loading) ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Your Domains</h3>
@@ -549,7 +549,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               ))}
             </div>
           </div>
-        ) : active && Array.isArray(domains) && domains.length === 0 ? (
+        ) : (active && Array.isArray(domains) && domains.length === 0) ? (
           <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
             <div className="max-w-md mx-auto">
               <div className="p-4 bg-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -575,7 +575,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
             </div>
           </div>
-        ) : active ? (
+        ) : (active) ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Your Domains</h3>
@@ -610,11 +610,11 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               ))}
             </div>
           </div>
-        ) : null}
-      </div>
+        ) : <div></div>}
+        </div>
 
         {/* DNS Records Modal */}
-        {showDnsFor && (
+        {showDnsFor ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden pointer-events-auto">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
@@ -765,7 +765,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Footer Information */}
         {active && primary ? (
@@ -813,7 +813,8 @@ export default function DomainManagement({ embedded = false, active = true, onLo
               </div>
             </div>
           </div>
-        )}
+        ) : null}
+      </div>
     </PageContainer>
   );
 }

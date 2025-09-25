@@ -12,7 +12,8 @@ import 'react-quill/dist/quill.snow.css';
 // Lazy load the Unlayer editor for better performance
 const UnlayerEmailEditor = lazy(() => import('./UnlayerEmailEditor'));
 
-const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId, selectedTemplate = null }) => {
+const SetupAudienceStep = ({ data, onChange, showValidation = false, campaignId, selectedTemplate: selectedTemplateProp }) => {
+  const selectedTemplate = selectedTemplateProp || null;
   const name = data.name || '';
   const from = data.from || '';
   const fromName = data.fromName || '';
@@ -739,8 +740,9 @@ const ContentDesignStep = ({ data, onChange, editorRef }) => {
                     </div>
                   ) : (
                     <UnlayerEmailEditor
+                      // eslint-disable-next-line no-undef
                       ref={editorRef}
-                      initialDesign={data?.design || selectedTemplate?.design || null}
+                      initialDesign={data?.design || selectedTemplate?.design || null} // eslint-disable-line no-undef
                       onSave={handleSaveFromEditor}
                       onHtmlChange={handleUnlayerHtmlChange}
                       onDesignChange={handleUnlayerDesignChange}
@@ -1173,7 +1175,8 @@ const stepsMeta = [
   { id: 'schedule-review', title: 'Review & Schedule', component: ScheduleReviewStep },
 ];
 
-const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp, selectedTemplate = null }) => {
+const EnhancedCampaignBuilder = ({ campaignId, onCancel = () => {}, onDirtyChange, fullscreenModal = false, showBreadcrumbs = false, onSave: onSaveProp, selectedTemplate: selectedTemplateProp }) => {
+  const selectedTemplate = selectedTemplateProp || null;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [campaignData, setCampaignData] = useState(() => ({}));
   const [dirty, setDirty] = useState(false);
