@@ -180,6 +180,14 @@ export default function DomainManagement({ embedded = false, active = true, onLo
   const [showDnsFor, setShowDnsFor] = useState(null);
   const [copyState, setCopyState] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [toast, setToast] = useState(null); // {type: 'success'|'error', message: string}
+
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -256,10 +264,13 @@ export default function DomainManagement({ embedded = false, active = true, onLo
       try {
         await deleteDomain(id);
         setSuccessMessage('Domain deleted successfully');
+        setToast({ type: 'success', message: 'Domain deleted successfully' });
         await load();
         setTimeout(() => setSuccessMessage(null), 3000);
       } catch (e) {
-        setError(e.response?.data?.message || e.message);
+        const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+        setError(msg);
+        setToast({ type: 'error', message: msg });
       }
     };
 
@@ -731,6 +742,15 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 <button onClick={cancelDelete} className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700">Cancel</button>
                 <button onClick={confirmDelete} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast */}
+        {toast && (
+          <div className="fixed top-6 right-6 z-50">
+            <div className={`px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+              {toast.message}
             </div>
           </div>
         )}

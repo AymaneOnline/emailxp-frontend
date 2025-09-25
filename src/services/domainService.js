@@ -37,6 +37,13 @@ async function request(fn){
       err.retryAfter = e.response?.headers?.['retry-after'];
       throw err;
     }
+    // Surface authorization/forbidden errors with backend message when available
+    if (status === 403) {
+      const err = new Error(e.response?.data?.message || e.response?.data?.error || 'Forbidden');
+      err.original = e;
+      err.status = 403;
+      throw err;
+    }
     // Handle validation errors
     if(status === 400 && e.response?.data?.message){
       const err = new Error(e.response.data.message);
