@@ -12,6 +12,8 @@ const API_BASE = '/sending-domains';
 let domainCache = null;
 let domainCacheTs = 0;
 const CACHE_TTL_MS = 30_000; // 30s; adjust as needed
+// Coalesce concurrent list requests to avoid flooding the backend with duplicate calls
+let inFlightListPromise = null;
 
 async function request(fn){
   try {
@@ -47,8 +49,16 @@ async function request(fn){
 
 export async function listDomains({ force, page = 1, limit = 20, search, status } = {}) {
   const now = Date.now();
+  // Return cached value when valid
   if(!force && domainCache && (now - domainCacheTs) < CACHE_TTL_MS && !search && !status && page === 1){
     return domainCache;
+  }
+
+  // If there's already an in-flight top-level list request and the caller
+  // is asking for the default unfiltered first page, return the same promise
+  // so multiple components don't trigger duplicate requests.
+  if(!force && !search && !status && page === 1 && inFlightListPromise) {
+    return inFlightListPromise;
   }
 
   const params = new URLSearchParams();
@@ -60,13 +70,27 @@ export async function listDomains({ force, page = 1, limit = 20, search, status 
   const queryString = params.toString();
   const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
 
-  const { data } = await request(()=>api.get(url));
+  // Start the network request and store the promise when appropriate
+  const fetchPromise = (async () => {
+    const { data } = await request(()=>api.get(url));
+    // Ensure we always return an array for backward compatibility
+    const domains = data.domains || data || [];
+    // Update cache only for default unfiltered first-page requests
+    if (!search && !status && page === 1) {
+      domainCache = domains;
+      domainCacheTs = Date.now();
+    }
+    return domains;
+  })();
 
-  // Ensure we always return an array for backward compatibility
-  const domains = data.domains || data || [];
-  domainCache = domains;
-  domainCacheTs = now;
-  return domains;
+  if (!search && !status && page === 1) inFlightListPromise = fetchPromise;
+
+  try {
+    const result = await fetchPromise;
+    return result;
+  } finally {
+    if (inFlightListPromise === fetchPromise) inFlightListPromise = null;
+  }
 }
 
 export async function getDomainStats() {
