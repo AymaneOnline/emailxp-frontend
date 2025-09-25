@@ -61,21 +61,23 @@ function ProfileSettings() {
     "Technology", "Marketing", "E-commerce", "Education", "Healthcare", "Non-profit", "Other"
   ];
 
-  // Tab state synced with hash (#profile | #domains | #account) – must be before any early returns
+  // Tab state synced with hash (#general | #account | #domains | #notifications) – must be before any early returns
   const getInitialTab = () => {
-    if (typeof window === 'undefined') return 'profile';
-    if (window.location.hash === '#domains') return 'domains';
+    if (typeof window === 'undefined') return 'general';
     if (window.location.hash === '#account') return 'account';
-    return 'profile';
+    if (window.location.hash === '#domains') return 'domains';
+    if (window.location.hash === '#notifications') return 'notifications';
+    return 'general';
   };
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [domainsLoaded, setDomainsLoaded] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const onHashChange = () => {
-        if (window.location.hash === '#domains') setActiveTab('domains');
-        else if (window.location.hash === '#account') setActiveTab('account');
-        else setActiveTab('profile');
+        if (window.location.hash === '#account') setActiveTab('account');
+        else if (window.location.hash === '#domains') setActiveTab('domains');
+        else if (window.location.hash === '#notifications') setActiveTab('notifications');
+        else setActiveTab('general');
       };
       window.addEventListener('hashchange', onHashChange);
       const onOpenDomains = () => {
@@ -99,13 +101,13 @@ function ProfileSettings() {
   const switchTab = useCallback((tab) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
-      const targetHash = tab === 'domains' ? '#domains' : tab === 'account' ? '#account' : '#profile';
+      const targetHash = tab === 'account' ? '#account' : tab === 'domains' ? '#domains' : tab === 'notifications' ? '#notifications' : '#general';
       if (window.location.hash !== targetHash) {
         window.history.replaceState({}, '', targetHash);
       }
       // Maintain current scroll position; only move focus (no scrolling)
       requestAnimationFrame(() => {
-        const id = tab === 'domains' ? 'domains-section' : tab === 'account' ? 'account-section' : 'profile-section';
+        const id = tab === 'domains' ? 'domains-section' : tab === 'account' ? 'account-section' : tab === 'notifications' ? 'notifications-section' : 'general-section';
         const el = document.getElementById(id);
         if (el) {
           try { el.focus({ preventScroll: true }); } catch { el.focus?.(); }
@@ -349,7 +351,7 @@ function ProfileSettings() {
       aria-label="Settings sections"
       className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-2 flex items-center gap-2 text-sm font-medium"
       onKeyDown={(e)=>{
-        const order=['profile','domains','account'];
+        const order=['general','account','domains','notifications'];
         const currentIndex = order.indexOf(activeTab);
         if(currentIndex===-1) return;
         if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){
@@ -368,265 +370,228 @@ function ProfileSettings() {
         }
       }}
     >
-      <button id="settings-tab-profile" role="tab" aria-selected={activeTab==='profile'} aria-controls="profile-section" tabIndex={activeTab==='profile'?0:-1} onClick={()=>switchTab('profile')} className={(activeTab==='profile' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Profile</button>
-      <button id="settings-tab-domains" role="tab" aria-selected={activeTab==='domains'} aria-controls="domains-section" tabIndex={activeTab==='domains'?0:-1} onClick={()=>switchTab('domains')} className={(activeTab==='domains' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Domains</button>
+      <button id="settings-tab-general" role="tab" aria-selected={activeTab==='general'} aria-controls="general-section" tabIndex={activeTab==='general'?0:-1} onClick={()=>switchTab('general')} className={(activeTab==='general' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>General</button>
       <button id="settings-tab-account" role="tab" aria-selected={activeTab==='account'} aria-controls="account-section" tabIndex={activeTab==='account'?0:-1} onClick={()=>switchTab('account')} className={(activeTab==='account' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Account</button>
+      <button id="settings-tab-domains" role="tab" aria-selected={activeTab==='domains'} aria-controls="domains-section" tabIndex={activeTab==='domains'?0:-1} onClick={()=>switchTab('domains')} className={(activeTab==='domains' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Domains</button>
+      <button id="settings-tab-notifications" role="tab" aria-selected={activeTab==='notifications'} aria-controls="notifications-section" tabIndex={activeTab==='notifications'?0:-1} onClick={()=>switchTab('notifications')} className={(activeTab==='notifications' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Notifications</button>
     </div>
   );
 
-  const profilePanel = activeTab === 'profile' && (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 relative" id="profile-section" role="tabpanel" aria-labelledby="settings-tab-profile">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2
-                  id="profile-settings-heading"
-                  ref={pageHeadingRef}
-                  className="text-2xl font-bold text-gray-900 dark:text-white"
-                >
-                  {user.isProfileComplete ? 'Profile Settings' : 'Complete Your Profile'}
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {user.isProfileComplete
-                    ? 'Update your profile information at any time.'
-                    : 'Fill out your profile to finish signup and unlock the full dashboard.'}
-                </p>
-              </div>
+  const generalPanel = activeTab === 'general' && (
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 relative" id="general-section" role="tabpanel" aria-labelledby="settings-tab-general">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">General Settings</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Customize your application preferences.</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Theme Section */}
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
+          <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Appearance</legend>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Theme</label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="theme"
+                  value="light"
+                  className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300"
+                  defaultChecked
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Light</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="theme"
+                  value="dark"
+                  className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Dark</span>
+              </label>
             </div>
-            {/* Completion banner removed: immediate redirect now occurs upon first completion */}
-
-            <div className="space-y-4" aria-live="polite">
-              {error && (
-                <div className="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
-                  <div className="flex items-center">
-                    <XCircleIcon className="h-5 w-5 mr-2" />
-                    <span className="block sm:inline">{error}</span>
-                  </div>
-                </div>
-              )}
-              {successMessage && (
-                <div className="bg-green-100 dark:bg-green-900 border border-green-400 text-green-700 dark:text-green-300 px-4 py-3 rounded relative" role="alert">
-                  <div className="flex items-center">
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    <span className="block sm:inline">{successMessage}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <form className="space-y-8" onSubmit={handleUpdateProfile} noValidate>
-              {/* Identity Section */}
-              <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-6">
-                <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Identity</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email address</label>
-                    <div className="mt-1">
-                      <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Organization Section */}
-              <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-6">
-                <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Organization</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-1">
-                    <label htmlFor="companyOrOrganization" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Company or Organization</label>
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        name="companyOrOrganization"
-                        id="companyOrOrganization"
-                        value={formData.companyOrOrganization}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="md:col-span-1">
-                    <label htmlFor="industry" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Industry</label>
-                    <div className="mt-1">
-                      <select
-                        id="industry"
-                        name="industry"
-                        value={formData.industry}
-                        onChange={handleChange}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-red focus:border-primary-red sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        <option value="">Select an industry</option>
-                        {industries.map((industry) => (
-                          <option key={industry} value={industry}>{industry}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Website</label>
-                    <div className="mt-1">
-                      <input
-                        type="url"
-                        name="website"
-                        id="website"
-                        value={websiteInput}
-                        onChange={handleChange}
-                        onBlur={handleWebsiteBlur}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="https://www.example.com"
-                      />
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">We will normalize (force https, lowercase domain, strip tracking parameters).</p>
-                    {websitePreview && !websiteError && websitePreview !== websiteInput && (
-                      <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">Will save as: {websitePreview}</p>
-                    )}
-                    {websiteError && (
-                      <p className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">{websiteError}</p>
-                    )}
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Location Section */}
-              <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-6">
-                <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Location</legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-3">
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Address</label>
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        name="address"
-                        id="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="123 Main St"
-                      />
-                    </div>
-                  </div>
-                  <div className="md:col-span-3">
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-200">City</label>
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        name="city"
-                        id="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-red focus:ring-primary-red sm:text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="San Francisco"
-                      />
-                    </div>
-                  </div>
-                  <div className="md:col-span-3">
-                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Country</label>
-                    <div className="mt-1">
-                      <select
-                        id="country"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleChange}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-red focus:border-primary-red sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        <option value="">Select a country</option>
-                        {countries.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* About Section */}
-              <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
-                <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">About</legend>
-                <div>
-                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-200">About You</label>
-                  <div className="mt-1">
-                    <textarea
-                      id="bio"
-                      name="bio"
-                      rows="3"
-                      value={formData.bio}
-                      onChange={handleChange}
-                      className="shadow-sm focus:ring-primary-red focus:border-primary-red mt-1 block w-full sm:text-sm border border-gray-300 rounded-md p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Tell us a little about your work and goals..."
-                    ></textarea>
-                  </div>
-                </div>
-              </fieldset>
-
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                <button
-                  type="submit"
-                  className={`flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isDirty && !loading && !websiteError ? 'bg-primary-red hover:bg-custom-red-hover' : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red disabled:opacity-70`}
-                  disabled={loading || !isDirty || !!websiteError}
-                  aria-disabled={loading || !isDirty || !!websiteError}
-                >
-                  {loading ? (
-                    <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                  ) : (
-                    isDirty ? 'Save Changes' : 'No Changes'
-                  )}
-                </button>
-                <div className="min-w-[140px] text-xs text-left" aria-live="polite">
-                  {isDirty && !loading && (
-                    <span className="inline-flex items-center text-amber-600 dark:text-amber-400">Unsaved changes…</span>
-                  )}
-                  {!isDirty && justSaved && !loading && (
-                    <span className="inline-flex items-center text-green-600 dark:text-green-400">
-                      <CheckCircleIcon className="h-4 w-4 mr-1" /> Saved
-                    </span>
-                  )}
-                  {!isDirty && !justSaved && !loading && (
-                    <span className="text-gray-500 dark:text-gray-400">All changes saved</span>
-                  )}
-                </div>
-              </div>
-            </form>
           </div>
+        </fieldset>
+
+        {/* Language Section */}
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
+          <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Language</legend>
+          <div>
+            <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Application Language</label>
+            <select
+              id="language"
+              name="language"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-red focus:border-primary-red sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              defaultValue="english"
+            >
+              <option value="english">English</option>
+              <option value="french">Français</option>
+              <option value="arabic">العربية</option>
+            </select>
+          </div>
+        </fieldset>
+      </div>
+    </div>
   );
 
   const domainsPanel = activeTab === 'domains' && (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 min-h-[200px] relative" id="domains-section" role="tabpanel" aria-labelledby="settings-tab-domains">
-      {!domainsLoaded && (
-        <div className="space-y-4 animate-pulse" aria-hidden="true">
-          <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-4 w-64 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="flex gap-3 pt-2">
-            <div className="h-8 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-8 min-h-[200px] relative" id="domains-section" role="tabpanel" aria-labelledby="settings-tab-domains">
+      {/* Sending Domains Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sending Domains</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Domains used for sending emails</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded" />
-          </div>
+          <button
+            onClick={() => {
+              // Navigate to domain management or open modal
+              window.location.href = '/settings#domains';
+            }}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-red hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Domain
+          </button>
         </div>
-      )}
-      <DomainManagement embedded active={activeTab==='domains'} onLoaded={() => setDomainsLoaded(true)} />
+
+        {/* Domains Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Verified</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {!domainsLoaded && (
+                <tr>
+                  <td colSpan="4" className="px-6 py-4">
+                    <div className="space-y-4 animate-pulse">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {domainsLoaded && (
+                <tr>
+                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <DomainManagement embedded active={activeTab==='domains'} onLoaded={() => setDomainsLoaded(true)} />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Sites Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sites</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Domains for landing pages and websites</p>
+          </div>
+          <button
+            onClick={() => {
+              // Navigate to sites management
+              window.location.href = '/sites';
+            }}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-red hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Site
+          </button>
+        </div>
+
+        {/* Sites Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pages</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tr>
+                <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <div className="flex flex-col items-center">
+                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                    </svg>
+                    <p className="text-sm">No sites configured yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Add your first site to get started</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  const notificationsPanel = activeTab === 'notifications' && (
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 min-h-[200px] relative" id="notifications-section" role="tabpanel" aria-labelledby="settings-tab-notifications">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Notification Preferences</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Choose how you want to be notified about important updates.</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
+          <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Email Notifications</legend>
+          <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300 rounded"
+                defaultChecked
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Campaign performance reports</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300 rounded"
+                defaultChecked
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Account security alerts</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300 rounded"
+                defaultChecked
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Domain verification updates</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Marketing tips and updates</span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
     </div>
   );
 
@@ -634,65 +599,81 @@ function ProfileSettings() {
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 min-h-[200px] relative" id="account-section" role="tabpanel" aria-labelledby="settings-tab-account">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Account Management</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account settings and data.</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Account Information</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">View and manage your account details.</p>
         </div>
       </div>
 
-      {/* Account Deletion Section */}
-      <div className="border border-red-200 dark:border-red-800 rounded-lg p-6 bg-red-50 dark:bg-red-900/20">
-        <div className="flex items-start space-x-4">
-          <div className="flex-shrink-0">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="space-y-6">
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
+          <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Account Details</legend>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">{user?.email || 'Loading...'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Account Created</label>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Loading...'}</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">Delete Account</h3>
-            <p className="mt-2 text-sm text-red-700 dark:text-red-300">
-              Permanently delete your account and all associated data. This action cannot be undone.
-            </p>
+        </fieldset>
 
-            <div className="mt-4 space-y-3">
-              <div className="text-sm text-red-700 dark:text-red-300">
-                <strong>What will be deleted:</strong>
-                <ul className="mt-1 ml-4 list-disc space-y-1">
-                  <li>All email campaigns and templates</li>
-                  <li>All subscriber lists and contact data</li>
-                  <li>All analytics and performance data</li>
-                  <li>All domain configurations</li>
-                  <li>Your account profile and settings</li>
-                </ul>
-              </div>
+        {/* Account Deletion Section */}
+        <div className="border border-red-200 dark:border-red-800 rounded-lg p-6 bg-red-50 dark:bg-red-900/20">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">Delete Account</h3>
+              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
-                <div className="flex">
-                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Before you continue</p>
-                    <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                      Consider exporting your data first. You can download your campaigns, subscribers, and analytics from the respective sections.
-                    </p>
+              <div className="mt-4 space-y-3">
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  <strong>What will be deleted:</strong>
+                  <ul className="mt-1 ml-4 list-disc space-y-1">
+                    <li>All email campaigns and templates</li>
+                    <li>All subscriber lists and contact data</li>
+                    <li>All analytics and performance data</li>
+                    <li>All domain configurations</li>
+                    <li>Your account profile and settings</li>
+                  </ul>
+                </div>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
+                  <div className="flex">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Before you continue</p>
+                      <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                        Consider exporting your data first. You can download your campaigns, subscribers, and analytics from the respective sections.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center space-x-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 rounded-md text-sm font-medium"
-                >
-                  Delete Account
-                </button>
-                <a
-                  href="/export-data"
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 rounded-md text-sm font-medium"
-                >
-                  Export Data First
-                </a>
+                <div className="flex items-center space-x-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 rounded-md text-sm font-medium"
+                  >
+                    Delete Account
+                  </button>
+                  <a
+                    href="/export-data"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 rounded-md text-sm font-medium"
+                  >
+                    Export Data First
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -701,36 +682,7 @@ function ProfileSettings() {
     </div>
   );
 
-  const aside = (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-5 space-y-4" aria-label="Profile completion progress">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">Profile Progress</h3>
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{progressPct}%</span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary-red transition-all duration-300"
-                style={{ width: `${progressPct}%` }}
-                aria-hidden="true"
-              />
-            </div>
-            <ul className="space-y-2">
-              {checklist.map(item => (
-                <li key={item.key} className="flex items-center text-sm">
-                  {item.done ? (
-                    <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  ) : (
-                    <span className="h-4 w-4 mr-2 rounded-full border border-gray-300 dark:border-gray-600 inline-block" aria-hidden="true" />
-                  )}
-                  <span className={item.done ? 'text-gray-600 dark:text-gray-300 line-through' : 'text-gray-800 dark:text-gray-200'}>{item.label}</span>
-                </li>
-              ))}
-            </ul>
-          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">A complete profile personalizes recommendations and unlocks advanced analytics sooner.</p>
-          </div>
-    </div>
-  );
+  const aside = null;
 
   const handleInitiateDeletion = async () => {
     if (!deletePassword.trim()) return;
@@ -757,9 +709,10 @@ function ProfileSettings() {
       tabsBar={tabsBar}
       aside={aside}
     >
-      {profilePanel}
-      {domainsPanel}
+      {generalPanel}
       {accountPanel}
+      {domainsPanel}
+      {notificationsPanel}
 
       {/* Account Deletion Modal */}
       {showDeleteModal && (
