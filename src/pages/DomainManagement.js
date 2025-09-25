@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import { H1, H2, Muted } from '../components/ui/Typography';
 import { listDomains, createDomain, getDomain, verifyDomain, regenerateDkim, deleteDomain } from '../services/domainService';
-import { CheckCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info, AlertCircle, X } from 'lucide-react';
+import { CheckCircle, RefreshCcw, PlusCircle, Globe2, Loader2, Shield, Zap, Target, Copy, Check, Info, AlertCircle, Trash2 } from 'lucide-react';
 
 function StatusBadge({ domain }) {
   const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200';
@@ -151,7 +151,7 @@ function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns
                 className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm"
                 title="Delete domain"
               >
-                <X className="w-3 h-3 mr-1.5" />
+                <Trash2 className="w-3 h-3 mr-1.5" />
                 Delete
               </button>
           </div>
@@ -332,10 +332,10 @@ export default function DomainManagement({ embedded = false, active = true, onLo
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                </tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Domain</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+              </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <tr>
@@ -373,10 +373,11 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     onClick={() => handleDelete(domain._id)}
-                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-red-300 text-red-700 bg-white hover:bg-red-50 transition-colors"
+                    className="inline-flex items-center p-2 text-red-700 rounded-md border border-red-300 bg-white hover:bg-red-50 transition-colors"
+                    title="Delete domain"
+                    aria-label="Delete domain"
                   >
-                    <X className="w-3 h-3 mr-1" />
-                    Delete
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </td>
               </tr>
