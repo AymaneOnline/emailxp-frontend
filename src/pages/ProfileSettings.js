@@ -24,6 +24,14 @@ import {
 import DomainManagement from './DomainManagement';
 import SettingsLayout from '../components/layout/SettingsLayout';
 
+// Small presentational helper for label/value pairs in account panel
+const InfoItem = ({ label, value }) => (
+  <div className="space-y-1">
+    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">{label}</p>
+    <p className="text-sm text-gray-900 dark:text-gray-100 break-all">{value || '—'}</p>
+  </div>
+);
+
 function ProfileSettings() {
   // Version marker – now logged only once on mount to avoid spam
   const VERSION = 'v2025.09.26-loopfix1';
@@ -646,14 +654,67 @@ function ProfileSettings() {
       <div className="space-y-6">
         <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4">
           <legend className="px-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Account Details</legend>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <InfoItem label="Email" value={user?.email} />
+            <InfoItem label="Role" value={user?.role} />
+            <InfoItem label="Status" value={user?.status} />
+            <InfoItem label="Verified" value={user?.isVerified ? 'Yes' : 'No'} />
+            <InfoItem label="Profile Complete" value={user?.isProfileComplete ? 'Yes' : 'No'} />
+            <InfoItem label="Created" value={user?.createdAt && new Date(user.createdAt).toLocaleDateString()} />
+            <InfoItem label="Last Login" value={user?.lastLogin && new Date(user.lastLogin).toLocaleString()} />
+            <InfoItem label="Two-Factor Auth" value={user?.twoFactorEnabled ? 'Enabled' : 'Disabled'} />
+            <InfoItem label="Verified Domain" value={user?.hasVerifiedDomain ? 'Yes' : 'No'} />
+            <InfoItem label="API Key" value={user?.apiKeyPresent ? 'Exists' : 'None'} />
+            <InfoItem label="API Key Last Used" value={user?.apiKeyLastUsed && new Date(user.apiKeyLastUsed).toLocaleDateString()} />
+            <InfoItem label="Deletion Requested" value={user?.deletionRequestedAt ? new Date(user.deletionRequestedAt).toLocaleString() : 'No'} />
+          </div>
+
+          {/* Subscription & Limits */}
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Subscription</h4>
+              <div className="text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-gray-500 dark:text-gray-400">Plan:</span><span className="text-gray-900 dark:text-gray-100">{user?.subscription?.plan || '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Status:</span><span className="text-gray-900 dark:text-gray-100">{user?.subscription?.status || '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Current Period:</span><span className="text-gray-900 dark:text-gray-100">{ user?.subscription?.currentPeriodStart && user?.subscription?.currentPeriodEnd ? `${new Date(user.subscription.currentPeriodStart).toLocaleDateString()} → ${new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}` : '—' }</span>
+                <span className="text-gray-500 dark:text-gray-400">Cancel at End:</span><span className="text-gray-900 dark:text-gray-100">{user?.subscription?.cancelAtPeriodEnd ? 'Yes' : 'No'}</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Usage Limits</h4>
+              <div className="text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-gray-500 dark:text-gray-400">Emails / Month:</span><span>{user?.usage?.emailsSentThisMonth ?? 0} / {user?.limits?.emailsPerMonth ?? '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Subscribers:</span><span>{user?.usage?.subscribersCount ?? 0} / {user?.limits?.subscribersMax ?? '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Templates:</span><span>{user?.usage?.templatesCount ?? 0} / {user?.limits?.templatesMax ?? '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Campaigns / Month:</span><span>{user?.usage?.campaignsThisMonth ?? 0} / {user?.limits?.campaignsPerMonth ?? '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Usage Reset:</span><span>{user?.usage?.lastResetDate ? new Date(user.usage.lastResetDate).toLocaleDateString() : '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Preferences (timezone / date format) */}
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">{user?.email || 'Loading...'}</p>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Preferences</h4>
+              <div className="text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-gray-500 dark:text-gray-400">Timezone:</span><span>{user?.preferences?.timezone || 'UTC'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Date Format:</span><span>{user?.preferences?.dateFormat || '—'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Layout:</span><span>{user?.preferences?.dashboardLayout || '—'}</span>
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Account Created</label>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Loading...'}</p>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Email Notifications</h4>
+              <div className="text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-gray-500 dark:text-gray-400">Campaign Updates:</span><span>{user?.preferences?.emailNotifications?.campaignUpdates ? 'On' : 'Off'}</span>
+                <span className="text-gray-500 dark:text-gray-400">System Alerts:</span><span>{user?.preferences?.emailNotifications?.systemAlerts ? 'On' : 'Off'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Weekly Reports:</span><span>{user?.preferences?.emailNotifications?.weeklyReports ? 'On' : 'Off'}</span>
+                <span className="text-gray-500 dark:text-gray-400">Marketing Emails:</span><span>{user?.preferences?.emailNotifications?.marketingEmails ? 'On' : 'Off'}</span>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Organization</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400">ID: {user?.organization || '—'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">(Future: fetch org details)</p>
             </div>
           </div>
         </fieldset>
