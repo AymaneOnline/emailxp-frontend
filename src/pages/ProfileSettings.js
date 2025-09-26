@@ -8,6 +8,8 @@ import { updateUserData } from '../store/slices/authSlice';
 import { toast } from 'react-toastify';
 import { track } from '../services/analyticsClient';
 import { normalizeWebsiteFrontend } from '../utils/website';
+import { getBackendUrl } from '../utils/getBackendUrl';
+import { getAuthToken } from '../utils/authToken';
 import api from '../services/api';
 import { countries } from '../constants/countries';
 import { createDomain } from '../services/domainService';
@@ -189,6 +191,19 @@ function ProfileSettings() {
       }
     }
     loadingStartRef.current = Date.now();
+    // Early probe (non-blocking) to log network issues quickly
+    (async () => {
+      try {
+        const backend = getBackendUrl();
+        const url = backend ? backend.replace(/\/$/, '') + '/api/users/profile' : '/api/users/profile';
+        const resp = await fetch(url, { headers: getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {} });
+        if (!resp.ok) {
+          console.warn('Early profile probe failed', resp.status, resp.statusText);
+        }
+      } catch (e) {
+        console.warn('Early profile probe network error', e.message);
+      }
+    })();
     fetchProfile();
   }, [user, fetchProfile, navigate]);
 
@@ -352,6 +367,10 @@ function ProfileSettings() {
       <div className="flex flex-col justify-center items-center h-screen space-y-4">
         <ArrowPathIcon className="h-12 w-12 animate-spin text-primary-red" />
         <p className="text-sm text-gray-600">Loading your profile...</p>
+        <div className="text-[10px] text-gray-500 mt-2">
+          <p>Backend URL (detected): {getBackendUrl() || '(relative /api)'}</p>
+          <p>Token present: {getAuthToken() ? 'yes' : 'no'}</p>
+        </div>
         {timedOut && (
           <div className="text-center space-y-3">
             <p className="text-xs text-red-600 max-w-xs">This is taking longer than expected. It could be a network issue, missing backend URL configuration, or an expired session.</p>

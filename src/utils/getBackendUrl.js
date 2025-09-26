@@ -33,8 +33,18 @@ export function getBackendUrl() {
         return val;
       }
     }
+    // 4) Heuristic fallback: if current host contains 'frontend', try swapping for 'backend'
+    if (typeof window !== 'undefined' && window.location && window.location.host) {
+      const host = window.location.host;
+      if (/frontend/i.test(host)) {
+        const guess = host.replace(/frontend/ig, 'backend');
+        const candidate = window.location.protocol + '//' + guess;
+        console.warn('getBackendUrl: using heuristic fallback', candidate);
+        return candidate;
+      }
+    }
 
-  console.warn('getBackendUrl: no backend URL found (checked window.__BACKEND_URL__, VITE and REACT_APP envs)');
+	console.error('getBackendUrl: no backend URL resolved (checked runtime override, VITE, REACT_APP, heuristic). Requests will use relative /api and may fail on a static host.');
     return '';
   } catch (e) {
     return '';
