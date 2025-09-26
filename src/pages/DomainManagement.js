@@ -147,7 +147,7 @@ function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns
               Regenerate DKIM
             </button>
               <button
-                onClick={() => onDelete && onDelete(domain._id)}
+                onClick={() => onDelete && onDelete(domain)}
                 className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg border border-red-300 bg-white text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm"
                 title="Delete domain"
               >
@@ -249,31 +249,14 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!id) return;
+  const [deleteCandidate, setDeleteCandidate] = useState(null); // store domain object for modal
 
-    // Fast path: if the domain is still pending verification, allow immediate delete
-    const target = domains.find(d => d._id === id);
-    if (target && target.status === 'pending') {
-      const ok = window.confirm('This domain is still pending verification. Delete it now? This cannot be undone.');
-      if (!ok) return;
-      setError(null);
-      try {
-        await deleteDomain(id);
-        setSuccessMessage('Domain deleted successfully');
-        setToast({ type: 'success', message: 'Domain deleted successfully' });
-        await load();
-        setTimeout(() => setSuccessMessage(null), 3000);
-      } catch (e) {
-        const msg = e.response?.data?.message || e.response?.data?.error || e.message;
-        setError(msg);
-        setToast({ type: 'error', message: msg });
-      }
-      return;
-    }
+  const handleDelete = (domain) => {
+    if (!domain) return;
 
-    // Otherwise, open the confirmation modal
-    setDeleteTarget(id);
+    // Store candidate and open modal for confirmation. Modal text will adjust for pending domains.
+    setDeleteCandidate(domain);
+    setDeleteTarget(domain._id);
     setShowDeleteModal(true);
   };
 
@@ -422,7 +405,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
-                    onClick={() => handleDelete(domain._id)}
+                      onClick={() => handleDelete(domain)}
                     className="inline-flex items-center p-2 text-red-700 rounded-md border border-red-300 bg-white hover:bg-red-50 transition-colors"
                     title="Delete domain"
                     aria-label="Delete domain"
@@ -746,7 +729,7 @@ export default function DomainManagement({ embedded = false, active = true, onLo
                       setShowDnsFor(domain);
                     }
                   }}
-                  onDelete={() => handleDelete(d._id)}
+                  onDelete={() => handleDelete(d)}
                 />
               ))}
             </div>
@@ -759,7 +742,13 @@ export default function DomainManagement({ embedded = false, active = true, onLo
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <h3 className="text-lg font-semibold mb-2">Delete domain</h3>
-              <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete this domain? This action cannot be undone.</p>
+              <p className="text-sm text-gray-600 mb-4">
+                {deleteCandidate && deleteCandidate.status === 'pending' ? (
+                  <>This domain (<strong>{deleteCandidate.domain}</strong>) is still pending verification. Deleting it now will remove it immediately. This action cannot be undone.</>
+                ) : (
+                  <>Are you sure you want to delete <strong>{deleteCandidate ? deleteCandidate.domain : ''}</strong>? This action cannot be undone.</>
+                )}
+              </p>
               <div className="flex justify-end space-x-3">
                 <button onClick={cancelDelete} className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700">Cancel</button>
                 <button onClick={confirmDelete} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
