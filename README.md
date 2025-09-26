@@ -116,6 +116,20 @@ Basic tests: `src/__tests__/onboardingCooldown.test.jsx` covers progress counts 
 - Persist analytics events to backend.
 - Add skeleton preview components under blur.
 
+## Running tests locally and in CI
+
+To run the frontend tests locally:
+
+```bash
+cd frontend
+npm ci
+npm test
+```
+
+Notes:
+- Create React App runs the test runner in watch mode by default. The CI workflow runs tests once with `--watchAll=false`.
+- The repository contains a GitHub Actions workflow at `.github/workflows/ci-frontend.yml` that runs tests on push and PRs which touch files under the `frontend/` directory.
+
 ## Backend Onboarding Analytics Events
 
 ### Endpoint
