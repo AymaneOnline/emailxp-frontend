@@ -22,6 +22,10 @@ import DomainManagement from './DomainManagement';
 import SettingsLayout from '../components/layout/SettingsLayout';
 
 function ProfileSettings() {
+  // Build/version marker for debugging deployment cache issues
+  // Update this string automatically via commit hash if you integrate a build script.
+  // For now manually bump when making spinner / loading logic changes.
+  console.info('ProfileSettings component version: v2025.09.26-spinnerfix2');
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -41,6 +45,8 @@ function ProfileSettings() {
   const [initialFormData, setInitialFormData] = useState(null);
   const [justSaved, setJustSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+  const loadingStartRef = useRef(Date.now());
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   // Avatar state removed
@@ -82,7 +88,56 @@ function ProfileSettings() {
         if (window.location.hash === '#account') setActiveTab('account');
         else if (window.location.hash === '#domains') setActiveTab('domains');
         else if (window.location.hash === '#notifications') setActiveTab('notifications');
-        else setActiveTab('general');
+        // Extracted so we can retry manually
+        const runFetchProfile = useCallback(async () => {
+          try {
+            setLoading(true);
+            setTimedOut(false);
+            setError(null);
+            setSuccessMessage(null);
+            const profileData = await userService.getUserProfile();
+            let initialWebsite = profileData.website || '';
+            if (!initialWebsite) {
+              try {
+                const orgResp = await api.get('/organizations/current');
+                if (orgResp.data?.website) {
+                  initialWebsite = orgResp.data.website;
+                }
+              } catch (_) { /* silent */ }
+            }
+            const nextData = {
+              companyOrOrganization: profileData.companyOrOrganization || '',
+              name: profileData.name || '',
+              email: profileData.email || '',
+              website: initialWebsite,
+              industry: profileData.industry || '',
+              bio: profileData.bio || '',
+              address: profileData.address || '',
+              city: profileData.city || '',
+              country: profileData.country || '',
+            };
+            setFormData(nextData);
+            setInitialFormData(nextData);
+            setWebsiteInput(initialWebsite);
+            validateAndPreviewWebsite(initialWebsite);
+            try { dispatch(updateUserData(profileData)); } catch {}
+          } catch (err) {
+            const status = err?.response?.status;
+            console.error('Error fetching profile (runFetchProfile):', err.response?.data || err.message);
+            if (status === 401 || status === 403) {
+              setError('Your session expired. Please log in again.');
+              toast.error('Session expired – please log in again.');
+              navigate('/login');
+            } else {
+              setError(err?.response?.data?.message || 'Failed to load profile data.');
+              toast.error(err?.response?.data?.message || 'Failed to load profile data.');
+            }
+          } finally {
+            setLoading(false);
+          }
+        }, [dispatch, navigate]);
+
+        useEffect(() => {
       };
       window.addEventListener('hashchange', onHashChange);
       const onOpenDomains = () => {
@@ -98,63 +153,22 @@ function ProfileSettings() {
       };
       window.addEventListener('open-domains-tab', onOpenDomains);
       return () => {
-        window.removeEventListener('hashchange', onHashChange);
-        window.removeEventListener('open-domains-tab', onOpenDomains);
-      };
-    }
-  }, []);
+          // Initial fetch
+          loadingStartRef.current = Date.now();
+          runFetchProfile();
 
-  const switchTab = useCallback((tab) => {
-    setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const targetHash = tab === 'account' ? '#account' : tab === 'domains' ? '#domains' : tab === 'notifications' ? '#notifications' : '#general';
-      if (window.location.hash !== targetHash) {
-        window.history.replaceState({}, '', targetHash);
-      }
-      // Maintain current scroll position; only move focus (no scrolling)
-      requestAnimationFrame(() => {
-        const id = tab === 'domains' ? 'domains-section' : tab === 'account' ? 'account-section' : tab === 'notifications' ? 'notifications-section' : 'general-section';
-        const el = document.getElementById(id);
-        if (el) {
-          try { el.focus({ preventScroll: true }); } catch { el.focus?.(); }
-        }
-      });
-    }
-  }, []);
+        }, [user, navigate, runFetchProfile]);
 
-  useEffect(() => {
-    // Handle verification success toast
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('verified') === 'true') {
-        toast.success('Email verified successfully!');
-        url.searchParams.delete('verified');
-        window.history.replaceState({}, '', url.toString());
-      }
-    }
-
-    // If the user is not logged in, navigate to the login page.
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setSuccessMessage(null);
-        const profileData = await userService.getUserProfile();
-        let initialWebsite = profileData.website || '';
-        if (!initialWebsite) {
-          try {
-            const orgResp = await api.get('/organizations/current');
-            if (orgResp.data?.website) {
-              initialWebsite = orgResp.data.website;
+        // Timeout watcher (8s) to break infinite spinner perception
+        useEffect(() => {
+          if (!loading) return;
+          const t = setTimeout(() => {
+            if (loading) {
+              setTimedOut(true);
             }
-          } catch (_) { /* silent */ }
-        }
-        const nextData = {
+          }, 8000);
+          return () => clearTimeout(t);
+        }, [loading]);
           companyOrOrganization: profileData.companyOrOrganization || '',
           name: profileData.name || '',
           email: profileData.email || '',
@@ -347,8 +361,20 @@ function ProfileSettings() {
   // Defer early return until after all hooks declared above
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
         <ArrowPathIcon className="h-12 w-12 animate-spin text-primary-red" />
+        <p className="text-sm text-gray-600">Loading your profile...</p>
+        {timedOut && (
+          <div className="text-center space-y-3">
+            <p className="text-xs text-red-600 max-w-xs">This is taking longer than expected. It could be a network issue, missing backend URL configuration, or an expired session.</p>
+            <button
+              type="button"
+              onClick={() => runFetchProfile()}
+              className="px-4 py-2 text-sm rounded-md bg-primary-red text-white hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red"
+            >Retry</button>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+        )}
       </div>
     );
   }
