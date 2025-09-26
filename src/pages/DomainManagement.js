@@ -129,7 +129,7 @@ function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns
             <Info className="w-3 h-3 mr-1" />
             Last checked {new Date(domain.lastCheckedAt).toLocaleString()}
           </div>
-        )}
+        }
 
         {/* Actions */}
         <div className="flex items-center justify-between">
@@ -249,11 +249,33 @@ export default function DomainManagement({ embedded = false, active = true, onLo
     }
   };
 
-    const handleDelete = (id) => {
-      if (!id) return;
-      setDeleteTarget(id);
-      setShowDeleteModal(true);
-    };
+  const handleDelete = async (id) => {
+    if (!id) return;
+
+    // Fast path: if the domain is still pending verification, allow immediate delete
+    const target = domains.find(d => d._id === id);
+    if (target && target.status === 'pending') {
+      const ok = window.confirm('This domain is still pending verification. Delete it now? This cannot be undone.');
+      if (!ok) return;
+      setError(null);
+      try {
+        await deleteDomain(id);
+        setSuccessMessage('Domain deleted successfully');
+        setToast({ type: 'success', message: 'Domain deleted successfully' });
+        await load();
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (e) {
+        const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+        setError(msg);
+        setToast({ type: 'error', message: msg });
+      }
+      return;
+    }
+
+    // Otherwise, open the confirmation modal
+    setDeleteTarget(id);
+    setShowDeleteModal(true);
+  };
 
     const confirmDelete = async () => {
       const id = deleteTarget;
