@@ -129,7 +129,7 @@ function DomainCard({ domain, onVerify, verifyingId, onRegenerateDkim, onShowDns
             <Info className="w-3 h-3 mr-1" />
             Last checked {new Date(domain.lastCheckedAt).toLocaleString()}
           </div>
-        }
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-between">
