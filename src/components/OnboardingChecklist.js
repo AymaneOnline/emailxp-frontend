@@ -75,7 +75,17 @@ function OnboardingChecklist({ compact = false }) {
   };
 
   const handleCompleteProfileClick = () => {
-    navigate('/settings');
+    // Ensure we land on the Account tab. Use both navigate and explicit hash set
+    // so that older browsers or router setups that ignore the hash still get it.
+    try {
+      navigate('/settings#account');
+    } catch (e) {
+      // fallback: set location.hash directly
+      window.location.hash = '#account';
+      window.location.pathname = '/settings';
+    }
+    // Also set hash explicitly to help the settings page initial tab logic
+    if (typeof window !== 'undefined') window.location.hash = '#account';
   };
 
   // Helper to render a step item

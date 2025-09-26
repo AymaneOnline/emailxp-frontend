@@ -169,6 +169,12 @@ function ProfileSettings() {
         setInitialFormData(nextData);
         setWebsiteInput(initialWebsite);
         validateAndPreviewWebsite(initialWebsite);
+        // Update redux store with the freshest profile data so account panel renders correctly
+        try {
+          dispatch(updateUserData(profileData));
+        } catch (e) {
+          // non-fatal
+        }
   // Avatar removed – ignore profilePicture
       } catch (err) {
         console.error('Error fetching profile:', err.response?.data || err.message);
