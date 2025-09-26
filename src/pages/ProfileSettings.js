@@ -177,8 +177,16 @@ function ProfileSettings() {
         }
   // Avatar removed – ignore profilePicture
       } catch (err) {
+        const status = err?.response?.status;
         console.error('Error fetching profile:', err.response?.data || err.message);
-        setError(err.response?.data?.message || 'Failed to load profile data.');
+        if (status === 401 || status === 403) {
+          setError('Your session expired. Please log in again.');
+          toast.error('Session expired – please log in again.');
+          navigate('/login');
+        } else {
+          setError(err?.response?.data?.message || 'Failed to load profile data.');
+          toast.error(err?.response?.data?.message || 'Failed to load profile data.');
+        }
       } finally {
         setLoading(false);
       }
