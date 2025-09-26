@@ -82,134 +82,105 @@ function ProfileSettings() {
     return 'general';
   };
   const [activeTab, setActiveTab] = useState(getInitialTab());
+
+  // Hash/tab listener
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const onHashChange = () => {
-        if (window.location.hash === '#account') setActiveTab('account');
-        else if (window.location.hash === '#domains') setActiveTab('domains');
-        else if (window.location.hash === '#notifications') setActiveTab('notifications');
-        // Extracted so we can retry manually
-        const runFetchProfile = useCallback(async () => {
-          try {
-            setLoading(true);
-            setTimedOut(false);
-            setError(null);
-            setSuccessMessage(null);
-            const profileData = await userService.getUserProfile();
-            let initialWebsite = profileData.website || '';
-            if (!initialWebsite) {
-              try {
-                const orgResp = await api.get('/organizations/current');
-                if (orgResp.data?.website) {
-                  initialWebsite = orgResp.data.website;
-                }
-              } catch (_) { /* silent */ }
-            }
-            const nextData = {
-              companyOrOrganization: profileData.companyOrOrganization || '',
-              name: profileData.name || '',
-              email: profileData.email || '',
-              website: initialWebsite,
-              industry: profileData.industry || '',
-              bio: profileData.bio || '',
-              address: profileData.address || '',
-              city: profileData.city || '',
-              country: profileData.country || '',
-            };
-            setFormData(nextData);
-            setInitialFormData(nextData);
-            setWebsiteInput(initialWebsite);
-            validateAndPreviewWebsite(initialWebsite);
-            try { dispatch(updateUserData(profileData)); } catch {}
-          } catch (err) {
-            const status = err?.response?.status;
-            console.error('Error fetching profile (runFetchProfile):', err.response?.data || err.message);
-            if (status === 401 || status === 403) {
-              setError('Your session expired. Please log in again.');
-              toast.error('Session expired – please log in again.');
-              navigate('/login');
-            } else {
-              setError(err?.response?.data?.message || 'Failed to load profile data.');
-              toast.error(err?.response?.data?.message || 'Failed to load profile data.');
-            }
-          } finally {
-            setLoading(false);
-          }
-        }, [dispatch, navigate]);
-
-        useEffect(() => {
-      };
-      window.addEventListener('hashchange', onHashChange);
-      const onOpenDomains = () => {
-        setActiveTab('domains');
-        if (window.location.hash !== '#domains') window.history.replaceState({}, '', '#domains');
-        setTimeout(() => {
-          const el = document.getElementById('domains-section');
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            el.focus?.();
-          }
-        }, 30);
-      };
-      window.addEventListener('open-domains-tab', onOpenDomains);
-      return () => {
-          // Initial fetch
-          loadingStartRef.current = Date.now();
-          runFetchProfile();
-
-        }, [user, navigate, runFetchProfile]);
-
-        // Timeout watcher (8s) to break infinite spinner perception
-        useEffect(() => {
-          if (!loading) return;
-          const t = setTimeout(() => {
-            if (loading) {
-              setTimedOut(true);
-            }
-          }, 8000);
-          return () => clearTimeout(t);
-        }, [loading]);
-          companyOrOrganization: profileData.companyOrOrganization || '',
-          name: profileData.name || '',
-          email: profileData.email || '',
-          website: initialWebsite,
-          industry: profileData.industry || '',
-          bio: profileData.bio || '',
-          address: profileData.address || '',
-          city: profileData.city || '',
-          country: profileData.country || '',
-        };
-        setFormData(nextData);
-        setInitialFormData(nextData);
-        setWebsiteInput(initialWebsite);
-        validateAndPreviewWebsite(initialWebsite);
-        // Update redux store with the freshest profile data so account panel renders correctly
-        try {
-          dispatch(updateUserData(profileData));
-        } catch (e) {
-          // non-fatal
-        }
-  // Avatar removed – ignore profilePicture
-      } catch (err) {
-        const status = err?.response?.status;
-        console.error('Error fetching profile:', err.response?.data || err.message);
-        if (status === 401 || status === 403) {
-          setError('Your session expired. Please log in again.');
-          toast.error('Session expired – please log in again.');
-          navigate('/login');
-        } else {
-          setError(err?.response?.data?.message || 'Failed to load profile data.');
-          toast.error(err?.response?.data?.message || 'Failed to load profile data.');
-        }
-      } finally {
-        setLoading(false);
-      }
+    if (typeof window === 'undefined') return;
+    const onHashChange = () => {
+      if (window.location.hash === '#account') setActiveTab('account');
+      else if (window.location.hash === '#domains') setActiveTab('domains');
+      else if (window.location.hash === '#notifications') setActiveTab('notifications');
+      else setActiveTab('general');
     };
-    
-    // Fetch the profile data when the component loads.
+    window.addEventListener('hashchange', onHashChange);
+    const onOpenDomains = () => {
+      setActiveTab('domains');
+      if (window.location.hash !== '#domains') window.history.replaceState({}, '', '#domains');
+      setTimeout(() => {
+        const el = document.getElementById('domains-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.focus?.();
+        }
+      }, 30);
+    };
+    window.addEventListener('open-domains-tab', onOpenDomains);
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('open-domains-tab', onOpenDomains);
+    };
+  }, []);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setTimedOut(false);
+      setError(null);
+      setSuccessMessage(null);
+      const profileData = await userService.getUserProfile();
+      let initialWebsite = profileData.website || '';
+      if (!initialWebsite) {
+        try {
+          const orgResp = await api.get('/organizations/current');
+          if (orgResp.data?.website) initialWebsite = orgResp.data.website;
+        } catch (_) { /* silent */ }
+      }
+      const nextData = {
+        companyOrOrganization: profileData.companyOrOrganization || '',
+        name: profileData.name || '',
+        email: profileData.email || '',
+        website: initialWebsite,
+        industry: profileData.industry || '',
+        bio: profileData.bio || '',
+        address: profileData.address || '',
+        city: profileData.city || '',
+        country: profileData.country || '',
+      };
+      setFormData(nextData);
+      setInitialFormData(nextData);
+      setWebsiteInput(initialWebsite);
+      validateAndPreviewWebsite(initialWebsite);
+      try { dispatch(updateUserData(profileData)); } catch {}
+    } catch (err) {
+      const status = err?.response?.status;
+      console.error('Error fetching profile:', err.response?.data || err.message);
+      if (status === 401 || status === 403) {
+        setError('Your session expired. Please log in again.');
+        toast.error('Session expired – please log in again.');
+        navigate('/login');
+      } else {
+        setError(err?.response?.data?.message || 'Failed to load profile data.');
+        toast.error(err?.response?.data?.message || 'Failed to load profile data.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, navigate]);
+
+  // Initial fetch & verification toast
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('verified') === 'true') {
+        toast.success('Email verified successfully!');
+        url.searchParams.delete('verified');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+    loadingStartRef.current = Date.now();
     fetchProfile();
-    
-  }, [user, navigate]);
+  }, [user, fetchProfile, navigate]);
+
+  // Timeout watcher (8s)
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => { if (loading) setTimedOut(true); }, 8000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   // Dirty state tracking (placed at top level, after initial data fetching effect)
   const isDirty = useMemo(() => {
