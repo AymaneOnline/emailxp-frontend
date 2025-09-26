@@ -25,13 +25,13 @@ import DomainManagement from './DomainManagement';
 import SettingsLayout from '../components/layout/SettingsLayout';
 
 function ProfileSettings() {
-  // Build/version marker for debugging deployment cache issues
-  // Update this string automatically via commit hash if you integrate a build script.
-  // For now manually bump when making spinner / loading logic changes.
-  console.info('ProfileSettings component version: v2025.09.26-spinnerfix2');
+  // Version marker – now logged only once on mount to avoid spam
+  const VERSION = 'v2025.09.26-loopfix1';
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const userId = user?._id || user?.id || null;
+  const fetchedRef = useRef(false);
   // Avatar removed – no file input ref needed
 
   const [formData, setFormData] = useState({
@@ -160,7 +160,19 @@ function ProfileSettings() {
       setInitialFormData(nextData);
       setWebsiteInput(initialWebsite);
       validateAndPreviewWebsite(initialWebsite);
-      try { dispatch(updateUserData(profileData)); } catch {}
+      // Only dispatch if key fields changed to avoid triggering effect loops
+      try {
+        if (user) {
+          const keys = ['name','companyOrOrganization','isProfileComplete','website','industry','bio','address','city','country'];
+          let changed = false;
+          for (const k of keys) {
+            if ((user[k] || '') !== (profileData[k] || '')) { changed = true; break; }
+          }
+          if (changed) dispatch(updateUserData(profileData));
+        } else {
+          dispatch(updateUserData(profileData));
+        }
+      } catch {}
     } catch (err) {
       const status = err?.response?.status;
       console.error('Error fetching profile:', err.response?.data || err.message);
@@ -175,14 +187,20 @@ function ProfileSettings() {
     } finally {
       setLoading(false);
     }
-  }, [dispatch, navigate]);
+  }, [dispatch, navigate, user]);
 
   // Initial fetch & verification toast
   useEffect(() => {
-    if (!user) {
+    // Log version once
+    console.info('ProfileSettings component version:', VERSION);
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
       navigate('/login');
       return;
     }
+    if (fetchedRef.current) return; // prevent repeated fetches when user object reference changes
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       if (url.searchParams.get('verified') === 'true') {
@@ -205,8 +223,9 @@ function ProfileSettings() {
         console.warn('Early profile probe network error', e.message);
       }
     })();
+    fetchedRef.current = true;
     fetchProfile();
-  }, [user, fetchProfile, navigate]);
+  }, [userId, fetchProfile, navigate]);
 
   // Timeout watcher (8s)
   useEffect(() => {
