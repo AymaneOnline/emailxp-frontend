@@ -11,6 +11,16 @@
     name="description"
     content="Web site created using create-react-app"
   />
+  <script>
+    // Optional runtime override: set window.__BACKEND_URL__ before bundle loads (replace __RUNTIME_BACKEND_URL__ during deploy if desired)
+    (function(){
+      var injected = '__RUNTIME_BACKEND_URL__';
+      if (injected && injected.indexOf('RUNTIME_BACKEND_URL') === -1 && !window.__BACKEND_URL__) {
+        window.__BACKEND_URL__ = injected.replace(/\/$/,'');
+        console.info('index.html runtime backend URL injected', window.__BACKEND_URL__);
+      }
+    })();
+  </script>
   <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 

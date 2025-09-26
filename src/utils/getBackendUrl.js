@@ -36,6 +36,12 @@ export function getBackendUrl() {
     // 4) Heuristic fallback: if current host contains 'frontend', try swapping for 'backend'
     if (typeof window !== 'undefined' && window.location && window.location.host) {
       const host = window.location.host;
+      // Explicit production mapping (frontend -> backend) if naming pattern differs from simple replace
+      if (host === 'emailxp-frontend-production.up.railway.app') {
+        const mapped = 'https://emailxp-backend-production.up.railway.app';
+        console.warn('getBackendUrl: using explicit production mapping', mapped);
+        return mapped;
+      }
       if (/frontend/i.test(host)) {
         const guess = host.replace(/frontend/ig, 'backend');
         const candidate = window.location.protocol + '//' + guess;

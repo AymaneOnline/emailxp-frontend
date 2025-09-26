@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { track } from '../services/analyticsClient';
 import { normalizeWebsiteFrontend } from '../utils/website';
 import { getBackendUrl } from '../utils/getBackendUrl';
+import { BASE_BACKEND_URL } from '../services/api';
 import { getAuthToken } from '../utils/authToken';
 import api from '../services/api';
 import { countries } from '../constants/countries';
@@ -368,7 +369,7 @@ function ProfileSettings() {
         <ArrowPathIcon className="h-12 w-12 animate-spin text-primary-red" />
         <p className="text-sm text-gray-600">Loading your profile...</p>
         <div className="text-[10px] text-gray-500 mt-2">
-          <p>Backend URL (detected): {getBackendUrl() || '(relative /api)'}</p>
+          <p>Backend URL (detected): {BASE_BACKEND_URL || '(relative /api)'}</p>
           <p>Token present: {getAuthToken() ? 'yes' : 'no'}</p>
         </div>
         {timedOut && (
