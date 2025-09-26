@@ -83,6 +83,23 @@ function ProfileSettings() {
   };
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
+  const switchTab = useCallback((tab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const targetHash = tab === 'account' ? '#account' : tab === 'domains' ? '#domains' : tab === 'notifications' ? '#notifications' : '#general';
+      if (window.location.hash !== targetHash) {
+        window.history.replaceState({}, '', targetHash);
+      }
+      requestAnimationFrame(() => {
+        const id = tab === 'domains' ? 'domains-section' : tab === 'account' ? 'account-section' : tab === 'notifications' ? 'notifications-section' : 'general-section';
+        const el = document.getElementById(id);
+        if (el) {
+          try { el.focus({ preventScroll: true }); } catch { el.focus?.(); }
+        }
+      });
+    }
+  }, []);
+
   // Hash/tab listener
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -340,7 +357,7 @@ function ProfileSettings() {
             <p className="text-xs text-red-600 max-w-xs">This is taking longer than expected. It could be a network issue, missing backend URL configuration, or an expired session.</p>
             <button
               type="button"
-              onClick={() => runFetchProfile()}
+              onClick={() => fetchProfile()}
               className="px-4 py-2 text-sm rounded-md bg-primary-red text-white hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red"
             >Retry</button>
             {error && <p className="text-xs text-red-500">{error}</p>}
