@@ -1,3 +1,672 @@
+// emailxp/frontend/src/pages/ProfileSettings.js (refactored settings UX)
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import userService from '../services/userService';
+import { updateUserData } from '../store/slices/authSlice';
+import { toast } from 'react-toastify';
+import { track } from '../services/analyticsClient';
+import { normalizeWebsiteFrontend } from '../utils/website';
+import { getBackendUrl } from '../utils/getBackendUrl';
+import { BASE_BACKEND_URL } from '../services/api';
+import { getAuthToken } from '../utils/authToken';
+import api from '../services/api';
+import { createDomain } from '../services/domainService';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import DomainManagement from './DomainManagement';
+import { SettingsShell } from '../components/settings/SettingsShell';
+import { SettingsNav } from '../components/settings/SettingsNav';
+import { SectionCard } from '../components/settings/SectionCard';
+import { KeyValueGrid } from '../components/settings/KeyValueGrid';
+
+// Badge helper
+const Badge = ({ tone='gray', children }) => {
+  const toneMap = {
+    gray: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    green: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    red: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+    blue: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
+    indigo: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300'
+  };
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${toneMap[tone]||toneMap.gray}`}>{children}</span>;
+};
+
+// Display toggle (non-editable outside prefs form)
+const Toggle = ({ checked, onChange=undefined, label, description }) => (
+  <label className="flex items-start justify-between gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary-red/50 transition cursor-pointer">
+    <span className="flex-1 min-w-0">
+      <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">{label}</span>
+      {description && <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400 leading-snug">{description}</span>}
+    </span>
+    <input type="checkbox" className="h-5 w-5 text-primary-red focus:ring-primary-red rounded" checked={checked} onChange={onChange ? (e=>onChange(e.target.checked)) : undefined} readOnly={!onChange} />
+  </label>
+);
+
+function ProfileSettings() {
+  const VERSION = 'v2025.09.26-refactor1';
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const userId = user?._id || user?.id || null;
+  const fetchedRef = useRef(false);
+
+  // Profile form state
+  const [formData, setFormData] = useState({
+    companyOrOrganization: '',
+    name: '',
+    email: '',
+    website: '',
+    industry: '',
+    bio: '',
+    address: '',
+    city: '',
+    country: '',
+  });
+  const [initialFormData, setInitialFormData] = useState(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+  const loadingStartRef = useRef(Date.now());
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const announceRef = useRef(null);
+  const [websiteInput, setWebsiteInput] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
+  const [websitePreview, setWebsitePreview] = useState('');
+
+  // Account deletion modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Domain modal
+  const [showDomainModal, setShowDomainModal] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [creatingDomain, setCreatingDomain] = useState(false);
+
+  // API key & preferences state
+  const [apiKeyPlain, setApiKeyPlain] = useState(null); // plain key shown once on generation
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  // Hash/tab nav
+  const getInitialTab = () => {
+    if (typeof window === 'undefined') return 'general';
+    const h = window.location.hash;
+    if (h === '#account') return 'account';
+    if (h === '#domains') return 'domains';
+    if (h === '#notifications') return 'notifications';
+    return 'general';
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab());
+  const switchTab = useCallback((tab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const targetHash = tab === 'account' ? '#account' : tab === 'domains' ? '#domains' : tab === 'notifications' ? '#notifications' : '#general';
+      if (window.location.hash !== targetHash) {
+        window.history.replaceState({}, '', targetHash);
+      }
+      requestAnimationFrame(() => {
+        const id = tab + '-section';
+        const el = document.getElementById(id);
+        if (el) { try { el.focus({ preventScroll: true }); } catch { el.focus?.(); } }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onHashChange = () => {
+      const h = window.location.hash;
+      if (h === '#account') setActiveTab('account');
+      else if (h === '#domains') setActiveTab('domains');
+      else if (h === '#notifications') setActiveTab('notifications');
+      else setActiveTab('general');
+    };
+    const onOpenDomains = () => {
+      setActiveTab('domains');
+      if (window.location.hash !== '#domains') window.history.replaceState({}, '', '#domains');
+      setTimeout(() => {
+        const el = document.getElementById('domains-section');
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.focus?.(); }
+      }, 30);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('open-domains-tab', onOpenDomains);
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('open-domains-tab', onOpenDomains);
+    };
+  }, []);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setTimedOut(false);
+      setError(null);
+      setSuccessMessage(null);
+      const profileData = await userService.getUserProfile();
+      let initialWebsite = profileData.website || '';
+      if (!initialWebsite) {
+        try {
+          const orgResp = await api.get('/organizations/current');
+          if (orgResp.data?.website) initialWebsite = orgResp.data.website;
+        } catch (_) { /* ignore */ }
+      }
+      const nextData = {
+        companyOrOrganization: profileData.companyOrOrganization || '',
+        name: profileData.name || '',
+        email: profileData.email || '',
+        website: initialWebsite,
+        industry: profileData.industry || '',
+        bio: profileData.bio || '',
+        address: profileData.address || '',
+        city: profileData.city || '',
+        country: profileData.country || '',
+      };
+      setFormData(nextData);
+      setInitialFormData(nextData);
+      setWebsiteInput(initialWebsite);
+      validateAndPreviewWebsite(initialWebsite);
+      // only dispatch if changed
+      try {
+        if (user) {
+          const keys = ['name','companyOrOrganization','isProfileComplete','website','industry','bio','address','city','country'];
+          let changed = false;
+            for (const k of keys) { if ((user[k] || '') !== (profileData[k] || '')) { changed = true; break; } }
+          if (changed) dispatch(updateUserData(profileData));
+        } else {
+          dispatch(updateUserData(profileData));
+        }
+      } catch {}
+    } catch (err) {
+      const status = err?.response?.status;
+      console.error('Error fetching profile:', err.response?.data || err.message);
+      if (status === 401 || status === 403) {
+        setError('Your session expired. Please log in again.');
+        toast.error('Session expired – please log in again.');
+        navigate('/login');
+      } else {
+        setError(err?.response?.data?.message || 'Failed to load profile data.');
+        toast.error(err?.response?.data?.message || 'Failed to load profile data.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, navigate, user]);
+
+  // One-time version log
+  useEffect(() => { console.info('ProfileSettings version', VERSION); }, []);
+
+  useEffect(() => {
+    if (!userId) { navigate('/login'); return; }
+    if (fetchedRef.current) return;
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('verified') === 'true') {
+        toast.success('Email verified successfully!');
+        url.searchParams.delete('verified');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+    loadingStartRef.current = Date.now();
+    (async () => { // early probe
+      try {
+        const backend = getBackendUrl();
+        const url = backend ? backend.replace(/\/$/, '') + '/api/users/profile' : '/api/users/profile';
+        const resp = await fetch(url, { headers: getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {} });
+        if (!resp.ok) console.warn('Early profile probe failed', resp.status, resp.statusText);
+      } catch(e) { console.warn('Early profile probe network error', e.message); }
+    })();
+    fetchedRef.current = true;
+    fetchProfile();
+  }, [userId, fetchProfile, navigate]);
+
+  // Timeout watcher (8s)
+  useEffect(() => { if (!loading) return; const t = setTimeout(()=>{ if (loading) setTimedOut(true); }, 8000); return () => clearTimeout(t); }, [loading]);
+
+  // Dirty tracking
+  const isDirty = useMemo(() => {
+    if (!initialFormData) return false; const keys = ['companyOrOrganization','name','email','website','industry','bio','address','city','country'];
+    return keys.some(k => (formData[k] || '') !== (initialFormData[k] || ''));
+  }, [formData, initialFormData]);
+
+  // Saved indicator
+  useEffect(() => { if (!justSaved) return; const t = setTimeout(()=>setJustSaved(false), 2500); return ()=>clearTimeout(t); }, [justSaved]);
+
+  // Before unload guard
+  useEffect(() => { const handler = e => { if (isDirty) { e.preventDefault(); e.returnValue=''; return ''; } }; window.addEventListener('beforeunload', handler); return () => window.removeEventListener('beforeunload', handler); }, [isDirty]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target; if (name === 'website') { setWebsiteInput(value); validateAndPreviewWebsite(value); }
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  function validateAndPreviewWebsite(raw) {
+    setWebsiteError(''); setWebsitePreview(''); const val = raw.trim(); if (!val) return; let candidate = /^https?:\/\//i.test(val) ? val : 'https://' + val; try { const url = new URL(candidate); if (!/^https?:$/i.test(url.protocol)) throw new Error('Unsupported scheme'); url.hash=''; url.search=''; if (url.pathname !== '/' && url.pathname.endsWith('/')) { url.pathname = url.pathname.replace(/\/+$/, ''); if (url.pathname === '') url.pathname='/'; } url.hostname=url.hostname.toLowerCase(); if ((url.protocol==='https:' && url.port==='443') || (url.protocol==='http:' && url.port==='80')) url.port=''; setWebsitePreview(url.toString()); } catch { setWebsiteError('Invalid URL'); }
+  }
+
+  const handleWebsiteBlur = () => { if (websitePreview && !websiteError) { setFormData(prev => ({ ...prev, website: websitePreview })); setWebsiteInput(websitePreview); } };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault(); setLoading(true); setError(null); setSuccessMessage(null); const wasProfileIncomplete = !user?.isProfileComplete;
+    try {
+      let submitData = { ...formData }; if (submitData.website) { try { submitData.website = normalizeWebsiteFrontend(submitData.website); } catch (er) { setLoading(false); setError(er.message); toast.error(er.message); return; } }
+      const websiteBefore = user?.website || '';
+      const updatedProfile = await userService.updateUserProfile(submitData);
+      dispatch(updateUserData({ ...updatedProfile, isProfileComplete: true }));
+      if (updatedProfile.website && updatedProfile.website !== websiteBefore) {
+        try { const domain = new URL(updatedProfile.website).hostname; track('profile.website.changed', { domain }); } catch {}
+      }
+      toast.success('Profile updated successfully!');
+      if (wasProfileIncomplete) { track('profile.completed', {}); navigate('/dashboard'); return; }
+      setSuccessMessage('Profile updated successfully!');
+      setInitialFormData({
+        companyOrOrganization: updatedProfile.companyOrOrganization || '',
+        name: updatedProfile.name || '',
+        email: updatedProfile.email || '',
+        website: updatedProfile.website || '',
+        industry: updatedProfile.industry || '',
+        bio: updatedProfile.bio || '',
+        address: updatedProfile.address || '',
+        city: updatedProfile.city || '',
+        country: updatedProfile.country || '',
+      });
+      setJustSaved(true); setTimeout(()=>{ announceRef.current && announceRef.current.focus(); }, 50);
+    } catch (err) {
+      console.error('Error updating profile:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to update profile.');
+      toast.error(err.response?.data?.message || 'Failed to update profile.');
+    } finally { setLoading(false); }
+  };
+
+  // Deletion
+  const handleInitiateDeletion = async () => {
+    if (!deletePassword.trim()) return; setDeletingAccount(true); try { await userService.initiateAccountDeletion(deletePassword, deleteReason); toast.success('Account deletion request sent. Check your email.'); setShowDeleteModal(false); setDeletePassword(''); setDeleteReason(''); } catch (error) { console.error('Failed deletion init:', error); toast.error(error.response?.data?.message || 'Failed to initiate account deletion'); } finally { setDeletingAccount(false); } };
+
+  // Domain create
+  const handleCreateDomain = async () => { if (!newDomain.trim()) return; setCreatingDomain(true); try { await createDomain(newDomain.trim()); toast.success('Domain added. Please verify it.'); setShowDomainModal(false); setNewDomain(''); window.location.reload(); } catch (error) { console.error('Failed to create domain:', error); toast.error(error.response?.data?.message || 'Failed to add domain'); } finally { setCreatingDomain(false); } };
+
+  // Progress calculation (frontend mirror; not persisted)
+  const completionKeys = ['companyOrOrganization','name','email','website','industry','bio'];
+  const completed = completionKeys.filter(k => (formData[k]||'').trim() !== '').length;
+  const progressPct = Math.round((completed / completionKeys.length) * 100);
+
+  const statusBadges = (
+    <div className="flex flex-wrap gap-2">
+      <Badge tone={user?.status==='active' ? 'green' : user?.status==='suspended' ? 'red':'yellow'}>{user?.status || '—'}</Badge>
+      <Badge tone={user?.isVerified ? 'green':'red'}>{user?.isVerified ? 'Verified' : 'Unverified'}</Badge>
+      <Badge tone={user?.hasVerifiedDomain ? 'indigo':'gray'}>{user?.hasVerifiedDomain ? 'Domain Verified' : 'No Verified Domain'}</Badge>
+      <Badge tone={user?.isProfileComplete ? 'green':'gray'}>Profile {user?.isProfileComplete ? 'Complete' : 'Incomplete'}</Badge>
+    </div>
+  );
+
+  // Sections renderers
+  const industries = ["Technology","Marketing","E-commerce","Education","Healthcare","Non-profit","Other"]; // for select
+
+  const renderGeneral = () => (
+    <SectionCard title="Profile Basics" subtitle="These details help personalize your account and outgoing communications." id="general-section">
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Organization<span className="text-red-500">*</span></label>
+          <input name="companyOrOrganization" value={formData.companyOrOrganization} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm" />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Name<span className="text-red-500">*</span></label>
+          <input name="name" value={formData.name} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm" />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Website</label>
+          <input name="website" value={formData.website} onChange={handleChange} onBlur={handleWebsiteBlur} className={`w-full rounded-md border ${websiteError ? 'border-red-400 focus:border-red-500 focus:ring-red-500':'border-gray-300 dark:border-gray-600'} dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm`} placeholder="https://yourdomain.com" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">{websiteError ? <span className="text-red-500">{websiteError}</span> : websitePreview || 'Enter a URL (optional)'}</p>
+            {formData.website && websitePreview && !websiteError && <a href={websitePreview} target="_blank" rel="noreferrer" className="text-[11px] text-primary-red hover:underline mt-1 sm:mt-0">Open</a>}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Industry</label>
+          <select name="industry" value={formData.industry} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm">
+            <option value="">Select industry</option>
+            {industries.map(i => <option key={i} value={i}>{i}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Country</label>
+          <input name="country" value={formData.country} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm" />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">City</label>
+            <input name="city" value={formData.city} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm" />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Address</label>
+          <input name="address" value={formData.address} onChange={handleChange} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm" />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Bio</label>
+          <textarea name="bio" value={formData.bio} onChange={handleChange} rows={4} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:ring-primary-red focus:border-primary-red text-sm resize-y" placeholder="Short description..." />
+        </div>
+      </div>
+      <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+        <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">Completion</p>
+        <div className="flex items-center gap-3">
+          <div className="h-2 flex-1 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div className="h-full bg-primary-red transition-all" style={{width: progressPct + '%'}} />
+          </div>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-12 text-right">{progressPct}%</span>
+        </div>
+      </div>
+    </SectionCard>
+  );
+
+  const renderDomains = () => (
+    <SectionCard id="domains-section" title="Sending Domains" subtitle="Authenticate and manage domains used for outbound email.">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {statusBadges}
+          <div className="flex gap-2">
+            <button onClick={()=>setShowDomainModal(true)} className="inline-flex items-center px-3 py-2 rounded-md bg-primary-red text-white text-sm font-medium hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red">
+              <span className="mr-1">+</span> Add Domain
+            </button>
+            <button onClick={()=>window.location.reload()} className="inline-flex items-center px-3 py-2 rounded-md border text-sm font-medium bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Re-verify</button>
+          </div>
+        </div>
+        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-4 bg-white dark:bg-gray-900/30">
+          <DomainManagement embedded active={activeTab==='domains'} />
+        </div>
+        <details className="group">
+          <summary className="cursor-pointer text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">Need help verifying? (SPF, DKIM, Tracking)</summary>
+          <div className="mt-3 text-xs leading-relaxed text-gray-600 dark:text-gray-400 space-y-2">
+            <p>Add the DNS records shown per domain. Propagation can take up to 24h but is usually quick.</p>
+            <p>Once all records are verified your deliverability reputation improves and bounce/complaint tracking is enabled.</p>
+          </div>
+        </details>
+      </div>
+    </SectionCard>
+  );
+
+  const renderNotifications = () => {
+    const current = user?.preferences?.emailNotifications || {};
+    return (
+      <SectionCard id="notifications-section" title="Notifications" subtitle="Control what system emails you receive.">
+        <div className="space-y-3">
+          <Toggle label="Campaign performance reports" checked={!!current.campaignUpdates} description="Weekly summary of sends, opens & clicks." />
+          <Toggle label="System alerts" checked={!!current.systemAlerts} description="Deliverability & security notices." />
+          <Toggle label="Weekly reports" checked={!!current.weeklyReports} description="High-level engagement overview." />
+          <Toggle label="Marketing emails" checked={!!current.marketingEmails} description="Product updates & tips." />
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 pt-2">Modify notification toggles in Preferences below.</p>
+        </div>
+      </SectionCard>
+    );
+  };
+
+  const renderAccount = () => {
+    const items = [
+      { label:'Email', value:user?.email },
+      { label:'Role', value:user?.role },
+      { label:'Status', value:user?.status },
+      { label:'Verified', value:user?.isVerified ? 'Yes':'No' },
+      { label:'Profile Complete', value:user?.isProfileComplete ? 'Yes':'No' },
+      { label:'Created', value:user?.createdAt && new Date(user.createdAt).toLocaleDateString() },
+      { label:'Last Login', value:user?.lastLogin && new Date(user.lastLogin).toLocaleString() },
+      { label:'2FA', value:user?.twoFactorEnabled ? 'Enabled':'Disabled' },
+      { label:'Verified Domain', value:user?.hasVerifiedDomain ? 'Yes':'No' },
+      { label:'API Key', value:user?.apiKeyPresent ? 'Exists':'None' },
+      { label:'API Key Last Used', value:user?.apiKeyLastUsed && new Date(user.apiKeyLastUsed).toLocaleDateString() },
+      { label:'Deletion Requested', value:user?.deletionRequestedAt ? new Date(user.deletionRequestedAt).toLocaleString():'No' },
+    ];
+    return (
+      <>
+        <SectionCard id="account-section" title="Account Overview" subtitle="Core account metadata and status indicators.">
+          {statusBadges}
+          <KeyValueGrid items={items} />
+          <details className="mt-4 group">
+            <summary className="cursor-pointer text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">Subscription & Usage</summary>
+            <div className="mt-4 grid gap-6 md:grid-cols-2">
+              <div className="text-xs space-y-1">
+                <p className="font-semibold text-gray-700 dark:text-gray-200">Subscription</p>
+                <p>Plan: <strong>{user?.subscription?.plan || '—'}</strong></p>
+                <p>Status: {user?.subscription?.status || '—'}</p>
+                <p>Period: {user?.subscription?.currentPeriodStart && user?.subscription?.currentPeriodEnd ? `${new Date(user.subscription.currentPeriodStart).toLocaleDateString()} → ${new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}` : '—'}</p>
+                <p>Cancel at End: {user?.subscription?.cancelAtPeriodEnd ? 'Yes':'No'}</p>
+              </div>
+              <div className="text-xs space-y-1">
+                <p className="font-semibold text-gray-700 dark:text-gray-200">Usage</p>
+                <p>Emails: {user?.usage?.emailsSentThisMonth ?? 0} / {user?.limits?.emailsPerMonth ?? '—'}</p>
+                <p>Subscribers: {user?.usage?.subscribersCount ?? 0} / {user?.limits?.subscribersMax ?? '—'}</p>
+                <p>Templates: {user?.usage?.templatesCount ?? 0} / {user?.limits?.templatesMax ?? '—'}</p>
+                <p>Campaigns: {user?.usage?.campaignsThisMonth ?? 0} / {user?.limits?.campaignsPerMonth ?? '—'}</p>
+                <p>Reset: {user?.usage?.lastResetDate ? new Date(user.usage.lastResetDate).toLocaleDateString() : '—'}</p>
+              </div>
+            </div>
+          </details>
+        </SectionCard>
+
+        <SectionCard title="Preferences" subtitle="Control localization, layout, and notification defaults.">
+          <form onSubmit={async e=>{e.preventDefault(); setPrefsSaving(true); try { await api.put('/users/preferences', {
+            timezone: e.target.timezone.value,
+            dateFormat: e.target.dateFormat.value,
+            dashboardLayout: e.target.dashboardLayout.value,
+            emailNotifications: {
+              campaignUpdates: e.target.campaignUpdates.checked,
+              systemAlerts: e.target.systemAlerts.checked,
+              weeklyReports: e.target.weeklyReports.checked,
+              marketingEmails: e.target.marketingEmails.checked
+            }
+          }); toast.success('Preferences saved'); fetchProfile(); } catch(err){ toast.error(err.response?.data?.message||'Failed to save'); } finally { setPrefsSaving(false);} }} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300">Timezone</label>
+                <input name="timezone" defaultValue={user?.preferences?.timezone || 'UTC'} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-primary-red focus:border-primary-red" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300">Date Format</label>
+                <input name="dateFormat" defaultValue={user?.preferences?.dateFormat || 'MM/DD/YYYY'} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-primary-red focus:border-primary-red" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300">Layout</label>
+                <select name="dashboardLayout" defaultValue={user?.preferences?.dashboardLayout || 'comfortable'} className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 text-sm focus:ring-primary-red focus:border-primary-red">
+                  {['compact','comfortable','spacious'].map(o=> <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {['campaignUpdates','systemAlerts','weeklyReports','marketingEmails'].map(k => (
+                <label key={k} className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" name={k} defaultChecked={!!user?.preferences?.emailNotifications?.[k]} className="h-4 w-4 text-primary-red focus:ring-primary-red border-gray-300 rounded" />
+                  <span className="capitalize">{k.replace(/([A-Z])/g,' $1')}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <button disabled={prefsSaving} className="inline-flex items-center px-4 py-2 rounded-md bg-primary-red text-white text-sm font-medium disabled:opacity-60">{prefsSaving ? 'Saving...' : 'Save Preferences'}</button>
+            </div>
+          </form>
+        </SectionCard>
+
+        <SectionCard title="API Access" subtitle="Generate or revoke your personal API key.">
+          {apiKeyPlain && (
+            <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 mb-4 text-xs">
+              <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">Copy your new API key now – you will not be able to see it again.</p>
+              <code className="block text-[11px] break-all text-yellow-700 dark:text-yellow-300">{apiKeyPlain}</code>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3 items-center">
+            <button disabled={apiKeyLoading} onClick={async ()=>{setApiKeyLoading(true); setApiKeyPlain(null); try { const r= await api.post('/users/api-key'); setApiKeyPlain(r.data.apiKey); toast.success('API key generated'); fetchProfile(); } catch(e){ toast.error(e.response?.data?.message||'Failed'); } finally { setApiKeyLoading(false);} }} className="px-4 py-2 rounded-md bg-primary-red text-white text-sm font-medium disabled:opacity-60">{apiKeyLoading ? 'Working...' : (user?.apiKeyPresent ? 'Regenerate Key':'Generate Key')}</button>
+            {user?.apiKeyPresent && <button onClick={async()=>{ if(!confirm('Revoke current API key?')) return; try { await api.delete('/users/api-key'); toast.success('API key revoked'); setApiKeyPlain(null); fetchProfile(); } catch(e){ toast.error(e.response?.data?.message||'Failed'); } }} className="px-4 py-2 rounded-md border text-sm font-medium bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">Revoke</button>}
+          </div>
+        </SectionCard>
+
+        <SectionCard tone="danger" title="Delete Account" subtitle="This action is permanent and cannot be undone.">
+          <div className="text-xs text-red-700 dark:text-red-300 space-y-2">
+            <p>Deleting your account will permanently remove:</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>Campaigns & templates</li>
+              <li>Subscribers & segments</li>
+              <li>Analytics & tracking data</li>
+              <li>All domain configurations</li>
+            </ul>
+            <p className="pt-2">Consider exporting your data first.</p>
+          </div>
+          <div className="flex flex-wrap gap-3 pt-3">
+            <button onClick={()=>setShowDeleteModal(true)} className="px-4 py-2 rounded-md border border-red-400 text-red-700 bg-white dark:bg-red-900/20 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/40">Delete Account</button>
+            <a href="/export-data" className="px-4 py-2 rounded-md border text-sm font-medium bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">Export Data</a>
+          </div>
+        </SectionCard>
+      </>
+    );
+  };
+
+  const aside = (
+    <div className="sticky top-6 space-y-6">
+      <SectionCard title="Tips" subtitle="Short guidance to improve setup." padded={true}>
+        <ul className="text-xs list-disc ml-4 text-gray-600 dark:text-gray-400 space-y-1">
+          <li>Add and verify a sending domain early to warm reputation.</li>
+          <li>Complete profile to unlock onboarding analytics.</li>
+          <li>Rotate API keys if you suspect compromise.</li>
+        </ul>
+      </SectionCard>
+      <SectionCard title="Need Help?" subtitle="Useful resources." padded={true}>
+        <div className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+          <p><a href="/docs/deliverability" className="text-primary-red hover:underline">Deliverability Guide</a></p>
+          <p><a href="/docs/api" className="text-primary-red hover:underline">API Docs</a></p>
+          <p><a href="mailto:support@example.com" className="text-primary-red hover:underline">Contact Support</a></p>
+        </div>
+      </SectionCard>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <ArrowPathIcon className="h-12 w-12 animate-spin text-primary-red" />
+        <p className="text-sm text-gray-600">Loading your profile...</p>
+        <div className="text-[10px] text-gray-500 mt-2">
+          <p>Backend URL (detected): {BASE_BACKEND_URL || '(relative /api)'}</p>
+          <p>Token present: {getAuthToken() ? 'yes' : 'no'}</p>
+        </div>
+        {timedOut && (
+          <div className="text-center space-y-3">
+            <p className="text-xs text-red-600 max-w-xs">This is taking longer than expected. It could be a network issue, missing backend URL, or an expired session.</p>
+            <button type="button" onClick={() => fetchProfile()} className="px-4 py-2 text-sm rounded-md bg-primary-red text-white hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red">Retry</button>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const mainContent = (
+    <>
+      {activeTab==='general' && renderGeneral()}
+      {activeTab==='account' && renderAccount()}
+      {activeTab==='domains' && renderDomains()}
+      {activeTab==='notifications' && renderNotifications()}
+    </>
+  );
+
+  return (
+    <SettingsShell nav={<SettingsNav active={activeTab} onSelect={(tab)=>switchTab(tab)} />} aside={aside}>
+      {mainContent}
+      {isDirty && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+          <p className="text-xs text-gray-600 dark:text-gray-400">Unsaved changes</p>
+          <div className="flex gap-2">
+            <button onClick={()=>{ setFormData(initialFormData); }} className="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">Discard</button>
+            <button onClick={(e)=>handleUpdateProfile(e)} className="px-4 py-1.5 text-xs rounded-md bg-primary-red text-white font-medium">Save</button>
+          </div>
+        </div>
+      )}
+
+      {/* Domain Creation Modal */}
+      {showDomainModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Add Sending Domain</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Enter the domain you want to use for sending emails. We'll guide you through verification.</p>
+                    <div className="mt-4">
+                      <label htmlFor="domain-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Domain</label>
+                      <input type="text" id="domain-input" value={newDomain} onChange={e=>setNewDomain(e.target.value)} className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-red focus:border-primary-red sm:text-sm dark:bg-gray-900 dark:text-gray-100" placeholder="example.com" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onClick={handleCreateDomain} disabled={creatingDomain || !newDomain.trim()} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-red text-base font-medium text-white hover:bg-custom-red-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-red sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">{creatingDomain ? 'Adding...' : 'Add Domain'}</button>
+                <button type="button" onClick={()=>{ setShowDomainModal(false); setNewDomain(''); }} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Deletion Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Delete Account</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">This action cannot be undone. It will permanently delete your account and all associated data.</p>
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <label htmlFor="delete-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm your password</label>
+                        <input type="password" id="delete-password" value={deletePassword} onChange={e=>setDeletePassword(e.target.value)} className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm dark:bg-gray-900 dark:text-gray-100" placeholder="Enter your password" />
+                      </div>
+                      <div>
+                        <label htmlFor="delete-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason for leaving (optional)</label>
+                        <select id="delete-reason" value={deleteReason} onChange={e=>setDeleteReason(e.target.value)} className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm dark:bg-gray-900 dark:text-gray-100">
+                          <option value="">Select a reason</option>
+                          <option value="not-using">Not using the service</option>
+                          <option value="found-alternative">Found a better alternative</option>
+                          <option value="technical-issues">Technical issues</option>
+                          <option value="privacy-concerns">Privacy concerns</option>
+                          <option value="cost">Too expensive</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onClick={handleInitiateDeletion} disabled={deletingAccount || !deletePassword.trim()} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">{deletingAccount ? 'Deleting...' : 'Delete Account'}</button>
+                <button type="button" onClick={()=>{ setShowDeleteModal(false); setDeletePassword(''); setDeleteReason(''); }} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </SettingsShell>
+  );
+}
+
+export default ProfileSettings;
+
 // emailxp/frontend/src/pages/ProfileSettings.js
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
