@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/segmentService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 
 import { getBackendUrl } from '../utils/getBackendUrl';
 
@@ -25,7 +26,7 @@ const segmentService = {
       const response = await segmentAPI.get('/');
       return response.data;
     } catch (error) {
-      console.error('Error fetching segments:', error);
+      devLog('Error fetching segments:', error);
       throw error;
     }
   },
@@ -36,7 +37,7 @@ const segmentService = {
       const response = await segmentAPI.get(`/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching segment:', error);
+      devLog('Error fetching segment:', error);
       throw error;
     }
   },
@@ -47,7 +48,7 @@ const segmentService = {
       const response = await segmentAPI.post('/', segmentData);
       return response.data;
     } catch (error) {
-      console.error('Error creating segment:', error);
+      devLog('Error creating segment:', error);
       throw error;
     }
   },
@@ -58,7 +59,7 @@ const segmentService = {
       const response = await segmentAPI.put(`/${id}`, segmentData);
       return response.data;
     } catch (error) {
-      console.error('Error updating segment:', error);
+      devLog('Error updating segment:', error);
       throw error;
     }
   },
@@ -69,7 +70,7 @@ const segmentService = {
       const response = await segmentAPI.delete(`/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting segment:', error);
+      devLog('Error deleting segment:', error);
       throw error;
     }
   },
@@ -80,7 +81,7 @@ const segmentService = {
       const response = await segmentAPI.post('/preview', { filters, logic });
       return response.data;
     } catch (error) {
-      console.error('Error previewing segment:', error);
+      devLog('Error previewing segment:', error);
       throw error;
     }
   },
@@ -93,7 +94,7 @@ const segmentService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching segment subscribers:', error);
+      devLog('Error fetching segment subscribers:', error);
       throw error;
     }
   },
@@ -104,7 +105,7 @@ const segmentService = {
       const response = await segmentAPI.get('/meta/fields');
       return response.data;
     } catch (error) {
-      console.error('Error fetching filter fields:', error);
+      devLog('Error fetching filter fields:', error);
       throw error;
     }
   },
@@ -115,7 +116,7 @@ const segmentService = {
       const response = await segmentAPI.post(`/${id}/refresh`);
       return response.data;
     } catch (error) {
-      console.error('Error refreshing segment:', error);
+      devLog('Error refreshing segment:', error);
       throw error;
     }
   }

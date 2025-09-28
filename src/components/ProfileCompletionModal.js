@@ -11,6 +11,7 @@ import { updateUserData } from '../store/slices/authSlice';
 import { addNotification } from '../store/slices/uiSlice';
 import { track } from '../services/analyticsClient';
 import { countries } from '../constants/countries';
+import devLog from '../utils/devLog';
 
 export default function ProfileCompletionModal({ isOpen, onClose }) {
 
@@ -175,7 +176,7 @@ export default function ProfileCompletionModal({ isOpen, onClose }) {
   };
 
   const handleSubmit = async (e) => {
-    console.log('ProfileCompletionModal: handleSubmit invoked', { isComplete, loading });
+    devLog('ProfileCompletionModal: handleSubmit invoked', { isComplete, loading });
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (!validateForm()) return;
 
@@ -210,17 +211,17 @@ export default function ProfileCompletionModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') return;
     const modalRoot = document.getElementById('modal-root') || document.body;
-    console.log('ProfileCompletionModal: mounting portal into:', modalRoot === document.body ? 'document.body' : '#modal-root', modalRoot);
-    console.log('ProfileCompletionModal: mounted');
-    return () => console.log('ProfileCompletionModal: unmounted');
+    devLog('ProfileCompletionModal: mounting portal into:', modalRoot === document.body ? 'document.body' : '#modal-root', modalRoot);
+    devLog('ProfileCompletionModal: mounted');
+    return () => devLog('ProfileCompletionModal: unmounted');
   }, [isOpen]);
 
   if (!isOpen) {
-    console.log('❌ ProfileCompletionModal: not open, returning null');
+    devLog('❌ ProfileCompletionModal: not open, returning null');
     return null;
   }
 
-  console.log('✅ ProfileCompletionModal: proceeding to render');
+  devLog('✅ ProfileCompletionModal: proceeding to render');
 
   const modal = (
     <div

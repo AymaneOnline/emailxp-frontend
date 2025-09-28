@@ -30,6 +30,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import subscriberService from '../services/subscriberService';
+import devLog from '../utils/devLog';
 import groupService from '../services/groupService';
 import segmentService from '../services/segmentService';
 import SegmentBuilder from '../components/SegmentBuilder';
@@ -169,7 +170,7 @@ const SubscriberManagement = () => {
         if (search.trim()) params.search = search.trim();
         if (statusFilter) params.status = statusFilter;
         if (groupFilter) params.groupId = groupFilter;
-        console.log('Fetching subscribers with params:', params);
+  devLog('Fetching subscribers with params:', params);
         const data = await subscriberService.getSubscribers(params);
         setSubscribers(data.subscribers || data || []);
         setPagination(data.pagination || null);

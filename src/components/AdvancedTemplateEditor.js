@@ -1,6 +1,7 @@
 // emailxp/frontend/src/components/AdvancedTemplateEditor.js
 
 import React, { useState, useEffect } from 'react';
+import devLog from '../utils/devLog';
 import {
   Save,
   Eye,
@@ -117,9 +118,9 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
   const loadTemplate = async () => {
     try {
       setLoading(true);
-      console.log('Loading template with ID:', templateId);
+  devLog('Loading template with ID:', templateId);
       const data = await templateService.getTemplateById(templateId);
-      console.log('Template data received:', data);
+  devLog('Template data received:', data);
       
       // Convert backend structure to frontend format
       const settings = data.structure?.settings || {};
@@ -148,7 +149,7 @@ const AdvancedTemplateEditor = ({ templateId, onSave, onCancel }) => {
         }
       };
       
-      console.log('Converted template:', convertedTemplate);
+  devLog('Converted template:', convertedTemplate);
       setTemplate(convertedTemplate);
       addToHistory(convertedTemplate);
     } catch (error) {

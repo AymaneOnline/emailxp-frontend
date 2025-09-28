@@ -1,6 +1,7 @@
 // emailxp/frontend/src/pages/RecommendationsManager.js
 
 import React, { useState, useEffect } from 'react';
+import devLog from '../utils/devLog';
 import { useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -34,18 +35,18 @@ function RecommendationsManager() {
 
   const fetchSubscribers = async () => {
     try {
-      console.log('Fetching subscribers...');
+  devLog('Fetching subscribers...');
       setLoading(true);
       setError(null);
       
       const data = await subscriberService.getSubscribers();
-      console.log('Subscribers fetched:', data);
+  devLog('Subscribers fetched:', data);
       setSubscribers(data);
       setFilteredSubscribers(data);
       
       // Select the first subscriber by default
       if (data.length > 0 && !selectedSubscriber) {
-        console.log('Selecting first subscriber:', data[0]);
+  devLog('Selecting first subscriber:', data[0]);
         setSelectedSubscriber(data[0]);
       } else if (data.length === 0) {
         // If no subscribers, show the create form
@@ -55,13 +56,13 @@ function RecommendationsManager() {
       console.error('Failed to fetch subscribers:', err);
       setError('Failed to load subscribers: ' + err.message);
     } finally {
-      console.log('Finished fetching subscribers, setting loading to false');
+  devLog('Finished fetching subscribers, setting loading to false');
       setLoading(false);
     }
   };
 
   const filterAndSortSubscribers = () => {
-    console.log('Filtering and sorting subscribers, current subscribers:', subscribers);
+  devLog('Filtering and sorting subscribers, current subscribers:', subscribers);
     let result = [...subscribers];
     
     // Apply search filter
@@ -99,17 +100,17 @@ function RecommendationsManager() {
         break;
     }
     
-    console.log('Filtered and sorted subscribers:', result);
+  devLog('Filtered and sorted subscribers:', result);
     setFilteredSubscribers(result);
   };
 
   useEffect(() => {
-    console.log('RecommendationsManager mounted, fetching subscribers...');
+  devLog('RecommendationsManager mounted, fetching subscribers...');
     fetchSubscribers();
   }, []);
 
   useEffect(() => {
-    console.log('Filtering and sorting subscribers...');
+  devLog('Filtering and sorting subscribers...');
     filterAndSortSubscribers();
   }, [subscribers, searchTerm, statusFilter, sortBy]);
 
@@ -118,7 +119,7 @@ function RecommendationsManager() {
   };
 
   const handleSubscriberSelect = (subscriber) => {
-    console.log('Selecting subscriber:', subscriber);
+  devLog('Selecting subscriber:', subscriber);
     setSelectedSubscriber(subscriber);
     setShowCreateForm(false);
   };

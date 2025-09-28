@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/userManagementService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 
 import { getBackendUrl } from '../utils/getBackendUrl';
 
@@ -32,7 +33,7 @@ const userManagementService = {
       const response = await userAPI.get('/', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching users:', error);
+      devLog('Error fetching users:', error);
       throw error;
     }
   },
@@ -42,7 +43,7 @@ const userManagementService = {
       const response = await userAPI.get(`/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user:', error);
+      devLog('Error fetching user:', error);
       throw error;
     }
   },
@@ -52,7 +53,7 @@ const userManagementService = {
       const response = await userAPI.post('/', userData);
       return response.data;
     } catch (error) {
-      console.error('Error creating user:', error);
+      devLog('Error creating user:', error);
       throw error;
     }
   },
@@ -62,7 +63,7 @@ const userManagementService = {
       const response = await userAPI.put(`/${userId}`, userData);
       return response.data;
     } catch (error) {
-      console.error('Error updating user:', error);
+      devLog('Error updating user:', error);
       throw error;
     }
   },
@@ -72,7 +73,7 @@ const userManagementService = {
       const response = await userAPI.delete(`/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      devLog('Error deleting user:', error);
       throw error;
     }
   },
@@ -82,7 +83,7 @@ const userManagementService = {
       const response = await userAPI.put(`/${userId}/permissions`, { permissions });
       return response.data;
     } catch (error) {
-      console.error('Error updating user permissions:', error);
+      devLog('Error updating user permissions:', error);
       throw error;
     }
   },
@@ -92,7 +93,7 @@ const userManagementService = {
       const response = await userAPI.post(`/${userId}/reset-password`, { newPassword });
       return response.data;
     } catch (error) {
-      console.error('Error resetting user password:', error);
+      devLog('Error resetting user password:', error);
       throw error;
     }
   },
@@ -102,7 +103,7 @@ const userManagementService = {
       const response = await userAPI.post(`/${userId}/api-key`);
       return response.data;
     } catch (error) {
-      console.error('Error generating API key:', error);
+      devLog('Error generating API key:', error);
       throw error;
     }
   },
@@ -112,7 +113,7 @@ const userManagementService = {
       const response = await userAPI.delete(`/${userId}/api-key`);
       return response.data;
     } catch (error) {
-      console.error('Error revoking API key:', error);
+      devLog('Error revoking API key:', error);
       throw error;
     }
   },
@@ -122,7 +123,7 @@ const userManagementService = {
       const response = await userAPI.get(`/${userId}/activity`, { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching user activity:', error);
+      devLog('Error fetching user activity:', error);
       throw error;
     }
   },
@@ -132,7 +133,7 @@ const userManagementService = {
       const response = await userAPI.post('/bulk-action', { action, userIds, data });
       return response.data;
     } catch (error) {
-      console.error('Error performing bulk action:', error);
+      devLog('Error performing bulk action:', error);
       throw error;
     }
   },
@@ -143,7 +144,7 @@ const userManagementService = {
       const response = await orgAPI.get('/', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching organizations:', error);
+      devLog('Error fetching organizations:', error);
       throw error;
     }
   },
@@ -153,7 +154,7 @@ const userManagementService = {
       const response = await orgAPI.get('/current');
       return response.data;
     } catch (error) {
-      console.error('Error fetching current organization:', error);
+      devLog('Error fetching current organization:', error);
       throw error;
     }
   },
@@ -163,7 +164,7 @@ const userManagementService = {
       const response = await orgAPI.get(`/${organizationId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching organization:', error);
+      devLog('Error fetching organization:', error);
       throw error;
     }
   },
@@ -173,7 +174,7 @@ const userManagementService = {
       const response = await orgAPI.post('/', orgData);
       return response.data;
     } catch (error) {
-      console.error('Error creating organization:', error);
+      devLog('Error creating organization:', error);
       throw error;
     }
   },
@@ -183,7 +184,7 @@ const userManagementService = {
       const response = await orgAPI.put(`/${organizationId}`, orgData);
       return response.data;
     } catch (error) {
-      console.error('Error updating organization:', error);
+      devLog('Error updating organization:', error);
       throw error;
     }
   },
@@ -193,7 +194,7 @@ const userManagementService = {
       const response = await orgAPI.put(`/${organizationId}/subscription`, subscriptionData);
       return response.data;
     } catch (error) {
-      console.error('Error updating subscription:', error);
+      devLog('Error updating subscription:', error);
       throw error;
     }
   },
@@ -203,7 +204,7 @@ const userManagementService = {
       const response = await orgAPI.get(`/${organizationId}/usage`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching usage statistics:', error);
+      devLog('Error fetching usage statistics:', error);
       throw error;
     }
   },
@@ -213,7 +214,7 @@ const userManagementService = {
       const response = await orgAPI.post(`/${organizationId}/reset-usage`);
       return response.data;
     } catch (error) {
-      console.error('Error resetting usage:', error);
+      devLog('Error resetting usage:', error);
       throw error;
     }
   },
@@ -223,7 +224,7 @@ const userManagementService = {
       const response = await orgAPI.post(`/${organizationId}/transfer-ownership`, { newOwnerId });
       return response.data;
     } catch (error) {
-      console.error('Error transferring ownership:', error);
+      devLog('Error transferring ownership:', error);
       throw error;
     }
   },
@@ -233,7 +234,7 @@ const userManagementService = {
       const response = await orgAPI.get(`/${organizationId}/members`, { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching organization members:', error);
+      devLog('Error fetching organization members:', error);
       throw error;
     }
   },
@@ -243,7 +244,7 @@ const userManagementService = {
       const response = await orgAPI.post(`/${organizationId}/invite`, inviteData);
       return response.data;
     } catch (error) {
-      console.error('Error inviting user:', error);
+      devLog('Error inviting user:', error);
       throw error;
     }
   },
@@ -253,7 +254,7 @@ const userManagementService = {
       const response = await orgAPI.delete(`/${organizationId}/members/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error removing user from organization:', error);
+      devLog('Error removing user from organization:', error);
       throw error;
     }
   },
@@ -263,7 +264,7 @@ const userManagementService = {
       const response = await orgAPI.delete(`/${organizationId}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting organization:', error);
+      devLog('Error deleting organization:', error);
       throw error;
     }
   },

@@ -228,6 +228,8 @@ const router = createBrowserRouter([
         path: '',
   element: <RequireOnboardingComplete><AutomationManagement /></RequireOnboardingComplete>,
       },
+      { path: 'new', element: <RequireOnboardingComplete><AutomationBuilderPage /></RequireOnboardingComplete> },
+      { path: 'edit/:id', element: <RequireOnboardingComplete><AutomationBuilderPage /></RequireOnboardingComplete> },
     ],
   },
   {

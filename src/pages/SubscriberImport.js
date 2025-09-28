@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ArrowLeft, Upload, Download, FileText, CheckCircle } from 'lucide-react';
 import subscriberService from '../services/subscriberService';
+import devLog from '../utils/devLog';
 import groupService from '../services/groupService';
 
 const SubscriberImport = () => {
@@ -77,7 +78,7 @@ const SubscriberImport = () => {
                     subscriber.tags.forEach(tag => allTags.add(tag));
                 }
             });
-            console.log('All tags from CSV:', Array.from(allTags));
+            devLog('All tags from CSV:', Array.from(allTags));
 
             const importData = {
                 subscribers: csvData.subscribers,

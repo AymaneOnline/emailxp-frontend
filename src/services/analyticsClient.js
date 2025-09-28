@@ -1,6 +1,7 @@
 // Analytics client with simple batching to backend.
 // API: track(eventName, payload)
 import api from './api';
+import devLog from '../utils/devLog';
 
 const queue = [];
 let flushTimer = null;
@@ -21,7 +22,7 @@ async function flush() {
     if (status === 403) {
       if (process.env.NODE_ENV !== 'production') {
         // eslint-disable-next-line no-console
-        console.warn('[analytics] dropping batch due to 403 (prob. unverified user)');
+      devLog('[analytics] dropping batch due to 403 (prob. unverified user)');
       }
       // Do NOT requeue – user not authorized yet
     } else {
@@ -47,7 +48,7 @@ function emit(event, payload) {
   queue.push(record);
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
-    console.log('[analytics][queued]', event, payload || {});
+  devLog('[analytics][queued]', event, payload || {});
   }
   if (queue.length >= MAX_BATCH) {
     flush();

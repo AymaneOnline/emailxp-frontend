@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/advancedSegmentationService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 import { getAuthToken } from '../utils/authToken';
 
 const ADVANCED_SEGMENTATION_API_PATH = '/api/advanced-segmentation';
@@ -38,7 +39,7 @@ const advancedSegmentationService = {
       const response = await advancedSegmentationAPI.get(`/${segmentId}/analytics`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching segment analytics:', error);
+      devLog('Error fetching segment analytics:', error);
       throw error;
     }
   },
@@ -49,7 +50,7 @@ const advancedSegmentationService = {
       const response = await advancedSegmentationAPI.post('/dynamic', segmentData);
       return response.data;
     } catch (error) {
-      console.error('Error creating dynamic segment:', error);
+      devLog('Error creating dynamic segment:', error);
       throw error;
     }
   },
@@ -60,7 +61,7 @@ const advancedSegmentationService = {
       const response = await advancedSegmentationAPI.post('/overlap', { segmentIds });
       return response.data;
     } catch (error) {
-      console.error('Error calculating segment overlap:', error);
+      devLog('Error calculating segment overlap:', error);
       throw error;
     }
   },
@@ -71,7 +72,7 @@ const advancedSegmentationService = {
       const response = await advancedSegmentationAPI.get(`/${segmentId}/export`);
       return response.data;
     } catch (error) {
-      console.error('Error exporting segment data:', error);
+      devLog('Error exporting segment data:', error);
       throw error;
     }
   },

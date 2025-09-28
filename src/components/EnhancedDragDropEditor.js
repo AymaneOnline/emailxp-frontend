@@ -1,6 +1,7 @@
 // emailxp/frontend/src/components/EnhancedDragDropEditor.js
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import devLog from '../utils/devLog';
 import {
   DndContext,
   closestCenter,
@@ -155,7 +156,7 @@ const DEVICE_PREVIEWS = [
 
 // Sortable Block Component
 const SortableBlock = ({ block, onUpdate, onDelete, onDuplicate, isSelected, onSelect }) => {
-  console.log('SortableBlock rendered for block:', block.id, 'with onDelete:', typeof onDelete);
+  devLog('SortableBlock rendered for block:', block.id, 'with onDelete:', typeof onDelete);
   
   const {
     attributes,
@@ -216,8 +217,8 @@ const SortableBlock = ({ block, onUpdate, onDelete, onDuplicate, isSelected, onS
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Delete button clicked for block:', block.id);
-              console.log('onDelete function type:', typeof onDelete);
+              devLog('Delete button clicked for block:', block.id);
+              devLog('onDelete function type:', typeof onDelete);
               if (onDelete) {
                 onDelete(block.id);
               } else {
@@ -687,19 +688,19 @@ const EnhancedDragDropEditor = ({
   };
 
   const deleteBlock = (blockId) => {
-    console.log('Attempting to delete block:', blockId);
-    console.log('Current blocks before deletion:', blocks);
+    devLog('Attempting to delete block:', blockId);
+    devLog('Current blocks before deletion:', blocks);
     
     setBlocks(prev => {
       const newBlocks = prev.filter(block => block.id !== blockId);
-      console.log('Blocks after deletion:', newBlocks);
+  devLog('Blocks after deletion:', newBlocks);
       return newBlocks;
     });
     
     if (selectedBlockId === blockId) {
       setSelectedBlockId(null);
     }
-    console.log('Block deletion completed');
+  devLog('Block deletion completed');
   };
 
   const duplicateBlock = (blockId) => {

@@ -1,20 +1,21 @@
 import axios from 'axios';
+import devLog from '../utils/devLog';
 
 const API_URL = '/api/subscribers';
 
 // Get all subscribers with filtering and pagination
 const getSubscribers = async (params = {}) => {
     try {
-        console.log('Calling getSubscribers with params:', params);
+        devLog('Calling getSubscribers with params:', params);
         const response = await axios.get(API_URL, { params });
-        console.log('getSubscribers response:', response.data);
+        devLog('getSubscribers response:', response.data);
         return response.data.subscribers || response.data;
     } catch (error) {
         if (error?.response?.status === 403) {
             // Unverified / onboarding state – return empty list silently
             return [];
         }
-        console.error('getSubscribers error:', error.response?.data || error.message);
+        devLog('getSubscribers error:', error.response?.data || error.message);
         throw error;
     }
 };
@@ -39,12 +40,12 @@ const getSubscriber = async (id) => {
 // Create new subscriber
 const createSubscriber = async (subscriberData) => {
     try {
-        console.log('Creating subscriber with data:', subscriberData);
+        devLog('Creating subscriber with data:', subscriberData);
         const response = await axios.post(API_URL, subscriberData);
-        console.log('createSubscriber response:', response.data);
+        devLog('createSubscriber response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('createSubscriber error:', error.response?.data || error.message);
+        devLog('createSubscriber error:', error.response?.data || error.message);
         throw error;
     }
 };
@@ -86,7 +87,7 @@ const bulkImportSubscribers = async ({ subscribers, groupIds = [], overwriteExis
         });
         return response.data;
     } catch (error) {
-        console.error('bulkImportSubscribers error:', error.response?.data || error.message);
+        devLog('bulkImportSubscribers error:', error.response?.data || error.message);
         throw error;
     }
 };
@@ -149,14 +150,14 @@ const getSubscriberActivity = async (id) => {
 
 // Parse CSV for import
 const parseCSV = (csvText) => {
-    console.log('Parsing CSV:', csvText);
+    devLog('Parsing CSV:', csvText);
     const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
         throw new Error('CSV file must contain at least a header row and one data row');
     }
 
     const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
-    console.log('Headers:', headers);
+    devLog('Headers:', headers);
     const emailIndex = headers.findIndex(h => h.includes('email'));
     
     if (emailIndex === -1) {
@@ -197,7 +198,7 @@ const parseCSV = (csvText) => {
                 groups: groupsIndex >= 0 ? values[groupsIndex].split(';').map(g => g.trim()).filter(g => g) : []
             };
             
-            console.log('Processed subscriber:', subscriber);
+            devLog('Processed subscriber:', subscriber);
 
             // Validate status
             if (!['subscribed', 'unsubscribed'].includes(subscriber.status)) {
@@ -219,7 +220,7 @@ const segmentSubscribers = async (body = {}) => {
         const response = await axios.post(`${API_URL}/segment`, body);
         return response.data;
     } catch (error) {
-        console.error('segmentSubscribers error:', error.response?.data || error.message);
+        devLog('segmentSubscribers error:', error.response?.data || error.message);
         throw error;
     }
 };
@@ -260,10 +261,10 @@ const subscriberService = {
     testAPI: async () => {
         try {
             const response = await axios.get(`${API_URL}/test`);
-            console.log('Test API response:', response.data);
+            devLog('Test API response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Test API error:', error.response?.data || error.message);
+            devLog('Test API error:', error.response?.data || error.message);
             throw error;
         }
     }

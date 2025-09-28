@@ -43,7 +43,7 @@ function Sidebar() {
   return (
     // Sidebar container. The 'dark' class is a placeholder for a potential dark mode.
     // We add custom CSS for the scrollbar to make it thinner and less intrusive.
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-900 shadow-lg p-6 flex flex-col justify-between h-screen overflow-y-auto">
+  <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-900 shadow-lg p-6 flex flex-col justify-between h-screen overflow-y-auto border-r border-gray-200 dark:border-gray-700">
       {/* Custom scrollbar styling */}
       <style>{`
         .overflow-y-auto::-webkit-scrollbar {
@@ -63,14 +63,16 @@ function Sidebar() {
       
       <div>
         {/* Application Logo */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center">
           <NavLink to="/dashboard" className="text-3xl font-bold text-gray-900 dark:text-white py-2">
             Email<span className="text-primary-red">XP</span>
           </NavLink>
+          {/* Separator under logo */}
+          <div className="w-full mt-4 border-b border-gray-200 dark:border-gray-700" />
         </div>
 
-        {/* Main navigation links */}
-        <nav className="mt-8">
+  {/* Main navigation links */}
+  <nav className="mt-4">
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.name}>

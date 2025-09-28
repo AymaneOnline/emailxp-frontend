@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import useReducedMotion from '../hooks/useReducedMotion';
+import devLog from '../utils/devLog';
 import { useSelector } from 'react-redux'; // Removed useDispatch as it's not directly used here
 import { toast } from 'react-toastify';
 import authService from '../services/authService';
@@ -66,7 +67,7 @@ function OnboardingChecklist({ compact = false, showProfileModal, setShowProfile
       setCooldownEndsAt(ends);
       localStorage.setItem('verifyEmailCooldown', ends.toString());
     } catch (error) {
-      console.error('Error sending verification email:', error);
+      devLog('Error sending verification email:', error);
       toast.error(error.response?.data?.message || 'Failed to send verification email.');
     } finally {
       setIsSendingVerification(false);
@@ -74,10 +75,10 @@ function OnboardingChecklist({ compact = false, showProfileModal, setShowProfile
   };
 
   const handleCompleteProfileClick = () => {
-    console.log('Complete button clicked, opening modal');
+  devLog('Complete button clicked, opening modal');
     // Open full-screen profile completion modal
     setShowProfileModal(true);
-    console.log('setShowProfileModal called with true');
+  devLog('setShowProfileModal called with true');
   };
 
   // Helper to render a step item

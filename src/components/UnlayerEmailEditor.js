@@ -1,6 +1,7 @@
 // UnlayerEmailEditor.js - Wrapper for Unlayer React Email Editor
 
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import devLog from '../utils/devLog';
 import EmailEditor from 'react-email-editor';
 import { Eye, Code, Save, Download } from 'lucide-react';
 
@@ -74,13 +75,13 @@ const UnlayerEmailEditor = forwardRef(({
   useEffect(() => {
     // Load initial design when component mounts or design changes
     if (initialDesign && emailEditorRef.current?.editor && editorReady) {
-      console.log('Loading design into Unlayer editor:', initialDesign);
+  devLog('Loading design into Unlayer editor:', initialDesign);
       emailEditorRef.current.editor.loadDesign(initialDesign);
     }
   }, [initialDesign, editorReady]);
 
   const onReady = () => {
-    console.log('Unlayer editor is ready');
+  devLog('Unlayer editor is ready');
     
     // Check if editor is available
     if (!emailEditorRef.current?.editor) {
@@ -102,7 +103,7 @@ const UnlayerEmailEditor = forwardRef(({
 
     // Load initial design if provided
     if (initialDesign) {
-      console.log('Loading initial design on ready:', initialDesign);
+  devLog('Loading initial design on ready:', initialDesign);
       editor.loadDesign(initialDesign);
     }
     
@@ -116,14 +117,14 @@ const UnlayerEmailEditor = forwardRef(({
   };
 
   const onDesignLoad = (data) => {
-    console.log('Design loaded:', data);
+    devLog('Design loaded:', data);
   };
 
   const exportHtml = () => {
     if (emailEditorRef.current?.editor) {
       emailEditorRef.current.editor.exportHtml((data) => {
         const { design, html } = data;
-        console.log('HTML exported:', html);
+  devLog('HTML exported:', html);
         setHtmlContent(html);
         
         if (onHtmlChange) {

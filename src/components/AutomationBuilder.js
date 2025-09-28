@@ -30,63 +30,84 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import automationService from '../services/automationService';
 import templateService from '../services/templateService';
+import { CREATE_AUTOMATION, EDIT_AUTOMATION, AUTOMATION_SUBHEAD } from '../constants/automationCopy';
 
 const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScreen = false }, ref) => {
-  const navigate = useNavigate();
-
-  const [automation, setAutomation] = useState({
-    name: '',
-    description: '',
-    isActive: false,
-    trigger: null,
-    actions: []
-  });
+  const [automation, setAutomation] = useState({ name: '', description: '', isActive: false, actions: [] });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showJsonEditor, setShowJsonEditor] = useState(false);
-  const [jsonText, setJsonText] = useState('');
-  const [jsonError, setJsonError] = useState('');
-  const [showVersions, setShowVersions] = useState(false);
-  const [versionApplying, setVersionApplying] = useState(false);
-
   const [showActionModal, setShowActionModal] = useState(false);
   const [editingAction, setEditingAction] = useState(null);
   const [selectedActionType, setSelectedActionType] = useState(null);
+  const [jsonText, setJsonText] = useState('');
+  const [jsonError, setJsonError] = useState('');
+  const [showJsonEditor, setShowJsonEditor] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [versionApplying, setVersionApplying] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState(null);
 
-  // Simple template selector used in action config
-  const TemplateSelector = ({ value, onChange }) => {
-    const [templates, setTemplates] = useState([]);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!automationId) return;
+      setLoading(true);
+      try {
+        const res = await automationService.getAutomation(automationId);
+        if (!mounted) return;
+        const loaded = res.automation || res || {};
+        // ensure actions is always an array to avoid runtime errors
+        if (!loaded.actions) loaded.actions = [];
 
-    useEffect(() => {
-      let mounted = true;
-      (async () => {
-        try {
-          const res = await templateService.getTemplates({ page: 1, limit: 200 });
-          if (!mounted) return;
-          // templateService returns { templates, total, page, pages } in many places
-          const list = res.templates || res;
-          setTemplates(list);
-        } catch (err) {
-          console.error('Failed to load templates for selector', err);
+        // If backend stores nodes/edges, map them into the builder's trigger/actions shape
+        if (Array.isArray(loaded.nodes) && loaded.nodes.length > 0) {
+          // find trigger node
+          const triggerNode = loaded.nodes.find(n => n.type === 'trigger');
+          const actionNodes = loaded.nodes.filter(n => n.type === 'action');
+
+          const mapped = {
+            ...loaded,
+            // map trigger
+            trigger: triggerNode ? { type: triggerNode.data?.triggerType || 'subscriber_added', config: triggerNode.data?.config || {} } : loaded.trigger || null,
+            // map actions preserving config
+            actions: actionNodes.map((n, idx) => ({
+              id: n.id || `action-${idx}`,
+              type: n.data?.actionType || 'send_email',
+              config: n.data?.config || {},
+              position: idx
+            }))
+          };
+
+          setAutomation(mapped);
+        } else {
+          setAutomation(loaded);
         }
-      })();
+      } catch (err) {
+        console.error('Failed to load automation:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
 
-      return () => { mounted = false; };
-    }, []);
-
-    return (
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-      >
-        <option value="">Choose a template...</option>
-        {templates.map(t => (
-          <option key={t._id || t.id} value={t._id || t.id}>{t.name || t.title || `Template ${t._id || t.id}`}</option>
-        ))}
-      </select>
-    );
-  };
+    // load templates for template actions
+    const loadTemplates = async () => {
+      setTemplatesLoading(true);
+      try {
+        const t = await templateService.getTemplates();
+        if (!mounted) return;
+        setTemplates(Array.isArray(t) ? t : (t.templates || []));
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+        if (mounted) setTemplatesError(err.message || 'Failed to load templates');
+      } finally {
+        if (mounted) setTemplatesLoading(false);
+      }
+    };
+    loadTemplates();
+    return () => { mounted = false; };
+  }, [automationId]);
 
   const TRIGGER_TYPES = [
     { id: 'subscriber_added', label: 'Subscriber Added', description: 'When someone subscribes to a list', icon: Users },
@@ -129,16 +150,65 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
         return;
       }
 
-      if (!automation.actions || automation.actions.length === 0) {
+      if (!automation.actions || (automation.actions && automation.actions.length === 0)) {
         toast.error('Please add at least one action');
         return;
       }
 
+      // Convert the builder's trigger/actions into nodes/edges shape expected by backend
+      const nodes = [];
+      const edges = [];
+
+      // Create a trigger node if present
+      if (automation.trigger) {
+        const triggerNodeId = `trigger-${Date.now()}`;
+        nodes.push({
+          id: triggerNodeId,
+          type: 'trigger',
+          position: { x: 400, y: 50 },
+          data: {
+            label: 'Trigger',
+            description: '',
+            triggerType: automation.trigger.type,
+            config: automation.trigger.config || {}
+          }
+        });
+
+        // Create action nodes and chain edges from trigger
+        (automation.actions || []).forEach((action, idx) => {
+          const nodeId = action.id || `action-${Date.now()}-${idx}`;
+          nodes.push({
+            id: nodeId,
+            type: 'action',
+            position: { x: 400, y: 150 + idx * 150 },
+            data: {
+              label: action.type,
+              description: '',
+              actionType: action.type,
+              config: action.config || {}
+            }
+          });
+
+          // connect previous node -> this node
+          const sourceId = idx === 0 ? triggerNodeId : (automation.actions[idx - 1]?.id || nodes.find(n => n.type === 'action' && n !== undefined && n.id)?.id);
+          const targetId = nodeId;
+          edges.push({ id: `e-${sourceId}-${targetId}`, source: sourceId, target: targetId });
+        });
+      }
+
+      const payload = {
+        name: automation.name,
+        description: automation.description,
+        isActive: automation.isActive,
+        nodes,
+        edges
+      };
+
       let result;
       if (automationId) {
-        result = await automationService.updateAutomation(automationId, automation);
+        result = await automationService.updateAutomation(automationId, payload);
       } else {
-        result = await automationService.createAutomation(automation);
+        result = await automationService.createAutomation(payload);
       }
 
       toast.success('Automation saved successfully');
@@ -165,10 +235,10 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
       id: Date.now() + Math.random(),
       type,
       config: cfg,
-      position: position === -1 ? automation.actions.length : position
+      position: position === -1 ? (automation.actions || []).length : position
     };
 
-    const newActions = [...automation.actions];
+  const newActions = [...(automation.actions || [])];
     if (position === -1) {
       newActions.push(newAction);
     } else {
@@ -176,7 +246,7 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
     }
 
     // Update positions
-    newActions.forEach((action, index) => {
+      newActions.forEach((action, index) => {
       action.position = index;
     });
 
@@ -196,11 +266,11 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
       case 'remove_tag':
         return { tagId: null };
       case 'condition':
-        return { 
-          type: 'tag_exists', 
-          value: '', 
-          trueActions: [], 
-          falseActions: [] 
+        return {
+          type: 'tag_exists',
+          value: '',
+          trueActions: [],
+          falseActions: []
         };
       default:
         return {};
@@ -224,22 +294,21 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
   };
 
   const duplicateAction = (actionId) => {
-    const actionToDuplicate = automation.actions.find(a => a.id === actionId);
+    const actionToDuplicate = (automation.actions || []).find(a => a.id === actionId);
     if (actionToDuplicate) {
       const newAction = {
         ...actionToDuplicate,
         id: Date.now() + Math.random(),
         position: actionToDuplicate.position + 1
       };
-      
-      const newActions = [...automation.actions];
+      const newActions = [...(automation.actions || [])];
       newActions.splice(actionToDuplicate.position + 1, 0, newAction);
-      
+
       // Update positions
       newActions.forEach((action, index) => {
         action.position = index;
       });
-      
+
       setAutomation(prev => ({ ...prev, actions: newActions }));
     }
   };
@@ -393,8 +462,8 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              {editingAction ? 'Edit Action' : 'Add Action'}
-            </h2>
+                {editingAction ? 'Edit Action' : 'Add Action'}
+              </h2>
             <button
               onClick={() => setShowActionModal(false)}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -468,7 +537,7 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
               <button
                 onClick={() => {
                   if (editingAction) {
-                    const exists = automation.actions.some(a => a.id === editingAction.id);
+                    const exists = (automation.actions || []).some(a => a.id === editingAction.id);
                     if (exists) {
                       // Update existing action
                       updateAction(editingAction.id, editingAction.config);
@@ -483,7 +552,7 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
               >
-                {editingAction ? (automation.actions.some(a => a.id === editingAction.id) ? 'Update Action' : 'Add Action') : 'Add Action'}
+                {editingAction ? ((automation.actions || []).some(a => a.id === editingAction.id) ? 'Update Action' : 'Add Action') : 'Add Action'}
               </button>
             )}
           </div>
@@ -691,13 +760,24 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select Template
               </label>
-              <TemplateSelector
+              <select
                 value={config.templateId || ''}
-                onChange={(val) => {
-                  const newConfig = { ...config, templateId: val };
+                onChange={(e) => {
+                  const newConfig = { ...config, templateId: e.target.value };
                   if (editingAction) setEditingAction({ ...editingAction, config: newConfig });
                 }}
-              />
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Select a template...</option>
+                {templatesLoading && <option disabled>Loading templates...</option>}
+                {!templatesLoading && templatesError && <option disabled>Error loading templates</option>}
+                {!templatesLoading && !templatesError && Array.isArray(templates) && templates.length === 0 && (
+                  <option disabled>No templates found</option>
+                )}
+                {!templatesLoading && templates && templates.map(t => (
+                  <option key={t._id || t.id} value={t._id || t.id}>{t.name || t.title || (`Template ${t._id || t.id}`)}</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -793,59 +873,61 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
     <div className={containerClass}>
       {/* Visual builder promo removed; step-list builder is the default */}
       
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={headerTitleClass}>
-            {automationId ? 'Edit Automation' : 'Create Automation'}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Build automated email sequences that engage your subscribers
-          </p>
-        </div>
+      {/* Header (hidden when fullScreen; modal wrapper provides top bar) */}
+      {!fullScreen && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className={headerTitleClass}>
+              {automationId ? EDIT_AUTOMATION : CREATE_AUTOMATION}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {AUTOMATION_SUBHEAD}
+            </p>
+          </div>
 
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={() => {
-              setJsonText(JSON.stringify(automation, null, 2));
-              setJsonError('');
-              setShowJsonEditor(true);
-            }}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            View JSON
-          </button>
-          <button
-            onClick={() => setShowVersions(true)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            History
-          </button>
-          <button
-            onClick={saveAutomation}
-            disabled={saving}
-            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Automation
-              </>
-            )}
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Close
+            </button>
+            <button
+              onClick={() => {
+                setJsonText(JSON.stringify(automation, null, 2));
+                setJsonError('');
+                setShowJsonEditor(true);
+              }}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              View JSON
+            </button>
+            <button
+              onClick={() => setShowVersions(true)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              History
+            </button>
+            <button
+              onClick={saveAutomation}
+              disabled={saving}
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Automation
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Basic Info */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -916,7 +998,7 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
           </h3>
           
           <div className="space-y-6">
-            {automation.actions.length === 0 ? (
+            {(automation.actions || []).length === 0 ? (
               <div className="text-center py-12">
                 <Zap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -939,7 +1021,7 @@ const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScre
               </div>
             ) : (
               <div className="space-y-6">
-                {automation.actions.map((action, index) => renderActionCard(action, index))}
+                {(automation.actions || []).map((action, index) => renderActionCard(action, index))}
               </div>
             )}
           </div>

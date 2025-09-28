@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import devLog from '../utils/devLog';
 
 function PrivateRoute({ children }) {
   // Check if user is logged in (e.g., by checking localStorage for a token/user object)
   const user = localStorage.getItem('user'); // This is the key line
 
-  console.log('[PrivateRoute] Checking authentication. User in localStorage:', user ? 'present' : 'absent'); // DEBUG LOG
+  devLog('[PrivateRoute] Checking authentication. User in localStorage:', user ? 'present' : 'absent'); // DEBUG LOG
 
   if (!user) {
     // If not authenticated, redirect to the login page

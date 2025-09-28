@@ -1,6 +1,7 @@
 // emailxp/frontend/src/pages/AutomationManagement.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { H1, H3, Body } from '../components/ui/Typography';
 // TabBar removed - single automation view
 import PageContainer from '../components/layout/PageContainer';
@@ -28,6 +29,7 @@ import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { isOnboardingComplete } from '../utils/onboarding';
 import automationService from '../services/automationService';
+import { CREATE_AUTOMATION, EDIT_AUTOMATION } from '../constants/automationCopy';
 import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
@@ -38,6 +40,7 @@ import ReactFlow, {
   addEdge,
   MarkerType
 } from 'reactflow';
+import devLog from '../utils/devLog';
 import AutomationBuilder from '../components/AutomationBuilder';
 import 'reactflow/dist/style.css';
 import { createPortal } from 'react-dom';
@@ -139,8 +142,8 @@ const AutomationManagement = () => {
   const [automations, setAutomations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [showFlowModal, setShowFlowModal] = useState(false); // State for flow modal
   const [editingAutomation, setEditingAutomation] = useState(null); // State for current automation being edited
+  const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const builderRef = useRef(null);
@@ -174,33 +177,13 @@ const AutomationManagement = () => {
   }, [loadAutomations]);
 
   const handleCreateAutomation = () => {
-    // Create a new automation
-    const newAutomation = {
-      name: 'New Automation',
-      description: '',
-      isActive: false,
-      nodes: [],
-      edges: []
-    };
-    setEditingAutomation(newAutomation);
-    setShowFlowModal(true);
+    // navigate to the full-page builder for creating a new automation
+    navigate('/automation/new');
   };
 
   const handleEditAutomation = async (id) => {
-    try {
-      // Load the automation data
-      const response = await automationService.getAutomation(id);
-      setEditingAutomation(response.automation);
-      
-      // Set nodes and edges for the flow
-      setNodes(response.automation.nodes || []);
-      setEdges(response.automation.edges || []);
-      
-      setShowFlowModal(true);
-    } catch (error) {
-      console.error('Failed to load automation:', error);
-      toast.error('Failed to load automation');
-    }
+    // navigate to the full-page builder for editing
+    navigate(`/automation/edit/${id}`);
   };
 
   const handleStartAutomation = async (id) => {
@@ -295,10 +278,10 @@ const AutomationManagement = () => {
         await automationService.createAutomation(automationData);
       }
 
-      toast.success('Automation saved successfully');
-      setShowFlowModal(false);
-      setEditingAutomation(null);
-      loadAutomations(); // Refresh the list
+  toast.success('Automation saved successfully');
+  navigate('/automation');
+  setEditingAutomation(null);
+  loadAutomations(); // Refresh the list
     } catch (error) {
       console.error('Failed to save automation:', error);
       toast.error('Failed to save automation: ' + error.message);
@@ -307,7 +290,7 @@ const AutomationManagement = () => {
 
   // Close the flow modal
   const closeFlowModal = () => {
-    setShowFlowModal(false);
+    navigate('/automation');
     setEditingAutomation(null);
   };
 
@@ -455,7 +438,7 @@ const AutomationManagement = () => {
             </div>
             <button
               onClick={handleCreateAutomation}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               <Plus className="h-4 w-4" />
               <span>Create Automation</span>
@@ -495,7 +478,6 @@ const AutomationManagement = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Automation</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
@@ -509,12 +491,6 @@ const AutomationManagement = () => {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{automation.name}</div>
                             <div className="text-sm text-gray-500">{automation.description}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            {getAutomationTypeIcon(automation.type)}
-                            <span className="text-sm text-gray-900 capitalize">{automation.type ? automation.type.replace('_', ' ') : 'Unknown'}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(automation.status)}</td>
@@ -543,71 +519,7 @@ const AutomationManagement = () => {
         </>
       )}
 
-      {/* Automation Builder Modal - full screen, improved UI */}
-      {showFlowModal && (() => {
-        // Guard against undefined components (helps catch runtime element-type errors)
-        if (!AutomationBuilder || typeof AutomationBuilder === 'undefined') {
-          console.error('AutomationBuilder component is undefined', { AutomationBuilder });
-          return createPortal(
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-              <div className="bg-white dark:bg-gray-900 rounded-md p-6">
-                <div className="text-red-600 font-semibold mb-2">Error</div>
-                <div className="text-sm text-gray-700 dark:text-gray-300">Automation Builder component failed to load. Check console for details.</div>
-                <div className="mt-4">
-                  <button onClick={() => setShowFlowModal(false)} className="px-3 py-2 bg-gray-200 rounded">Close</button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          );
-        }
-
-        if (typeof Save === 'undefined') console.warn('Save icon is undefined (lucide-react import)');
-
-        return createPortal(
-          <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-60">
-            <div className="w-full h-full md:max-w-7xl md:mx-6 bg-white dark:bg-gray-900 shadow-2xl rounded-none md:rounded-xl flex flex-col overflow-hidden">
-              {/* Top bar */}
-              <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                <div>
-                  <div className="text-sm text-gray-500">Automations</div>
-                  <div className="text-lg font-semibold text-gray-900 dark:text-white">{editingAutomation?._id ? 'Edit Automation' : 'Create Automation'}</div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => {
-                      // call save on builder
-                      if (builderRef.current && builderRef.current.save) builderRef.current.save();
-                    }}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    {typeof Save !== 'undefined' ? <Save className="w-4 h-4 mr-2" /> : null}
-                    Save
-                  </button>
-                  <button
-                    onClick={() => { setShowFlowModal(false); setEditingAutomation(null); }}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
-                <AutomationBuilder
-                  ref={builderRef}
-                  automationId={editingAutomation?._id}
-                  onSave={() => { setShowFlowModal(false); setEditingAutomation(null); loadAutomations(); }}
-                  onCancel={() => { setShowFlowModal(false); setEditingAutomation(null); }}
-                  fullScreen={true}
-                />
-              </div>
-            </div>
-          </div>,
-          document.body
-        );
-      })()}
+      {/* Full-page builder routes are used for create/edit instead of modal */}
     </div>
     </PageContainer>
   );

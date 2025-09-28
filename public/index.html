@@ -30,11 +30,27 @@
        without rebuilding the JS bundle. Update this value in your deployment
        template or CI if you need to point to a different backend. -->
   <script>
-    // Set the production backend URL used by getBackendUrl() at runtime.
-    window.__BACKEND_URL__ = "https://emailxp-backend-production.up.railway.app";
-    // Optional runtime config object
-    window.__RUNTIME_CONFIG__ = window.__RUNTIME_CONFIG__ || {};
-    window.__RUNTIME_CONFIG__.backendUrl = window.__BACKEND_URL__;
+    // Resolve backend URL at runtime from a build-time placeholder when available.
+    // This uses the CRA HTML placeholder %REACT_APP_BACKEND_URL% so local .env
+    // values (like REACT_APP_BACKEND_URL) are respected without forcing a prod URL.
+    (function () {
+      try {
+        var placeholder = "%REACT_APP_BACKEND_URL%";
+        // If CRA replaced the placeholder, use it. Otherwise leave blank so
+        // the app's getBackendUrl() helper can fall back to process.env or
+        // relative URLs during local development.
+        if (placeholder && placeholder.indexOf('%REACT_APP_BACKEND_URL%') === -1) {
+          window.__BACKEND_URL__ = placeholder;
+        } else {
+          window.__BACKEND_URL__ = "";
+        }
+      } catch (e) {
+        window.__BACKEND_URL__ = "";
+      }
+
+      window.__RUNTIME_CONFIG__ = window.__RUNTIME_CONFIG__ || {};
+      window.__RUNTIME_CONFIG__.backendUrl = window.__BACKEND_URL__;
+    })();
   </script>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>

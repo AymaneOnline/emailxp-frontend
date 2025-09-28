@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/campaignScheduleService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 
 import { getBackendUrl } from '../utils/getBackendUrl';
 
@@ -25,7 +26,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.get('/', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching campaign schedules:', error);
+      devLog('Error fetching campaign schedules:', error);
       throw error;
     }
   },
@@ -36,7 +37,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.get(`/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching campaign schedule:', error);
+      devLog('Error fetching campaign schedule:', error);
       throw error;
     }
   },
@@ -47,7 +48,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.post('/', scheduleData);
       return response.data;
     } catch (error) {
-      console.error('Error creating campaign schedule:', error);
+      devLog('Error creating campaign schedule:', error);
       throw error;
     }
   },
@@ -58,7 +59,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.put(`/${id}`, scheduleData);
       return response.data;
     } catch (error) {
-      console.error('Error updating campaign schedule:', error);
+      devLog('Error updating campaign schedule:', error);
       throw error;
     }
   },
@@ -69,7 +70,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.post(`/${id}/start`);
       return response.data;
     } catch (error) {
-      console.error('Error starting campaign schedule:', error);
+      devLog('Error starting campaign schedule:', error);
       throw error;
     }
   },
@@ -80,7 +81,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.post(`/${id}/pause`);
       return response.data;
     } catch (error) {
-      console.error('Error pausing campaign schedule:', error);
+      devLog('Error pausing campaign schedule:', error);
       throw error;
     }
   },
@@ -91,7 +92,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.post(`/${id}/cancel`);
       return response.data;
     } catch (error) {
-      console.error('Error cancelling campaign schedule:', error);
+      devLog('Error cancelling campaign schedule:', error);
       throw error;
     }
   },
@@ -102,7 +103,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.delete(`/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting campaign schedule:', error);
+      devLog('Error deleting campaign schedule:', error);
       throw error;
     }
   },
@@ -113,7 +114,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.get(`/${id}/executions`, { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching execution history:', error);
+      devLog('Error fetching execution history:', error);
       throw error;
     }
   },
@@ -124,7 +125,7 @@ const campaignScheduleService = {
       const response = await scheduleAPI.post(`/${id}/execute`);
       return response.data;
     } catch (error) {
-      console.error('Error executing campaign schedule:', error);
+      devLog('Error executing campaign schedule:', error);
       throw error;
     }
   },

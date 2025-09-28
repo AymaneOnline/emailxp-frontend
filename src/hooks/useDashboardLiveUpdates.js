@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import devLog from '../utils/devLog';
 import { useSelector } from 'react-redux';
 import { isOnboardingComplete } from '../utils/onboarding';
 
@@ -55,8 +56,8 @@ export default function useDashboardLiveUpdates(enabled=true){
     });
 
     es.addEventListener('stream.error', (e)=>{
-      // Could surface toast here; for now just console
-      console.warn('SSE stream.error', e.data);
+      // Could surface toast here; for now dev-only log
+      devLog('SSE stream.error', e.data);
     });
 
     es.onerror = () => {

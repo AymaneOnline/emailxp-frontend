@@ -1,6 +1,7 @@
 // UnlayerEmailEditorModal.js - Full-screen modal wrapper for Unlayer React Email Editor
 
 import React, { useState, useEffect, useRef } from 'react';
+import devLog from '../utils/devLog';
 import { createPortal } from 'react-dom';
 import { X, Code, Download, Save, Palette, File, Type } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -46,7 +47,7 @@ const UnlayerEmailEditorModal = ({
                       plainText += extractedText + '\n\n';
                     }
                   } catch (e) {
-                    console.warn('Error parsing textJson:', e);
+                    devLog('Error parsing textJson:', e);
                   }
                 }
                 // Handle legacy text elements
@@ -66,7 +67,7 @@ const UnlayerEmailEditorModal = ({
                       const textJsonData = JSON.parse(content.values.textJson);
                       buttonText = extractTextFromLexical(textJsonData);
                     } catch (e) {
-                      console.warn('Error parsing button textJson:', e);
+                      devLog('Error parsing button textJson:', e);
                     }
                   }
                   if (buttonText) {

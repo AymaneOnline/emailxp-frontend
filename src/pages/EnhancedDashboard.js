@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import devLog from '../utils/devLog';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import campaignService from '../services/campaignService';
@@ -40,7 +41,7 @@ function EnhancedDashboard() {
     ctor: 0,
     campaignsTable: [],
   });
-  
+        devLog('Using default dashboard data for new user');
   // Filters and search
   const [selectedTimeframe, setSelectedTimeframe] = useState('Last 30 days');
   const [searchTerm, setSearchTerm] = useState('');
@@ -184,7 +185,7 @@ function EnhancedDashboard() {
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       if (err.response?.status === 404 || err.response?.status === 500) {
-        console.log('Using default dashboard data for new user');
+        devLog('Using default dashboard data for new user');
         setDashboardData({
           emailsSent: 0,
           opens: 0,

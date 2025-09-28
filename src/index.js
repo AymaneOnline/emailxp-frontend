@@ -11,6 +11,23 @@ import AppErrorBoundary from './AppErrorBoundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
+// Silence noisy console output in non-development environments to keep
+// production/preview consoles clean. Individual dev-only logs should use
+// the `devLog` helper where verbose info is required.
+try {
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'development') {
+    // eslint-disable-next-line no-console
+    console.log = () => {};
+    // eslint-disable-next-line no-console
+    console.debug = () => {};
+    // eslint-disable-next-line no-console
+    console.info = () => {};
+    // keep console.warn and console.error so errors are visible in prod
+  }
+} catch (e) {
+  // ignore
+}
+
 // Configure Axios interceptors with the Redux store
 configureAxios(store); // Call the function here
 

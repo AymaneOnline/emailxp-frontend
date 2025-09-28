@@ -27,6 +27,7 @@ import {
 import { toast } from 'react-toastify';
 import automationService from '../services/automationService';
 import { useSelector } from 'react-redux';
+import { CREATE_AUTOMATION, EDIT_AUTOMATION, AUTOMATION_SUBHEAD } from '../constants/automationCopy';
 
 // Node types configuration
 const nodeTypes = {
@@ -116,7 +117,7 @@ function ConditionNode({ data }) {
   );
 }
 
-const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
+const VisualAutomationBuilder = ({ automationId, onSave, onCancel, fullScreen = false }) => {
   const { user } = useSelector((state) => state.auth);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -125,48 +126,10 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
     description: '',
     isActive: false
   });
+  const [loading, setLoading] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [showNodeModal, setShowNodeModal] = useState(false);
-  const [nodeModalData, setNodeModalData] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  // Load automation if editing
-  useEffect(() => {
-    const loadAutomation = async () => {
-      // Check if user is authenticated
-      if (!user || !user.token) {
-        console.error('User not authenticated');
-        toast.error('Please log in to edit automations');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await automationService.getAutomation(automationId);
-        
-        // Set basic info
-        setAutomation({
-          name: response.automation.name,
-          description: response.automation.description,
-          isActive: response.automation.isActive
-        });
-        
-        // Set nodes and edges
-        setNodes(response.automation.nodes || []);
-        setEdges(response.automation.edges || []);
-      } catch (error) {
-        console.error('Failed to load automation:', error);
-        toast.error('Failed to load automation');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (automationId) {
-      loadAutomation();
-    }
-  }, [automationId, setNodes, setEdges, user]);
+  const [nodeModalData, setNodeModalData] = useState(null);
 
   // Available trigger types
   const triggerTypes = [
@@ -496,7 +459,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
               </button>
               <button
                 onClick={() => setShowNodeModal(false)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
               >
                 Save
               </button>
@@ -517,33 +480,35 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - Modified for modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {automationId ? 'Edit Automation' : 'Create Automation'}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Build automated email sequences with a visual workflow
-          </p>
+      {/* Header - hidden when fullScreen (modal wrapper provides top bar) */}
+      {!fullScreen && (
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {automationId ? EDIT_AUTOMATION : CREATE_AUTOMATION}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {AUTOMATION_SUBHEAD}
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveAutomation}
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Automation
+            </button>
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={saveAutomation}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Automation
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Scrollable content area */}
       <div className="flex-1 overflow-auto">
@@ -576,7 +541,7 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                   <button
                     onClick={() => setAutomation(prev => ({ ...prev, isActive: !prev.isActive }))}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      automation.isActive ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'
+                      automation.isActive ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'
                     }`}
                   >
                     <span

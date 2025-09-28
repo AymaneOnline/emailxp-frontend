@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/campaignService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 
 const CAMPAIGN_API_PATH = '/api/campaigns';
 const RECOMMENDATIONS_API_PATH = '/api/recommendations';
@@ -135,7 +136,7 @@ const campaignService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching recommended campaigns:', error);
+      devLog('Error fetching recommended campaigns:', error);
       throw error;
     }
   },
@@ -148,7 +149,7 @@ const campaignService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching personalized campaign:', error);
+      devLog('Error fetching personalized campaign:', error);
       throw error;
     }
   },
@@ -159,7 +160,7 @@ const campaignService = {
       const response = await axios.post(`${RECOMMENDATIONS_API_PATH}/feedback`, feedbackData);
       return response.data;
     } catch (error) {
-      console.error('Error recording campaign feedback:', error);
+      devLog('Error recording campaign feedback:', error);
       throw error;
     }
   },
@@ -170,7 +171,7 @@ const campaignService = {
       const response = await axios.get(`${RECOMMENDATIONS_API_PATH}/profile/${subscriberId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching subscriber engagement profile:', error);
+      devLog('Error fetching subscriber engagement profile:', error);
       throw error;
     }
   }

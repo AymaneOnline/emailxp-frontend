@@ -13,6 +13,7 @@ import { useDashboardOverview, useAncillaryDashboardData } from '../hooks/useDas
 import PanelErrorBoundary from '../components/dashboard/PanelErrorBoundary';
 import useDashboardLiveUpdates from '../hooks/useDashboardLiveUpdates';
 import { isOnboardingComplete } from '../utils/onboarding';
+import devLog from '../utils/devLog';
 import useReducedMotion from '../hooks/useReducedMotion';
 import DomainStatusBanner from '../components/DomainStatusBanner';
 import PageContainer from '../components/layout/PageContainer';
@@ -25,10 +26,8 @@ export default function DashboardNew() {
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 showProfileModal changed to:', showProfileModal);
+    devLog('🔄 showProfileModal changed to:', showProfileModal);
   }, [showProfileModal]);
-
-  console.log('🎯 DashboardNew render, showProfileModal:', showProfileModal, 'timestamp:', Date.now());
 
   const { data: overviewPayload, isLoading: overviewLoading, error: overviewError } = useDashboardOverview(timeframe);
   const { subscriberStats, automationStats, /* campaignStats */ loading: ancillaryLoading } = useAncillaryDashboardData(true);
@@ -49,7 +48,7 @@ export default function DashboardNew() {
   const needsEmailVerification = !!user && !user.isVerified;
   const needsProfileCompletion = !!user && user.isVerified && !user.isProfileComplete;
   const onboardingIncomplete = needsEmailVerification || needsProfileCompletion;
-  console.log('📊 onboardingIncomplete:', onboardingIncomplete, 'needsEmailVerification:', needsEmailVerification, 'needsProfileCompletion:', needsProfileCompletion);
+  devLog('📊 onboardingIncomplete:', onboardingIncomplete, 'needsEmailVerification:', needsEmailVerification, 'needsProfileCompletion:', needsProfileCompletion);
   const domainNeedsAttention = !!user && user.isVerified && !user.hasVerifiedDomain;
 
   // Defer panel lazy imports until onboarding complete to reduce initial bundle
@@ -152,7 +151,7 @@ export default function DashboardNew() {
           <Suspense fallback={<PanelSkeleton />}>{body}</Suspense>
         </PageContainer>
       )}
-      {console.log('🎪 About to render ProfileCompletionModal with isOpen:', showProfileModal)}
+  {devLog('🎪 About to render ProfileCompletionModal with isOpen:', showProfileModal)}
       <ProfileCompletionModal
         key={showProfileModal ? 'open' : 'closed'}
         isOpen={showProfileModal}

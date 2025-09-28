@@ -3,6 +3,7 @@
 import axios from 'axios';
 
 import { getBackendUrl } from '../utils/getBackendUrl';
+import devLog from '../utils/devLog';
 
 const base = (getBackendUrl() || '').replace(/\/$/, '');
 const UNLAYER_TEMPLATES_API = base ? `${base}/api/unlayer-templates` : '/api/unlayer-templates';
@@ -663,7 +664,7 @@ const unlayerTemplateService = {
       const response = await unlayerAPI.get('/health/check');
       return response.data;
     } catch (error) {
-      console.warn('Unlayer API health check failed:', error.message);
+  devLog('Unlayer API health check failed:', error.message);
       return { configured: false, working: false };
     }
   },
@@ -684,7 +685,7 @@ const unlayerTemplateService = {
         };
       } else {
         // Fall back to mock templates
-        console.warn('Using fallback templates - Unlayer API not available');
+  devLog('Using fallback templates - Unlayer API not available');
         return unlayerTemplateService.getFallbackTemplates(params);
       }
     } catch (error) {
@@ -820,7 +821,7 @@ const unlayerTemplateService = {
         // Strategy 1: Try direct design export (most reliable)
         if (template.design && !exportSuccess) {
           try {
-            console.log('Attempting design export for template:', id);
+            devLog('Attempting design export for template:', id);
             const designResponse = await unlayerAPI.post('/export/design', {
               design: template.design,
               displayMode: 'email'
@@ -828,13 +829,13 @@ const unlayerTemplateService = {
             
             htmlContent = designResponse.data.html || designResponse.data.data?.html || '';
             if (htmlContent) {
-              console.log('Design export successful');
+              devLog('Design export successful');
               exportSuccess = true;
             }
           } catch (designExportError) {
-            console.warn('Design export failed:', designExportError.message);
+            devLog('Design export failed:', designExportError.message);
             if (designExportError.response) {
-              console.warn('Design export error details:', designExportError.response.data);
+              devLog('Design export error details:', designExportError.response.data);
             }
           }
         }
@@ -842,27 +843,27 @@ const unlayerTemplateService = {
         // Strategy 2: Try template ID export (if design export failed)
         if (!exportSuccess) {
           try {
-            console.log('Attempting template ID export for template:', id);
+            devLog('Attempting template ID export for template:', id);
             const response = await unlayerAPI.post(`/${id}/export`, {
               displayMode: 'email'
             });
             
             htmlContent = response.data.html || response.data.data?.html || '';
             if (htmlContent) {
-              console.log('Template ID export successful');
+              devLog('Template ID export successful');
               exportSuccess = true;
             }
           } catch (exportError) {
-            console.warn('Template ID export failed:', exportError.message);
+            devLog('Template ID export failed:', exportError.message);
             if (exportError.response) {
-              console.warn('Template export error details:', exportError.response.data);
+              devLog('Template export error details:', exportError.response.data);
             }
           }
         }
 
         // Strategy 3: Generate comprehensive HTML from design (fallback)
         if (!exportSuccess || !htmlContent) {
-          console.log('Using comprehensive HTML generation fallback');
+          devLog('Using comprehensive HTML generation fallback');
           htmlContent = unlayerTemplateService.generateComprehensiveHtml(template.design);
         }
         
@@ -1629,7 +1630,7 @@ const unlayerTemplateService = {
                           }
                         }
                       } catch (e) {
-                        console.warn('Error parsing textJson for thumbnail:', e);
+                        devLog('Error parsing textJson for thumbnail:', e);
                       }
                     }
                     break;
@@ -1667,7 +1668,7 @@ const unlayerTemplateService = {
                         const textJsonData = JSON.parse(values.textJson);
                         buttonText = unlayerTemplateService.extractTextFromLexicalForPreview(textJsonData).replace(/<[^>]*>/g, '').substring(0, 15);
                       } catch (e) {
-                        console.warn('Error parsing button textJson for thumbnail:', e);
+                        devLog('Error parsing button textJson for thumbnail:', e);
                       }
                     } else {
                       buttonText = 'Button';

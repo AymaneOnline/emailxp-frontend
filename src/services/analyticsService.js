@@ -1,6 +1,7 @@
 // emailxp/frontend/src/services/analyticsService.js
 
 import axios from 'axios';
+import devLog from '../utils/devLog';
 import { getAuthToken } from '../utils/authToken';
 
 import { getBackendUrl } from '../utils/getBackendUrl';
@@ -34,7 +35,7 @@ const analyticsService = {
         // Suppress onboarding noise: unverified/incomplete profiles will 403
         return null;
       }
-      console.error('Error fetching dashboard overview:', error);
+        devLog('Error fetching dashboard overview:', error);
       throw error;
     }
   },
@@ -47,7 +48,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching campaign analytics:', error);
+        devLog('Error fetching campaign analytics:', error);
       throw error;
     }
   },
@@ -58,7 +59,7 @@ const analyticsService = {
       const response = await analyticsAPI.get('/campaigns', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching campaigns analytics:', error);
+        devLog('Error fetching campaigns analytics:', error);
       throw error;
     }
   },
@@ -71,7 +72,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching template analytics:', error);
+        devLog('Error fetching template analytics:', error);
       throw error;
     }
   },
@@ -84,7 +85,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching subscriber analytics:', error);
+        devLog('Error fetching subscriber analytics:', error);
       throw error;
     }
   },
@@ -97,7 +98,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching engagement analytics:', error);
+        devLog('Error fetching engagement analytics:', error);
       throw error;
     }
   },
@@ -110,7 +111,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching geographic analytics:', error);
+        devLog('Error fetching geographic analytics:', error);
       throw error;
     }
   },
@@ -124,7 +125,7 @@ const analyticsService = {
       const response = await analyticsAPI.get('/links', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching link performance:', error);
+        devLog('Error fetching link performance:', error);
       throw error;
     }
   },
@@ -137,7 +138,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching comparative analytics:', error);
+        devLog('Error fetching comparative analytics:', error);
       throw error;
     }
   },
@@ -148,7 +149,7 @@ const analyticsService = {
       const response = await analyticsAPI.post('/reports', reportConfig);
       return response.data;
     } catch (error) {
-      console.error('Error generating report:', error);
+        devLog('Error generating report:', error);
       throw error;
     }
   },
@@ -161,7 +162,7 @@ const analyticsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error generating analytics:', error);
+        devLog('Error generating analytics:', error);
       throw error;
     }
   },

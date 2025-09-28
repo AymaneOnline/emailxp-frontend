@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import devLog from '../utils/devLog';
 import { H1, H2, H3, H4, Body, Small, Muted } from '../components/ui/Typography';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -63,19 +64,19 @@ function LandingPage() {
         }
     };
     const handleContactSalesClick = () => {
-        console.log('Contact Sales not implemented yet.');
+        devLog('Contact Sales not implemented yet.');
     };
     const handleViewDemoClick = () => {
-        console.log('View Demo not implemented yet.');
+    devLog('View Demo not implemented yet.');
     };
     const handleSocialClick = (platform) => {
-        console.log(`${platform} link not implemented yet.`);
+    devLog(`${platform} link not implemented yet.`);
     };
     const handleSolutionClick = (solution) => {
-        console.log(`${solution} solution not implemented yet.`);
+    devLog(`${solution} solution not implemented yet.`);
     };
     const handleCompanyClick = (page) => {
-        console.log(`${page} page not implemented yet.`);
+    devLog(`${page} page not implemented yet.`);
     };
 
     return (
