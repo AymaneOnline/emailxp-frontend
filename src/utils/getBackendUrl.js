@@ -32,9 +32,13 @@ export function getBackendUrl() {
     }
 
     // 3) Vite build-time env
-    // eslint-disable-next-line no-undef
-    if (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
-      return import.meta.env.VITE_BACKEND_URL;
+    // Access import.meta.env via a runtime Function so the static parser used by
+    // Create-React-App (react-scripts) does not choke on the `import.meta` token.
+    try {
+      const viteVal = new Function('return (typeof import !== "undefined" && import.meta && import.meta.env && import.meta.env.VITE_BACKEND_URL) || ""')();
+      if (viteVal) return viteVal;
+    } catch (e) {
+      // ignore
     }
 
     // 4) CRA fallback (process.env)
