@@ -1,12 +1,13 @@
 // emailxp/frontend/src/pages/TemplateForm.js
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Palette, Eye, Code, Type, Wand2, ArrowRight, CheckCircle, X } from 'lucide-react';
+import { Palette, Code, Type, Wand2, CheckCircle, X, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import FormField from '../components/ui/FormField';
 import UnlayerEmailEditorModal from '../components/UnlayerEmailEditorModal';
+import PageContainer from '../components/layout/PageContainer';
 import templateService from '../services/templateService';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -277,16 +278,16 @@ const TemplateForm = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-            <div className="max-w-4xl mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        {id ? 'Edit Template' : 'Create New Template'}
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        {id ? 'Update your email template' : 'Design a beautiful email template for your campaigns'}
-                    </p>
+        <PageContainer>
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-4">
+                        <button onClick={() => navigate('/templates')} className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                        </button>
+                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{id ? 'Edit Template' : 'Create Template'}</h1>
+                    </div>
+                    <div />
                 </div>
 
                 {/* Error and Success Messages */}
@@ -310,306 +311,111 @@ const TemplateForm = () => {
 
                 {/* Main Form */}
                 <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Basic Information Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
-                                <Type className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    {/* Unified Card: Basic Information + Content Creation */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div className="p-8">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
+                                    <Type className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                Template Information
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField id="name" label="Template Name" required description="A descriptive internal name.">
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => { setName(e.target.value); markDirty(); }}
+                                        required
+                                        placeholder="Enter template name..."
+                                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                                    />
+                                </FormField>
+                                <FormField id="subject" label="Email Subject" required description="Visible to recipients.">
+                                    <input
+                                        type="text"
+                                        value={subject}
+                                        onChange={(e) => { setSubject(e.target.value); markDirty(); }}
+                                        required
+                                        placeholder="Enter email subject..."
+                                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                                    />
+                                </FormField>
                             </div>
-                            Template Information
-                        </h2>
-                        
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormField id="name" label="Template Name" required description="A descriptive internal name.">
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => { setName(e.target.value); markDirty(); }}
-                                    required
-                                    placeholder="Enter template name..."
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
-                                />
-                            </FormField>
-                            <FormField id="subject" label="Email Subject" required description="Visible to recipients.">
-                                <input
-                                    type="text"
-                                    value={subject}
-                                    onChange={(e) => { setSubject(e.target.value); markDirty(); }}
-                                    required
-                                    placeholder="Enter email subject..."
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
-                                />
-                            </FormField>
-                        </div>
-                        <div className="mt-4 text-sm text-gray-500 flex items-center space-x-3">
-                          {dirty && <span className="text-amber-600">Unsaved changes…</span>}
-                          {saving && <span className="text-blue-600 flex items-center"><svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75" fill="none"/></svg>Saving…</span>}
-                          {!dirty && !saving && <span className="text-green-600">All changes saved</span>}
-                        </div>
-                    </div>
-
-                    {/* Content Creation Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-3">
-                                <Palette className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <div className="mt-4 text-sm text-gray-500 flex items-center space-x-3">
+                              {dirty && <span className="text-amber-600">Unsaved changes…</span>}
+                              {saving && <span className="text-blue-600 flex items-center"><svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" className="opacity-75" fill="none"/></svg>Saving…</span>}
+                              {!dirty && !saving && <span className="text-green-600">All changes saved</span>}
                             </div>
-                            Email Content
-                        </h2>
+                        </div>
 
-                        {!editorType ? (
-                            // Editor Selection
-                            <div className="space-y-6">
-                                <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
-                                    Choose how you'd like to create your email template
-                                </p>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Visual Editor Option */}
-                                    <div 
-                                        onClick={() => selectEditorType('visual')}
-                                        className="group cursor-pointer bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-2 border-red-200 dark:border-red-700 rounded-xl p-6 hover:border-red-400 dark:hover:border-red-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-                                    >
-                                        <div className="text-center">
-                                            <div className="w-16 h-16 bg-red-100 dark:bg-red-800 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-red-200 dark:group-hover:bg-red-700 transition-colors">
-                                                <Wand2 className="w-8 h-8 text-red-600 dark:text-red-400" />
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                                Visual Builder
-                                            </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                                                Drag & drop components to create professional emails visually
-                                            </p>
-                                            <div className="flex items-center justify-center text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
-                                                <span className="text-sm font-medium">Get Started</span>
-                                                <ArrowRight className="w-4 h-4 ml-1" />
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 pt-4 border-t border-red-200 dark:border-red-700">
-                                            <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                                                <span>✓ No coding required</span>
-                                                <span>✓ Professional templates</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 p-8">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-3">
+                                    <Palette className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                Email Content
+                            </h2>
 
-                                    {/* Text Editor Option */}
-                                    <div 
-                                        onClick={() => selectEditorType('text')}
-                                        className="group cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-                                    >
-                                        <div className="text-center">
-                                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-800 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 dark:group-hover:bg-blue-700 transition-colors">
-                                                <Code className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                                Text Editor
-                                            </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                                                Rich text editor with formatting tools and HTML support
-                                            </p>
-                                            <div className="flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                                                <span className="text-sm font-medium">Get Started</span>
-                                                <ArrowRight className="w-4 h-4 ml-1" />
-                                            </div>
+                            { !editorType ? (
+                                <div className="space-y-6">
+                                    <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
+                                        Choose how you'd like to create your email template
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div onClick={() => selectEditorType('visual')} className="cursor-pointer p-6 rounded-xl border">
+                                            <h3 className="font-semibold">Visual Builder</h3>
+                                            <p className="text-sm text-gray-500">Drag & drop components to create emails visually.</p>
                                         </div>
-                                        <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
-                                            <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                                                <span>✓ Full HTML control</span>
-                                                <span>✓ Rich formatting</span>
-                                            </div>
+                                        <div onClick={() => selectEditorType('text')} className="cursor-pointer p-6 rounded-xl border">
+                                            <h3 className="font-semibold">Text Editor</h3>
+                                            <p className="text-sm text-gray-500">Rich text editor with HTML support.</p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            // Selected Editor Interface
-                            <div>
-                                {/* Editor Type Indicator */}
-                                <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div className="flex items-center">
-                                        {editorType === 'visual' ? (
-                                            <>
-                                                <div className="w-8 h-8 bg-red-100 dark:bg-red-800 rounded-lg flex items-center justify-center mr-3">
-                                                    <Wand2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-gray-900 dark:text-white">Visual Builder</p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Drag & drop email designer</p>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center mr-3">
-                                                    <Code className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-gray-900 dark:text-white">Text Editor</p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Rich text with HTML support</p>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={resetEditor}
-                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
-                                    >
-                                        Switch Editor
-                                    </button>
-                                </div>
-
-                                {editorType === 'visual' ? (
-                                    // Visual Editor Interface
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={openEmailEditor}
-                                                    className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                                                >
-                                                    <Palette className="w-4 h-4 mr-2" />
-                                                    {emailDesign || htmlContent ? 'Edit Design' : 'Open Designer'}
-                                                </button>
-                                                
-                                                {htmlContent && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={togglePreview}
-                                                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                                    >
-                                                        {previewMode ? <Code className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                                        {previewMode ? 'Show HTML' : 'Preview'}
-                                                    </button>
-                                                )}
+                            ) : (
+                                <div>
+                                    <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                        <div className="flex items-center">
+                                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                                {editorType === 'visual' ? <Wand2 className="w-4 h-4 text-red-600" /> : <Code className="w-4 h-4 text-blue-600" />}
                                             </div>
-                                            
-                                            {htmlContent && (
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {htmlContent.length} characters
-                                                </div>
-                                            )}
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">{editorType === 'visual' ? 'Visual Builder' : 'Text Editor'}</p>
+                                                <p className="text-sm text-gray-500">{editorType === 'visual' ? 'Drag & drop email designer' : 'Rich text with HTML support'}</p>
+                                            </div>
                                         </div>
+                                        <button type="button" onClick={resetEditor} className="text-sm text-gray-500">Switch Editor</button>
+                                    </div>
 
-                                        {htmlContent ? (
-                                            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 min-h-[400px] overflow-hidden">
-                                                {previewMode ? (
-                                                    <div className="p-6">
-                                                                <div 
-                                                                    className="prose prose-sm max-w-none dark:prose-invert"
-                                                                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
-                                                                />
-                                                    </div>
+                                    {editorType === 'visual' ? (
+                                        <div>
+                                            <div className="flex items-center space-x-3 mb-4">
+                                                <button type="button" onClick={openEmailEditor} className="px-4 py-2 bg-red-600 text-white rounded">Open Designer</button>
+                                                {htmlContent && <button type="button" onClick={togglePreview} className="px-4 py-2 border rounded">{previewMode ? 'Show HTML' : 'Preview'}</button>}
+                                            </div>
+                                            {htmlContent ? (
+                                                previewMode ? (
+                                                    <div className="p-6" dangerouslySetInnerHTML={{ __html: getPreviewHtml() }} />
                                                 ) : (
-                                                    <textarea
-                                                        value={htmlContent}
-                                                        onChange={(e) => setHtmlContent(e.target.value)}
-                                                        className="w-full h-96 p-6 font-mono text-sm border-none resize-none focus:outline-none bg-transparent text-gray-900 dark:text-white"
-                                                        placeholder="HTML content will appear here when you design your email..."
-                                                        readOnly
-                                                    />
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-12 text-center bg-gray-50 dark:bg-gray-700/50">
-                                                <div className="w-16 h-16 bg-red-100 dark:bg-red-800 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                                    <Palette className="w-8 h-8 text-red-600 dark:text-red-400" />
-                                                </div>
-                                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                                    Ready to Design?
-                                                </h3>
-                                                <p className="text-gray-500 dark:text-gray-400 mb-6">
-                                                    Click "Open Designer" to start building your email template with our visual drag & drop editor.
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={openEmailEditor}
-                                                    className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                                                >
-                                                    <Palette className="w-5 h-5 mr-2" />
-                                                    Open Designer
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    // Text Editor Interface  
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center space-x-3">
-                                                {htmlContent && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={togglePreview}
-                                                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                                    >
-                                                        {previewMode ? <Code className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                                        {previewMode ? 'Show Editor' : 'Preview'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                            
-                                            {htmlContent && (
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {htmlContent.length} characters
-                                                </div>
+                                                    <textarea value={htmlContent} readOnly className="w-full h-48 p-4" />
+                                                )
+                                            ) : (
+                                                <div className="p-6 border-dashed border rounded text-center">No design yet</div>
                                             )}
                                         </div>
-
-                                        {previewMode ? (
-                                            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 min-h-[400px] p-6">
-                                                <div 
-                                                    className="prose prose-sm max-w-none dark:prose-invert"
-                                                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-800">
-                                                <ReactQuill
-                                                    theme="snow"
-                                                    value={htmlContent}
-                                                    onChange={setHtmlContent}
-                                                    modules={{
-                                                        toolbar: [
-                                                            [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }],
-                                                            [{ size: [] }],
-                                                            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-                                                            [{ 'list': 'ordered' }, { 'list': 'bullet' },
-                                                            { 'indent': '-1' }, { 'indent': '+1' }],
-                                                            ['link', 'image', 'video'],
-                                                            ['clean']
-                                                        ],
-                                                    }}
-                                                    formats={[
-                                                        'header', 'font', 'size',
-                                                        'bold', 'italic', 'underline', 'strike', 'blockquote',
-                                                        'list', 'bullet', 'indent',
-                                                        'link', 'image', 'video'
-                                                    ]}
-                                                    style={{ minHeight: '400px' }}
-                                                    placeholder="Start writing your email content..."
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                    ) : (
+                                        <div>
+                                            <ReactQuill theme="snow" value={htmlContent} onChange={(v) => { setHtmlContent(v); markDirty(); }} style={{ minHeight: 300 }} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
-
-                    {/* Plain text version removed per UX request */}
 
                     {/* Action Buttons */}
-                    <div className="flex items-center justify-end space-x-4 pt-6">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/templates')}
-                            disabled={loading}
-                            className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Cancel
-                        </button>
+                    <div className="flex items-center justify-end pt-6">
                         <button 
                             type="submit" 
                             disabled={loading}
@@ -629,7 +435,6 @@ const TemplateForm = () => {
                         </button>
                     </div>
                 </form>
-
                 {/* Editor Selection Modal */}
                 {showEditorSelection && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
@@ -704,30 +509,51 @@ const TemplateForm = () => {
                 />
                 {/* Rich Text Editor Modal (for text editor flow on new templates) */}
                 {showTextEditorModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full mx-4 p-6">
-                            <div className="flex items-center justify-between mb-4">
+                    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm">
+                        {/* Quill tweaks: ensure the Quill wrapper and its container/editor use full height so scrolling only appears when content overflows */}
+                        <style>{`.template-text-editor, .template-text-editor .ql-editor { height: 100% !important; } .template-text-editor .ql-container { height: 95% !important; } .template-text-editor .ql-editor { min-height: 120px; max-height: calc(100vh - 300px); overflow: auto; }`}</style>
+                        <div className="flex flex-col w-full h-full">
+                            {/* Header */}
+                            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Text Editor</h3>
-                                <button onClick={() => setShowTextEditorModal(false)} className="text-gray-500 hover:text-gray-700">Close</button>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => { setHtmlContent(modalTextContent); setShowTextEditorModal(false); markDirty(); }}
+                                        className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                    >
+                                        Save
+                                    </button>
+                                    <button onClick={() => setShowTextEditorModal(false)} className="p-2 text-gray-500 hover:text-gray-700" aria-label="Close">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="mb-4">
-                                <ReactQuill
-                                    theme="snow"
-                                    value={modalTextContent}
-                                    onChange={(val) => setModalTextContent(val)}
-                                    style={{ minHeight: '300px' }}
-                                />
+
+                            {/* Editor area */}
+                            <div className="p-6 flex-1 overflow-hidden bg-white dark:bg-gray-900">
+                                <div className="h-full flex flex-col">
+                                    <div className="flex-1 min-h-0">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={modalTextContent}
+                                            onChange={(val) => setModalTextContent(val)}
+                                            className="template-text-editor"
+                                            style={{ height: '100%' }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-end space-x-3">
-                                <button onClick={() => { setShowTextEditorModal(false); }} className="px-4 py-2 bg-gray-100 rounded">Cancel</button>
-                                <button onClick={() => { setHtmlContent(modalTextContent); setShowTextEditorModal(false); markDirty(); }} className="px-4 py-2 bg-red-600 text-white rounded">Save</button>
-                            </div>
+
+                            {/* Footer removed: Save/Close live in header */}
                         </div>
                     </div>
                 )}
+
             </div>
-        </div>
+        </PageContainer>
+
     );
+
 };
 
 export default TemplateForm;
