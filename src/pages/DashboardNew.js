@@ -31,7 +31,7 @@ export default function DashboardNew() {
   console.log('🎯 DashboardNew render, showProfileModal:', showProfileModal, 'timestamp:', Date.now());
 
   const { data: overviewPayload, isLoading: overviewLoading, error: overviewError } = useDashboardOverview(timeframe);
-  const { subscriberStats, formStats, automationStats, /* campaignStats */ siteStats, loading: ancillaryLoading } = useAncillaryDashboardData(true);
+  const { subscriberStats, automationStats, /* campaignStats */ loading: ancillaryLoading } = useAncillaryDashboardData(true);
 
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   useEffect(() => { if (overviewError) toast.error('Failed to load overview metrics'); }, [overviewError]);
@@ -65,23 +65,19 @@ export default function DashboardNew() {
     { key: 'overview', label: 'Overview' },
     { key: 'campaigns', label: 'Campaigns' },
     { key: 'subscribers', label: 'Subscribers' },
-    { key: 'forms', label: 'Forms' },
-    { key: 'sites', label: 'Sites' },
     { key: 'automation', label: 'Automation' }
   ];
 
   const OverviewPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/OverviewPanel')) : null;
   const CampaignsPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/CampaignsPanel')) : null;
   const SubscribersPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/SubscribersPanel')) : null;
-  const FormsPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/FormsPanel')) : null;
-  const SitesPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/SitesPanel')) : null;
+  
   const AutomationPanel = panelsReady ? React.lazy(()=>import('./dashboard-panels/AutomationPanel')) : null;
 
   function renderOverview() { if(!OverviewPanel) return null; return <PanelErrorBoundary><OverviewPanel overview={overview} subscriberStats={subscriberStats} quickStats={quickStats} metricsLoading={metricsLoading} setActiveTab={setActiveTab} /></PanelErrorBoundary>; }
   function renderCampaigns() { if(!CampaignsPanel) return null; return <PanelErrorBoundary><CampaignsPanel overview={overview} topCampaigns={topCampaignsMemo} recentActivity={quickStats?.recentActivity||[]} metricsLoading={metricsLoading} navigate={navigate} setActiveTab={setActiveTab} /></PanelErrorBoundary>; }
   function renderSubscribers() { if(!SubscribersPanel) return null; return <PanelErrorBoundary><SubscribersPanel subscriberStats={subscriberStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
-  function renderForms() { if(!FormsPanel) return null; return <PanelErrorBoundary><FormsPanel formStats={formStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
-  function renderSites() { if(!SitesPanel) return null; return <PanelErrorBoundary><SitesPanel siteStats={siteStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
+  
   function renderAutomation() { if(!AutomationPanel) return null; return <PanelErrorBoundary><AutomationPanel automationStats={automationStats} metricsLoading={metricsLoading} /></PanelErrorBoundary>; }
 
   let body;
@@ -89,8 +85,7 @@ export default function DashboardNew() {
     case 'overview': body = renderOverview(); break;
     case 'campaigns': body = renderCampaigns(); break;
     case 'subscribers': body = renderSubscribers(); break;
-    case 'forms': body = renderForms(); break;
-    case 'sites': body = renderSites(); break;
+    
     case 'automation': body = renderAutomation(); break;
     default: body = null;
   }

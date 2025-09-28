@@ -36,10 +36,7 @@ import AutomationBuilderPage from './pages/AutomationBuilderPage';
 import AutomationManagement from './pages/AutomationManagement';
 import FileManagement from './pages/FileManagement';
 // import AnalyticsDashboard from './pages/AnalyticsDashboard'; // Removed this import
-import SitesPage from './pages/SitesPage'; // Add this import
-import FormsPage from './pages/FormsPage'; // Add this import
-import FormBuilder from './pages/FormBuilder'; // Add this import
-import FormSubmissions from './pages/FormSubmissions'; // Add this import
+// Sites and Forms pages removed from main navigation
 // Removed standalone ABTesting page import (A/B tests integrated into Campaigns)
 import PublicLandingPage from './pages/PublicLandingPage'; // Add this import
 import VerifyEmail from './pages/VerifyEmail';
@@ -222,38 +219,7 @@ const router = createBrowserRouter([
       { index: true, element: <RequireOnboardingComplete><ProfileSettings /></RequireOnboardingComplete> },
     ],
   },
-  {
-    path: '/forms',
-    element: <Layout />,
-    children: [
-      {
-        path: '',
-  element: <RequireOnboardingComplete><FormsPage /></RequireOnboardingComplete>,
-      },
-      {
-        path: 'new',
-  element: <RequireOnboardingComplete><FormBuilder /></RequireOnboardingComplete>,
-      },
-      {
-        path: 'edit/:id',
-  element: <RequireOnboardingComplete><FormBuilder /></RequireOnboardingComplete>,
-      },
-      {
-        path: ':id/submissions',
-  element: <RequireOnboardingComplete><FormSubmissions /></RequireOnboardingComplete>,
-      },
-    ],
-  },
-  {
-    path: '/sites',
-    element: <Layout />,
-    children: [
-      {
-        path: '',
-  element: <RequireOnboardingComplete><SitesPage /></RequireOnboardingComplete>,
-      },
-    ],
-  },
+  // Forms and Sites routes removed from the main app routes. Access to these pages is deprecated.
   {
     path: '/automation',
     element: <Layout />,
