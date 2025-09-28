@@ -1,0 +1,97 @@
+
+> frontend@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Compiled with warnings.
+
+[eslint] 
+src\components\AudienceSelector.js
+  Line 4:33:  'X' is defined but never used  no-unused-vars
+
+src\components\BehavioralTriggerManager.js
+  Line 11:3:  'Filter' is defined but never used       no-unused-vars
+  Line 12:3:  'Clock' is defined but never used        no-unused-vars
+  Line 14:3:  'Users' is defined but never used        no-unused-vars
+  Line 15:3:  'Calendar' is defined but never used     no-unused-vars
+  Line 16:3:  'AlertCircle' is defined but never used  no-unused-vars
+
+src\components\EnhancedCampaignBuilder.js
+  Line 262:39:  The ref value 'debounceTimerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'debounceTimerRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  Line 348:6:   React Hook useEffect has missing dependencies: 'handleQuillSave' and 'handleUnlayerSave'. Either include them or remove the dependency array                                                                                                                                     react-hooks/exhaustive-deps
+
+src\components\SegmentBuilder.js
+  Line 4:34:  'Eye' is defined but never used     no-unused-vars
+  Line 4:45:  'Trash2' is defined but never used  no-unused-vars
+
+src\components\UnlayerEmailEditorModal.js
+  Line 5:13:   'Eye' is defined but never used                                                                                                 no-unused-vars
+  Line 5:49:   'FileText' is defined but never used                                                                                            no-unused-vars
+  Line 188:6:  React Hook useEffect has a missing dependency: 'generatePlainTextFromDesign'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\components\VisualAutomationBuilder.js
+  Line 355:31:  'TriggerIcon' is assigned a value but never used  no-unused-vars
+  Line 409:31:  'ActionIcon' is assigned a value but never used   no-unused-vars
+
+src\pages\FormSubmissions.js
+  Line 20:6:  React Hook useEffect has a missing dependency: 'loadFormAndSubmissions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\GroupForm.js
+  Line 24:8:  React Hook useEffect has a missing dependency: 'fetchGroup'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\Login.js
+  Line 21:11:  'user' is assigned a value but never used  no-unused-vars
+
+src\pages\Register.js
+  Line 21:11:  'user' is assigned a value but never used       no-unused-vars
+  Line 21:37:  'isSuccess' is assigned a value but never used  no-unused-vars
+
+src\pages\SubscriberImport.js
+  Line 4:49:   'AlertTriangle' is defined but never used             no-unused-vars
+  Line 20:12:  'selectedTags' is assigned a value but never used     no-unused-vars
+  Line 20:26:  'setSelectedTags' is assigned a value but never used  no-unused-vars
+
+src\pages\TemplatePreview.js
+  Line 10:3:  'Share2' is defined but never used                                                                               no-unused-vars
+  Line 16:3:  'Settings' is defined but never used                                                                             no-unused-vars
+  Line 37:6:  React Hook useEffect has a missing dependency: 'loadTemplate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\dashboard-panels\DeliverabilityPanel.js
+  Line 8:36:  'loadingTrends' is assigned a value but never used  no-unused-vars
+
+src\services\funnelService.js
+  Line 8:1:  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+src\services\unlayerTemplateService.js
+  Line 1223:17:  'targetDate' is assigned a value but never used  no-unused-vars
+  Line 1473:17:  'hoverColor' is assigned a value but never used  no-unused-vars
+  Line 1614:17:  Expected a default case                          default-case
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+File sizes after gzip:
+
+  434.48 kB (+20 B)  build\static\js\main.b2cd68a2.js
+  18.88 kB           build\static\css\main.d84f44a6.css
+  3.44 kB            build\static\js\285.9c1beafd.chunk.js
+  2.78 kB            build\static\js\885.a51a8c56.chunk.js
+  2.39 kB            build\static\js\503.bc1b1740.chunk.js
+  2.03 kB            build\static\js\381.86b54b4e.chunk.js
+  725 B              build\static\js\81.39bbc695.chunk.js
+  708 B              build\static\js\411.7b568b1c.chunk.js
+  681 B              build\static\js\584.6b8c1d84.chunk.js
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+

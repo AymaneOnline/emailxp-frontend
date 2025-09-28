@@ -1,0 +1,213 @@
+
+> frontend@0.1.0 start
+> react-scripts start
+
+(node:3180) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:3180) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled with warnings.
+
+[eslint] 
+src\components\AudienceSelector.js
+  Line 4:33:  'X' is defined but never used  no-unused-vars
+
+src\components\BehavioralTriggerManager.js
+  Line 11:3:  'Filter' is defined but never used       no-unused-vars
+  Line 12:3:  'Clock' is defined but never used        no-unused-vars
+  Line 14:3:  'Users' is defined but never used        no-unused-vars
+  Line 15:3:  'Calendar' is defined but never used     no-unused-vars
+  Line 16:3:  'AlertCircle' is defined but never used  no-unused-vars
+
+src\components\EnhancedCampaignBuilder.js
+  Line 16:9:    'selectedTemplate' is assigned a value but never used                                                                                                                                                                                                                            no-unused-vars
+  Line 262:39:  The ref value 'debounceTimerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'debounceTimerRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  Line 348:6:   React Hook useEffect has missing dependencies: 'handleQuillSave' and 'handleUnlayerSave'. Either include them or remove the dependency array                                                                                                                                     react-hooks/exhaustive-deps
+
+src\components\SegmentBuilder.js
+  Line 4:34:  'Eye' is defined but never used     no-unused-vars
+  Line 4:45:  'Trash2' is defined but never used  no-unused-vars
+
+src\components\UnlayerEmailEditorModal.js
+  Line 5:13:   'Eye' is defined but never used                                                                                                 no-unused-vars
+  Line 5:49:   'FileText' is defined but never used                                                                                            no-unused-vars
+  Line 188:6:  React Hook useEffect has a missing dependency: 'generatePlainTextFromDesign'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\components\VisualAutomationBuilder.js
+  Line 355:31:  'TriggerIcon' is assigned a value but never used  no-unused-vars
+  Line 409:31:  'ActionIcon' is assigned a value but never used   no-unused-vars
+
+src\components\templates\TemplateCard.js
+  Line 16:28:  Unnecessary escape character: \"  no-useless-escape
+  Line 16:76:  Unnecessary escape character: \"  no-useless-escape
+  Line 17:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 17:43:  Unnecessary escape character: \"  no-useless-escape
+  Line 18:32:  Unnecessary escape character: \"  no-useless-escape
+  Line 18:70:  Unnecessary escape character: \"  no-useless-escape
+  Line 19:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 19:53:  Unnecessary escape character: \"  no-useless-escape
+  Line 29:28:  Unnecessary escape character: \"  no-useless-escape
+  Line 29:76:  Unnecessary escape character: \"  no-useless-escape
+  Line 30:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 30:43:  Unnecessary escape character: \"  no-useless-escape
+  Line 31:32:  Unnecessary escape character: \"  no-useless-escape
+  Line 31:70:  Unnecessary escape character: \"  no-useless-escape
+  Line 32:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 32:53:  Unnecessary escape character: \"  no-useless-escape
+
+src\pages\FormSubmissions.js
+  Line 20:6:  React Hook useEffect has a missing dependency: 'loadFormAndSubmissions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\GroupForm.js
+  Line 24:8:  React Hook useEffect has a missing dependency: 'fetchGroup'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\Login.js
+  Line 23:11:  'user' is assigned a value but never used  no-unused-vars
+
+src\pages\ProfileSettings.js
+  Line 12:10:  'countries' is defined but never used                     no-unused-vars
+  Line 17:3:   'XCircleIcon' is defined but never used                   no-unused-vars
+  Line 18:3:   'CheckCircleIcon' is defined but never used               no-unused-vars
+  Line 43:10:  'error' is assigned a value but never used                no-unused-vars
+  Line 44:10:  'successMessage' is assigned a value but never used       no-unused-vars
+  Line 49:9:   'pageHeadingRef' is assigned a value but never used       no-unused-vars
+  Line 50:10:  'websiteInput' is assigned a value but never used         no-unused-vars
+  Line 60:9:   'industries' is assigned a value but never used           no-unused-vars
+  Line 207:9:  'handleChange' is assigned a value but never used         no-unused-vars
+  Line 245:9:  'handleWebsiteBlur' is assigned a value but never used    no-unused-vars
+  Line 254:9:  'handleUpdateProfile' is assigned a value but never used  no-unused-vars
+  Line 344:9:  'progressPct' is assigned a value but never used          no-unused-vars
+
+src\pages\Register.js
+  Line 21:11:  'user' is assigned a value but never used       no-unused-vars
+  Line 21:37:  'isSuccess' is assigned a value but never used  no-unused-vars
+
+src\pages\SubscriberImport.js
+  Line 4:49:   'AlertTriangle' is defined but never used             no-unused-vars
+  Line 20:12:  'selectedTags' is assigned a value but never used     no-unused-vars
+  Line 20:26:  'setSelectedTags' is assigned a value but never used  no-unused-vars
+
+src\pages\TemplateManagement.js
+  Line 30:6:  React Hook useEffect has a missing dependency: 'fetchTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\TemplatePreview.js
+  Line 10:3:  'Share2' is defined but never used                                                                               no-unused-vars
+  Line 16:3:  'Settings' is defined but never used                                                                             no-unused-vars
+  Line 37:6:  React Hook useEffect has a missing dependency: 'loadTemplate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\services\domainService.js
+  Line 113:7:  'domainService' is assigned a value but never used  no-unused-vars
+
+src\services\funnelService.js
+  Line 8:1:  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+src\services\unlayerTemplateService.js
+  Line 1246:17:  'targetDate' is assigned a value but never used  no-unused-vars
+  Line 1496:17:  'hoverColor' is assigned a value but never used  no-unused-vars
+  Line 1637:17:  Expected a default case                          default-case
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+src\components\AudienceSelector.js
+  Line 4:33:  'X' is defined but never used  no-unused-vars
+
+src\components\BehavioralTriggerManager.js
+  Line 11:3:  'Filter' is defined but never used       no-unused-vars
+  Line 12:3:  'Clock' is defined but never used        no-unused-vars
+  Line 14:3:  'Users' is defined but never used        no-unused-vars
+  Line 15:3:  'Calendar' is defined but never used     no-unused-vars
+  Line 16:3:  'AlertCircle' is defined but never used  no-unused-vars
+
+src\components\EnhancedCampaignBuilder.js
+  Line 16:9:    'selectedTemplate' is assigned a value but never used                                                                                                                                                                                                                            no-unused-vars
+  Line 262:39:  The ref value 'debounceTimerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'debounceTimerRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  Line 348:6:   React Hook useEffect has missing dependencies: 'handleQuillSave' and 'handleUnlayerSave'. Either include them or remove the dependency array                                                                                                                                     react-hooks/exhaustive-deps
+
+src\components\SegmentBuilder.js
+  Line 4:34:  'Eye' is defined but never used     no-unused-vars
+  Line 4:45:  'Trash2' is defined but never used  no-unused-vars
+
+src\components\UnlayerEmailEditorModal.js
+  Line 5:13:   'Eye' is defined but never used                                                                                                 no-unused-vars
+  Line 5:49:   'FileText' is defined but never used                                                                                            no-unused-vars
+  Line 188:6:  React Hook useEffect has a missing dependency: 'generatePlainTextFromDesign'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\components\VisualAutomationBuilder.js
+  Line 355:31:  'TriggerIcon' is assigned a value but never used  no-unused-vars
+  Line 409:31:  'ActionIcon' is assigned a value but never used   no-unused-vars
+
+src\components\templates\TemplateCard.js
+  Line 16:28:  Unnecessary escape character: \"  no-useless-escape
+  Line 16:76:  Unnecessary escape character: \"  no-useless-escape
+  Line 17:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 17:43:  Unnecessary escape character: \"  no-useless-escape
+  Line 18:32:  Unnecessary escape character: \"  no-useless-escape
+  Line 18:70:  Unnecessary escape character: \"  no-useless-escape
+  Line 19:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 19:53:  Unnecessary escape character: \"  no-useless-escape
+  Line 29:28:  Unnecessary escape character: \"  no-useless-escape
+  Line 29:76:  Unnecessary escape character: \"  no-useless-escape
+  Line 30:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 30:43:  Unnecessary escape character: \"  no-useless-escape
+  Line 31:32:  Unnecessary escape character: \"  no-useless-escape
+  Line 31:70:  Unnecessary escape character: \"  no-useless-escape
+  Line 32:30:  Unnecessary escape character: \"  no-useless-escape
+  Line 32:53:  Unnecessary escape character: \"  no-useless-escape
+
+src\pages\FormSubmissions.js
+  Line 20:6:  React Hook useEffect has a missing dependency: 'loadFormAndSubmissions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\GroupForm.js
+  Line 24:8:  React Hook useEffect has a missing dependency: 'fetchGroup'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\Login.js
+  Line 23:11:  'user' is assigned a value but never used  no-unused-vars
+
+src\pages\ProfileSettings.js
+  Line 12:10:  'countries' is defined but never used                     no-unused-vars
+  Line 17:3:   'XCircleIcon' is defined but never used                   no-unused-vars
+  Line 18:3:   'CheckCircleIcon' is defined but never used               no-unused-vars
+  Line 43:10:  '[1m[31merror[39m[22m[1m' is assigned a value but never used                no-unused-vars
+  Line 44:10:  'successMessage' is assigned a value but never used       no-unused-vars
+  Line 49:9:   'pageHeadingRef' is assigned a value but never used       no-unused-vars
+  Line 50:10:  'websiteInput' is assigned a value but never used         no-unused-vars
+  Line 60:9:   'industries' is assigned a value but never used           no-unused-vars
+  Line 207:9:  'handleChange' is assigned a value but never used         no-unused-vars
+  Line 245:9:  'handleWebsiteBlur' is assigned a value but never used    no-unused-vars
+  Line 254:9:  'handleUpdateProfile' is assigned a value but never used  no-unused-vars
+  Line 344:9:  'progressPct' is assigned a value but never used          no-unused-vars
+
+src\pages\Register.js
+  Line 21:11:  'user' is assigned a value but never used       no-unused-vars
+  Line 21:37:  'isSuccess' is assigned a value but never used  no-unused-vars
+
+src\pages\SubscriberImport.js
+  Line 4:49:   'AlertTriangle' is defined but never used             no-unused-vars
+  Line 20:12:  'selectedTags' is assigned a value but never used     no-unused-vars
+  Line 20:26:  'setSelectedTags' is assigned a value but never used  no-unused-vars
+
+src\pages\TemplateManagement.js
+  Line 30:6:  React Hook useEffect has a missing dependency: 'fetchTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\pages\TemplatePreview.js
+  Line 10:3:  'Share2' is defined but never used                                                                               no-unused-vars
+  Line 16:3:  'Settings' is defined but never used                                                                             no-unused-vars
+  Line 37:6:  React Hook useEffect has a missing dependency: 'loadTemplate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\services\domainService.js
+  Line 113:7:  'domainService' is assigned a value but never used  no-unused-vars
+
+src\services\funnelService.js
+  Line 8:1:  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+src\services\unlayerTemplateService.js
+  Line 1246:17:  'targetDate' is assigned a value but never used  no-unused-vars
+  Line 1496:17:  'hoverColor' is assigned a value but never used  no-unused-vars
+  Line 1637:17:  Expected a default case                          default-case
+
+[39m[22m
+
+webpack compiled with [1m[33m1 warning[39m[22m
