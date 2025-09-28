@@ -30,23 +30,26 @@
        without rebuilding the JS bundle. Update this value in your deployment
        template or CI if you need to point to a different backend. -->
   <script>
-    // Resolve backend URL at runtime from a build-time placeholder when available.
-    // This uses the CRA HTML placeholder %REACT_APP_BACKEND_URL% so local .env
-    // values (like REACT_APP_BACKEND_URL) are respected without forcing a prod URL.
+    // Runtime backend injection. Priority:
+    // 1) CRA placeholder %REACT_APP_BACKEND_URL% (replaced at build-time if set)
+    // 2) Explicit production backend URL (useful if placeholder not set during deploy)
+    // 3) Empty string (let getBackendUrl() fallback to relative '/api')
     (function () {
       try {
-        var placeholder = "%REACT_APP_BACKEND_URL%";
-        // If CRA replaced the placeholder, use it. Otherwise leave blank so
-        // the app's getBackendUrl() helper can fall back to process.env or
-        // relative URLs during local development.
-        if (placeholder && placeholder.indexOf('%REACT_APP_BACKEND_URL%') === -1) {
-          window.__BACKEND_URL__ = placeholder;
-        } else {
+          var placeholder = "%REACT_APP_BACKEND_URL%";
+
+          // If the build system replaced the CRA placeholder, use it.
+          // Otherwise leave empty so the app's getBackendUrl() can pick up
+          // process.env.REACT_APP_BACKEND_URL (inlined at build time), or fall
+          // back to localStorage/import.meta/env/relative URL as configured.
+          if (placeholder && placeholder.indexOf('%REACT_APP_BACKEND_URL%') === -1) {
+            window.__BACKEND_URL__ = placeholder;
+          } else {
+            window.__BACKEND_URL__ = "";
+          }
+        } catch (e) {
           window.__BACKEND_URL__ = "";
         }
-      } catch (e) {
-        window.__BACKEND_URL__ = "";
-      }
 
       window.__RUNTIME_CONFIG__ = window.__RUNTIME_CONFIG__ || {};
       window.__RUNTIME_CONFIG__.backendUrl = window.__BACKEND_URL__;
