@@ -1,11 +1,49 @@
-// Safe helper to read Vite backend URL without throwing when import.meta.env is undefined
+// Safe helper to resolve a backend URL.
+// Resolution order (first non-empty wins):
+// 1. runtime global `window.__BACKEND_URL__` (can be injected into index.html at deploy time)
+// 2. localStorage key `backend_url` (useful for quick switches in the browser)
+// 3. Vite build-time env `import.meta.env.VITE_BACKEND_URL`
+// 4. Create-React-App env `process.env.REACT_APP_BACKEND_URL` (for older setups)
+// 5. empty string (use relative paths)
 export function getBackendUrl() {
   try {
-    // Accessing import.meta may throw in non-module environments, so guard with try/catch
-    // Use optional chaining where supported by the environment/bundler.
-    // If Vite provides `import.meta.env.VITE_BACKEND_URL` it will be returned, otherwise empty string.
+    // 1) runtime global (injected script)
     // eslint-disable-next-line no-undef
-    return (import.meta && import.meta.env && import.meta.env.VITE_BACKEND_URL) || '';
+    if (typeof window !== 'undefined') {
+      // prefer explicit runtime global
+      // eslint-disable-next-line no-undef
+      if (window.__BACKEND_URL__ && typeof window.__BACKEND_URL__ === 'string') {
+        return window.__BACKEND_URL__;
+      }
+
+      // support an optional runtime config object
+      // eslint-disable-next-line no-undef
+      if (window.__RUNTIME_CONFIG__ && window.__RUNTIME_CONFIG__.backendUrl) {
+        return window.__RUNTIME_CONFIG__.backendUrl;
+      }
+
+      // 2) localStorage override (developer convenience)
+      try {
+        const stored = window.localStorage.getItem('backend_url');
+        if (stored) return stored;
+      } catch (e) {
+        // ignore storage errors (e.g., sandboxed iframes)
+      }
+    }
+
+    // 3) Vite build-time env
+    // eslint-disable-next-line no-undef
+    if (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
+      return import.meta.env.VITE_BACKEND_URL;
+    }
+
+    // 4) CRA fallback (process.env)
+    // eslint-disable-next-line no-undef
+    if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_BACKEND_URL) {
+      return process.env.REACT_APP_BACKEND_URL;
+    }
+
+    return '';
   } catch (e) {
     return '';
   }
