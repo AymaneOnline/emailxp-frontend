@@ -40,7 +40,7 @@ const FormsPage = () => {
   };
 
   const handleCreateForm = () => {
-    navigate('/forms/new');
+  navigate('/dashboard');
   };
 
   const handleEditForm = (formId) => {

@@ -66,7 +66,7 @@ const FormSubmissions = () => {
       {/* Header */}
       <div className="mb-6">
         <button
-          onClick={() => navigate('/forms')}
+          onClick={() => navigate('/dashboard')}
           className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

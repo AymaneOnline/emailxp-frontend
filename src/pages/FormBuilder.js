@@ -151,7 +151,7 @@ const FormBuilder = () => {
         toast.success('Form created successfully');
       }
       
-      navigate('/forms');
+  navigate('/dashboard');
     } catch (err) {
       console.error('Error saving form:', err);
       setError('Failed to save form');
@@ -301,7 +301,7 @@ const FormBuilder = () => {
       {/* Header */}
       <div className="mb-6">
         <button
-          onClick={() => navigate('/forms')}
+          onClick={() => navigate('/dashboard')}
           className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -398,7 +398,7 @@ const FormBuilder = () => {
         <div className="flex justify-end space-x-4">
           <button
             type="button"
-            onClick={() => navigate('/forms')}
+            onClick={() => navigate('/dashboard')}
             className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Cancel
