@@ -26,6 +26,16 @@
   <title>EmailXP App</title>
 </head>
 <body class="font-sans">
+  <!-- Runtime backend config: this allows deployments to set the backend URL
+       without rebuilding the JS bundle. Update this value in your deployment
+       template or CI if you need to point to a different backend. -->
+  <script>
+    // Set the production backend URL used by getBackendUrl() at runtime.
+    window.__BACKEND_URL__ = "https://emailxp-backend-production.up.railway.app";
+    // Optional runtime config object
+    window.__RUNTIME_CONFIG__ = window.__RUNTIME_CONFIG__ || {};
+    window.__RUNTIME_CONFIG__.backendUrl = window.__BACKEND_URL__;
+  </script>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
   <div id="modal-root"></div>
