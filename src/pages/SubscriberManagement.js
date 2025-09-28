@@ -34,7 +34,7 @@ import groupService from '../services/groupService';
 import segmentService from '../services/segmentService';
 import SegmentBuilder from '../components/SegmentBuilder';
 import PageContainer from '../components/layout/PageContainer';
-import TabBar from '../components/ui/TabBar';
+import DashboardTabs from '../components/DashboardTabs';
 
 const SubscriberManagement = () => {
   const navigate = useNavigate();
@@ -535,7 +535,7 @@ const SubscriberManagement = () => {
           </div>
         </div>
 
-        <TabBar
+        <DashboardTabs
           tabs={[{ key: 'subscribers', label: 'Subscribers' }, { key: 'segments', label: 'Segments' }, { key: 'groups', label: 'Groups' }]}
           active={activeTab}
           onChange={(k) => { setActiveTab(k); const hash = k === 'segments' ? '#segments' : k === 'groups' ? '#groups' : ''; window.history.pushState(null, null, `/subscribers${hash}`); }}

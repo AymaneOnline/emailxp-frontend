@@ -25,8 +25,21 @@ export const uiSlice = createSlice({
     addNotification: (state, action) => {
       state.notifications.push({
         id: Date.now(),
+        createdAt: Date.now(),
+        read: false,
         ...action.payload,
       });
+    },
+    markAsRead: (state, action) => {
+      const id = action.payload;
+      const n = state.notifications.find((x) => x.id === id);
+      if (n) n.read = true;
+    },
+    markAllRead: (state) => {
+      state.notifications.forEach((n) => (n.read = true));
+    },
+    removeAllNotifications: (state) => {
+      state.notifications = [];
     },
     removeNotification: (state, action) => {
       state.notifications = state.notifications.filter(
@@ -44,6 +57,9 @@ export const {
   toggleTheme,
   toggleSidebar,
   addNotification,
+  markAsRead,
+  markAllRead,
+  removeAllNotifications,
   removeNotification,
   setLoading,
 } = uiSlice.actions;

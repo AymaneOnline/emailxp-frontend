@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import DomainManagement from './DomainManagement';
 import SettingsLayout from '../components/layout/SettingsLayout';
+import DashboardTabs from '../components/DashboardTabs';
 
 function ProfileSettings() {
   const navigate = useNavigate();
@@ -318,46 +319,19 @@ function ProfileSettings() {
     );
   }
 
-  // Checklist & progress calculation
-  const checklist = [
-    { key: 'companyOrOrganization', label: 'Organization', done: !!formData.companyOrOrganization },
-    { key: 'name', label: 'Name', done: !!formData.name },
-    { key: 'industry', label: 'Industry', done: !!formData.industry },
-    { key: 'bio', label: 'Bio', done: !!formData.bio },
-  ];
-  const completed = checklist.filter(c => c.done).length;
-  const progressPct = Math.round((completed / checklist.length) * 100);
-
   // (tab hooks moved above early return)
 
   const tabsBar = (
-    <div
-      role="tablist"
-      aria-label="Settings sections"
-      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-2 flex items-center gap-2 text-sm font-medium"
-      onKeyDown={(e)=>{
-        const order=['profile','domains'];
-        const currentIndex = order.indexOf(activeTab);
-        if(currentIndex===-1) return;
-        if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){
-          e.preventDefault();
-        }
-        if(e.key==='ArrowRight'){
-          const next = order[(currentIndex+1)%order.length];
-          switchTab(next); document.getElementById(`settings-tab-${next}`)?.focus();
-        } else if(e.key==='ArrowLeft'){
-          const prev = order[(currentIndex-1+order.length)%order.length];
-          switchTab(prev); document.getElementById(`settings-tab-${prev}`)?.focus();
-        } else if(e.key==='Home'){
-          switchTab(order[0]); document.getElementById(`settings-tab-${order[0]}`)?.focus();
-        } else if(e.key==='End'){
-          switchTab(order[order.length-1]); document.getElementById(`settings-tab-${order[order.length-1]}`)?.focus();
-        }
-      }}
-    >
-      <button id="settings-tab-profile" role="tab" aria-selected={activeTab==='profile'} aria-controls="profile-section" tabIndex={activeTab==='profile'?0:-1} onClick={()=>switchTab('profile')} className={(activeTab==='profile' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Profile</button>
-      <button id="settings-tab-domains" role="tab" aria-selected={activeTab==='domains'} aria-controls="domains-section" tabIndex={activeTab==='domains'?0:-1} onClick={()=>switchTab('domains')} className={(activeTab==='domains' ? 'bg-primary-red text-white ' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ') + 'px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-red'}>Domains</button>
-    </div>
+    <DashboardTabs
+      tabs={[
+        { key: 'profile', label: 'Profile' },
+        { key: 'domains', label: 'Domains' },
+        { key: 'integrations', label: 'Integrations' },
+        { key: 'notifications', label: 'Notifications' }
+      ]}
+      active={activeTab}
+      onChange={switchTab}
+    />
   );
 
   const profilePanel = activeTab === 'profile' && (
@@ -616,34 +590,31 @@ function ProfileSettings() {
     </div>
   );
 
-  const aside = (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-5 space-y-4" aria-label="Profile completion progress">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">Profile Progress</h3>
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{progressPct}%</span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary-red transition-all duration-300"
-                style={{ width: `${progressPct}%` }}
-                aria-hidden="true"
-              />
-            </div>
-            <ul className="space-y-2">
-              {checklist.map(item => (
-                <li key={item.key} className="flex items-center text-sm">
-                  {item.done ? (
-                    <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  ) : (
-                    <span className="h-4 w-4 mr-2 rounded-full border border-gray-300 dark:border-gray-600 inline-block" aria-hidden="true" />
-                  )}
-                  <span className={item.done ? 'text-gray-600 dark:text-gray-300 line-through' : 'text-gray-800 dark:text-gray-200'}>{item.label}</span>
-                </li>
-              ))}
-            </ul>
-          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">A complete profile personalizes recommendations and unlocks advanced analytics sooner.</p>
-          </div>
+  const integrationsPanel = activeTab === 'integrations' && (
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 relative" id="integrations-section" role="tabpanel" aria-labelledby="settings-tab-integrations">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Integrations</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Connect your favorite tools and services</p>
+        </div>
+      </div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">Integrations coming soon...</p>
+      </div>
+    </div>
+  );
+
+  const notificationsPanel = activeTab === 'notifications' && (
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 relative" id="notifications-section" role="tabpanel" aria-labelledby="settings-tab-notifications">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Notifications</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your notification preferences</p>
+        </div>
+      </div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">Notifications settings coming soon...</p>
+      </div>
     </div>
   );
 
@@ -652,10 +623,11 @@ function ProfileSettings() {
       heading="Settings"
       description="Manage your profile and sending domains."
       tabsBar={tabsBar}
-      aside={aside}
     >
       {profilePanel}
       {domainsPanel}
+      {integrationsPanel}
+      {notificationsPanel}
     </SettingsLayout>
   );
 }

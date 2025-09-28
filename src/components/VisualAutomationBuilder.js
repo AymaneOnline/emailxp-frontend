@@ -352,14 +352,6 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                     <button
                       key={trigger.id}
                       onClick={() => {
-                        const TriggerIcon = {
-                          subscriber_added: Users,
-                          tag_added: Target,
-                          date_based: Clock,
-                          behavior: Zap,
-                          api_trigger: Settings
-                        }[trigger.id] || Zap;
-                        
                         updateNodeData(selectedNode.id, {
                           label: trigger.label,
                           description: trigger.description,
@@ -406,14 +398,6 @@ const VisualAutomationBuilder = ({ automationId, onSave, onCancel }) => {
                     <button
                       key={action.id}
                       onClick={() => {
-                        const ActionIcon = {
-                          send_email: Mail,
-                          wait: Clock,
-                          add_tag: Target,
-                          remove_tag: Target,
-                          condition: GitBranch
-                        }[action.id] || Settings;
-                        
                         updateNodeData(selectedNode.id, {
                           label: action.label,
                           description: action.description,

@@ -1,10 +1,9 @@
 // emailxp/frontend/src/pages/AutomationManagement.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { H1, H3, Body } from '../components/ui/Typography';
-import TabBar from '../components/ui/TabBar';
+// TabBar removed - single automation view
 import PageContainer from '../components/layout/PageContainer';
-import BehavioralTriggerManager from '../components/BehavioralTriggerManager';
 import {
   Plus,
   Play,
@@ -23,12 +22,14 @@ import {
   Users,
   Target,
   GitBranch
+  , Save
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { isOnboardingComplete } from '../utils/onboarding';
 import automationService from '../services/automationService';
 import ReactFlow, {
+  ReactFlowProvider,
   MiniMap,
   Controls,
   Background,
@@ -37,6 +38,7 @@ import ReactFlow, {
   addEdge,
   MarkerType
 } from 'reactflow';
+import AutomationBuilder from '../components/AutomationBuilder';
 import 'reactflow/dist/style.css';
 import { createPortal } from 'react-dom';
 
@@ -46,6 +48,10 @@ const nodeTypes = {
   action: ActionNode,
   condition: ConditionNode
 };
+
+// Icon fallback helper
+const FallbackIcon = ({ className = '' }) => (<span className={`inline-block ${className}`}>🔧</span>);
+const getIcon = (Icon) => Icon || FallbackIcon;
 
 // Trigger node component
 function TriggerNode({ data }) {
@@ -58,12 +64,12 @@ function TriggerNode({ data }) {
   };
   
   const iconType = data.triggerType || 'subscriber_added';
-  const TriggerIcon = triggerIcons[iconType] || Zap;
+  const TriggerIcon = getIcon(triggerIcons[iconType] || Zap);
   
   return (
-    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-500 shadow-lg">
+    <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-red-600 shadow-lg">
       <div className="flex items-center space-x-2">
-        <TriggerIcon className="w-5 h-5 text-blue-500" />
+  <TriggerIcon className="w-5 h-5 text-red-600" />
         <div className="font-medium text-gray-900 dark:text-white">
           {data.label}
         </div>
@@ -71,7 +77,7 @@ function TriggerNode({ data }) {
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
         {data.description}
       </div>
-      <div className="absolute top-0 -right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+  <div className="absolute top-0 -right-2 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center">
         <div className="w-2 h-2 bg-white rounded-full"></div>
       </div>
     </div>
@@ -89,7 +95,7 @@ function ActionNode({ data }) {
   };
   
   const iconType = data.actionType || 'send_email';
-  const ActionIcon = actionIcons[iconType] || Settings;
+  const ActionIcon = getIcon(actionIcons[iconType] || Settings);
   
   return (
     <div className="px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-green-500 shadow-lg">
@@ -137,6 +143,7 @@ const AutomationManagement = () => {
   const [editingAutomation, setEditingAutomation] = useState(null); // State for current automation being edited
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const builderRef = useRef(null);
 
   const loadAutomations = useCallback(async () => {
     if (!user || !user.token) {
@@ -405,7 +412,7 @@ const AutomationManagement = () => {
       <button
         key="duplicate"
         onClick={() => handleDuplicateAutomation(automation._id)}
-        className="p-1 text-blue-600 hover:text-blue-800"
+  className="p-1 text-red-600 hover:text-red-800"
         title="Duplicate"
       >
         <Copy className="h-4 w-4" />
@@ -426,7 +433,7 @@ const AutomationManagement = () => {
     return actions;
   };
 
-  const [activeTab, setActiveTab] = useState('workflows');
+  // No activeTab - single Automation view
 
   const loadingSpinner = (
     <div className="flex items-center justify-center h-64">
@@ -437,26 +444,13 @@ const AutomationManagement = () => {
   return (
     <PageContainer>
     <div className="space-y-6">
-      <TabBar
-        tabs={[
-          { key: 'workflows', label: 'Workflows' },
-          { key: 'behavioral', label: 'Behavioral Triggers' }
-        ]}
-        active={activeTab}
-        onChange={setActiveTab}
-      />
-      {activeTab === 'behavioral' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <BehavioralTriggerManager />
-        </div>
-      )}
-      {activeTab === 'workflows' && (loading ? loadingSpinner : null)}
-      {activeTab === 'workflows' && !loading && (
-        <>
+          {loading ? loadingSpinner : null}
+          {!loading && (
+            <>
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <H1 className="mb-1 text-2xl">Automation Workflows</H1>
+              <H1 className="mb-1 text-2xl">Automation</H1>
               <Body className="text-gray-600">Create and manage automated email sequences</Body>
             </div>
             <button
@@ -492,13 +486,7 @@ const AutomationManagement = () => {
               <p className="text-gray-600 mb-4">
                 Create your first automation workflow to engage your subscribers
               </p>
-              <button
-                onClick={handleCreateAutomation}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create Automation</span>
-              </button>
+              {/* Create Automation button removed per request */}
             </div>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -555,78 +543,71 @@ const AutomationManagement = () => {
         </>
       )}
 
-      {/* React Flow Modal - Using Portal to avoid margin issues */}
-      {showFlowModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <H3 className="text-lg font-bold !text-gray-900 dark:!text-white">
-                {editingAutomation?._id ? 'Edit Automation Flow' : 'Create Automation Flow'}
-              </H3>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={closeFlowModal}
-                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveFlow}
-                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-            
-            {/* Modal Content */}
-            <div className="flex-1 overflow-hidden">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={addTriggerNode}
-                    className="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Trigger
-                  </button>
-                  <button
-                    onClick={addActionNode}
-                    className="inline-flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Action
-                  </button>
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Drag nodes to move them. Connect nodes by dragging from the connection points.
+      {/* Automation Builder Modal - full screen, improved UI */}
+      {showFlowModal && (() => {
+        // Guard against undefined components (helps catch runtime element-type errors)
+        if (!AutomationBuilder || typeof AutomationBuilder === 'undefined') {
+          console.error('AutomationBuilder component is undefined', { AutomationBuilder });
+          return createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+              <div className="bg-white dark:bg-gray-900 rounded-md p-6">
+                <div className="text-red-600 font-semibold mb-2">Error</div>
+                <div className="text-sm text-gray-700 dark:text-gray-300">Automation Builder component failed to load. Check console for details.</div>
+                <div className="mt-4">
+                  <button onClick={() => setShowFlowModal(false)} className="px-3 py-2 bg-gray-200 rounded">Close</button>
                 </div>
               </div>
-              
-              {/* React Flow Editor */}
-              <div className="h-[600px]">
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  nodeTypes={nodeTypes}
-                  fitView
-                  attributionPosition="bottom-left"
-                >
-                  <Controls />
-                  <MiniMap />
-                  <Background variant="dots" gap={12} size={1} />
-                </ReactFlow>
+            </div>,
+            document.body
+          );
+        }
+
+        if (typeof Save === 'undefined') console.warn('Save icon is undefined (lucide-react import)');
+
+        return createPortal(
+          <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-60">
+            <div className="w-full h-full md:max-w-7xl md:mx-6 bg-white dark:bg-gray-900 shadow-2xl rounded-none md:rounded-xl flex flex-col overflow-hidden">
+              {/* Top bar */}
+              <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <div>
+                  <div className="text-sm text-gray-500">Automations</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">{editingAutomation?._id ? 'Edit Automation' : 'Create Automation'}</div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      // call save on builder
+                      if (builderRef.current && builderRef.current.save) builderRef.current.save();
+                    }}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    {typeof Save !== 'undefined' ? <Save className="w-4 h-4 mr-2" /> : null}
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setShowFlowModal(false); setEditingAutomation(null); }}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
+                <AutomationBuilder
+                  ref={builderRef}
+                  automationId={editingAutomation?._id}
+                  onSave={() => { setShowFlowModal(false); setEditingAutomation(null); loadAutomations(); }}
+                  onCancel={() => { setShowFlowModal(false); setEditingAutomation(null); }}
+                  fullScreen={true}
+                />
               </div>
             </div>
-          </div>
-        </div>,
-        document.body // Render the modal directly into the body element
-      )}
+          </div>,
+          document.body
+        );
+      })()}
     </div>
     </PageContainer>
   );

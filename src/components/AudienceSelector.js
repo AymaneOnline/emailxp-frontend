@@ -1,7 +1,7 @@
 // emailxp/frontend/src/components/AudienceSelector.js
 
 import React, { useState, useEffect } from 'react';
-import { Users, Filter, Search, X, Plus } from 'lucide-react';
+import { Users, Filter, Search, Plus } from 'lucide-react';
 import groupService from '../services/groupService';
 import subscriberService from '../services/subscriberService';
 import segmentService from '../services/segmentService';

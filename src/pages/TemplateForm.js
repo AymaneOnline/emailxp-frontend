@@ -16,6 +16,8 @@ const TemplateForm = () => {
     const [htmlContent, setHtmlContent] = useState('');
     const [plainTextContent, setPlainTextContent] = useState('');
     const [emailDesign, setEmailDesign] = useState(null);
+    const [showTextEditorModal, setShowTextEditorModal] = useState(false);
+    const [modalTextContent, setModalTextContent] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -40,6 +42,8 @@ const TemplateForm = () => {
                     setName(data.name);
                     setSubject(data.subject);
                     setHtmlContent(data.htmlContent);
+                    // Show preview by default when loading existing template
+                    if (data.htmlContent) setPreviewMode(true);
                     setPlainTextContent(data.plainTextContent || '');
                     setEmailDesign(data.emailDesign || null);
                     // Set editor type based on existing content
@@ -59,23 +63,64 @@ const TemplateForm = () => {
         }
     }, [id]);
 
-    const performSave = async (opts={navigateAfter:true}) => {
+    const performSave = async (opts={navigateAfter:true, allowCreate:true}) => {
         if (!name || !subject) return; // minimal guard
         const templateData = { name, subject, htmlContent, plainTextContent, emailDesign };
+
+        // Ensure saved data satisfies backend compliance for footer/unsubscribe.
+        // If the drag-and-drop `structure` exists, make sure it contains a footer block.
+        // If only `htmlContent` exists (visual editor output), append a minimal footer to the HTML
+        // so the backend pre-validate accepts the template without overwriting the html content.
+        const footerHtmlSnippet = `<footer style="font-size:12px;color:#666;padding:20px 0;text-align:center">You are receiving this email because you subscribed. <a href="{{unsubscribeUrl}}">Unsubscribe</a></footer>`;
+
+        if (templateData.structure && Array.isArray(templateData.structure.blocks) && templateData.structure.blocks.length > 0) {
+            const blocks = templateData.structure.blocks;
+            const hasFooter = blocks.some(b => b && b.type === 'footer' && /\{\{\s*unsubscribeUrl\s*\}\}/i.test((b.content?.text || '') + ''));
+            if (!hasFooter) {
+                blocks.push({ id: `footer-${Date.now()}`, type: 'footer', content: { text: footerHtmlSnippet }, styles: {} });
+            }
+            templateData.structure.blocks = blocks;
+        } else if (templateData.htmlContent && typeof templateData.htmlContent === 'string') {
+            // If htmlContent is present (from visual editor), ensure it contains the unsubscribe token.
+            if (!/\{\{\s*unsubscribeUrl\s*\}\}/i.test(templateData.htmlContent)) {
+                // If there's a closing </body> tag, insert before it; otherwise append
+                if (/<\/body>/i.test(templateData.htmlContent)) {
+                    templateData.htmlContent = templateData.htmlContent.replace(/<\/body>/i, `${footerHtmlSnippet}</body>`);
+                } else {
+                    templateData.htmlContent = templateData.htmlContent + footerHtmlSnippet;
+                }
+            }
+        } else {
+            // No structure and no htmlContent: ensure structure exists with a footer so backend validation passes
+            templateData.structure = { blocks: [{ id: `footer-${Date.now()}`, type: 'footer', content: { text: footerHtmlSnippet }, styles: {} }] };
+        }
+        let result = null;
         try {
             setSaving(true);
             if (id) {
-                await templateService.updateTemplate(id, templateData);
+                result = await templateService.updateTemplate(id, templateData);
             } else {
-                await templateService.createTemplate(templateData);
+                // Only create when allowed (explicit submit). Autosave should not create new templates.
+                if (opts.allowCreate) {
+                    result = await templateService.createTemplate(templateData);
+                } else {
+                    // Skip creation during autosave for new templates
+                    return null;
+                }
             }
             setDirty(false);
+            // Only navigate after a successful create/update
+            if (!id && opts.navigateAfter) {
+                navigate('/templates');
+            }
+            return result;
         } catch (err) {
             console.error('Autosave error:', err);
+            // Re-throw so callers (like explicit form submit) can handle and show errors
+            throw err;
         } finally {
             setSaving(false);
         }
-        if (!id && opts.navigateAfter) navigate('/templates');
     };
 
     const handleSubmit = async (e) => {
@@ -99,6 +144,10 @@ const TemplateForm = () => {
         try {
             await performSave();
             setSuccess(id ? 'Template updated successfully!' : 'Template created successfully!');
+            // After updating an existing template, navigate back to the templates list
+            if (id) {
+                navigate('/templates');
+            }
             if (!id) {
                 setName('');
                 setSubject('');
@@ -108,7 +157,14 @@ const TemplateForm = () => {
                 setEditorType(null);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to save template. Please try again.');
+            // Handle Mongo duplicate key error (name uniqueness)
+            const serverMsg = err.response?.data?.message;
+            if (err?.response?.status === 500 && serverMsg && /duplicate key/i.test(serverMsg)) {
+                setError('Template name already exists. Please choose a different name.');
+                try { toast.error('Template name already exists. Please choose a different name.'); } catch (e) {}
+            } else {
+                setError(serverMsg || err.message || 'Failed to save template. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -121,15 +177,28 @@ const TemplateForm = () => {
         }
         if (data.html) {
             setHtmlContent(data.html);
+            // When user saves from the visual designer, show preview by default
+            setPreviewMode(true);
         }
-        toast.success('Email design saved successfully!');
+        toast.success('Email template saved successfully!');
+        // Ensure modal is closed if still open
+        setShowEmailEditor(false);
     };
 
     const markDirty = () => setDirty(true);
     const scheduleAutosave = () => {
         if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-        autosaveTimer.current = setTimeout(() => {
-            if (dirty) performSave({navigateAfter:false});
+        autosaveTimer.current = setTimeout(async () => {
+            if (dirty) {
+                    try {
+                    await performSave({navigateAfter:false, allowCreate:false});
+                } catch (err) {
+                    console.error('Autosave failed:', err);
+                    const msg = err?.response?.data?.message || err?.message || 'Autosave failed';
+                    setError(msg);
+                    try { toast.error(msg); } catch (e) { /* ignore */ }
+                }
+            }
         }, 1200);
     };
 
@@ -160,6 +229,14 @@ const TemplateForm = () => {
         if (type === 'visual') {
             setShowEmailEditor(true);
         }
+        if (type === 'text') {
+            // For new templates, open the rich text editor in a modal
+            if (!id) {
+                // initialize modal with current content
+                setModalTextContent(htmlContent || '');
+                setShowTextEditorModal(true);
+            }
+        }
     };
 
     const resetEditor = () => {
@@ -170,6 +247,24 @@ const TemplateForm = () => {
 
     const togglePreview = () => {
         setPreviewMode(!previewMode);
+    };
+
+    // Ensure preview HTML includes a compliant footer with unsubscribeUrl
+    const getPreviewHtml = () => {
+        const raw = htmlContent || '';
+        // Simple check for unsubscribe token
+        const hasUnsubscribe = /\{\{\s*unsubscribeUrl\s*\}\}/i.test(raw);
+        if (hasUnsubscribe) return raw;
+
+        // Append a minimal footer if missing
+    const footerHtml = `
+<footer style="font-size:12px;color:#666;padding:20px 0;text-align:center">You are receiving this email because you subscribed. <a href="{{unsubscribeUrl}}">Unsubscribe</a></footer>`;
+
+        // If there's a closing body tag, insert before it
+        if (/</i.test(raw) && /<\/body>/i.test(raw)) {
+            return raw.replace(/<\/body>/i, `${footerHtml}</body>`);
+        }
+        return raw + footerHtml;
     };
 
     if (loading && id) { // Only show loading when fetching existing template
@@ -401,10 +496,10 @@ const TemplateForm = () => {
                                             <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 min-h-[400px] overflow-hidden">
                                                 {previewMode ? (
                                                     <div className="p-6">
-                                                        <div 
-                                                            className="prose prose-sm max-w-none dark:prose-invert"
-                                                            dangerouslySetInnerHTML={{ __html: htmlContent }}
-                                                        />
+                                                                <div 
+                                                                    className="prose prose-sm max-w-none dark:prose-invert"
+                                                                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                                                                />
                                                     </div>
                                                 ) : (
                                                     <textarea
@@ -466,7 +561,7 @@ const TemplateForm = () => {
                                             <div className="border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 min-h-[400px] p-6">
                                                 <div 
                                                     className="prose prose-sm max-w-none dark:prose-invert"
-                                                    dangerouslySetInnerHTML={{ __html: htmlContent }}
+                                                    dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
                                                 />
                                             </div>
                                         ) : (
@@ -503,29 +598,7 @@ const TemplateForm = () => {
                         )}
                     </div>
 
-                    {/* Plain Text Content Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                            <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
-                                <Type className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                            </div>
-                            Plain Text Version
-                            <span className="ml-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-1 rounded-full">Optional</span>
-                        </h2>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Provide a plain text version of your email for better compatibility and accessibility. If left empty, it will be automatically generated from the HTML content.
-                        </p>
-                        
-                        <textarea
-                            id="plainTextContent"
-                            value={plainTextContent}
-                            onChange={(e) => setPlainTextContent(e.target.value)}
-                            rows="6"
-                            placeholder="Enter plain text version of your email content..."
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-vertical"
-                        />
-                    </div>
+                    {/* Plain text version removed per UX request */}
 
                     {/* Action Buttons */}
                     <div className="flex items-center justify-end space-x-4 pt-6">
@@ -629,6 +702,29 @@ const TemplateForm = () => {
                     onDesignChange={handleEmailDesignChange}
                     onHtmlChange={handleEmailHtmlChange}
                 />
+                {/* Rich Text Editor Modal (for text editor flow on new templates) */}
+                {showTextEditorModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full mx-4 p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Text Editor</h3>
+                                <button onClick={() => setShowTextEditorModal(false)} className="text-gray-500 hover:text-gray-700">Close</button>
+                            </div>
+                            <div className="mb-4">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={modalTextContent}
+                                    onChange={(val) => setModalTextContent(val)}
+                                    style={{ minHeight: '300px' }}
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-3">
+                                <button onClick={() => { setShowTextEditorModal(false); }} className="px-4 py-2 bg-gray-100 rounded">Cancel</button>
+                                <button onClick={() => { setHtmlContent(modalTextContent); setShowTextEditorModal(false); markDirty(); }} className="px-4 py-2 bg-red-600 text-white rounded">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

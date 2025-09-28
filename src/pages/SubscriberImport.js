@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Upload, Download, FileText, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Download, FileText, CheckCircle } from 'lucide-react';
 import subscriberService from '../services/subscriberService';
 import groupService from '../services/groupService';
 
@@ -17,7 +17,7 @@ const SubscriberImport = () => {
     const [overwriteExisting, setOverwriteExisting] = useState(false);
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Results
-    const [selectedTags, setSelectedTags] = useState([]);
+    // tags selection not used yet
 
     useEffect(() => {
         loadGroups();

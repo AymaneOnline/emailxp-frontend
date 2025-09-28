@@ -1,7 +1,7 @@
 // emailxp/frontend/src/components/SegmentBuilder.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Users, Filter, Eye, Save, Trash2 } from 'lucide-react';
+import { Plus, X, Users, Filter, Save } from 'lucide-react';
 import segmentService from '../services/segmentService';
 import { toast } from 'react-toastify';
 

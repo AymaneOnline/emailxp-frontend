@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useReducedMotion from '../hooks/useReducedMotion';
 import { useSelector } from 'react-redux'; // Removed useDispatch as it's not directly used here
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import authService from '../services/authService';
 // Removed: import { updateUserData } from '../store/slices/authSlice'; // updateUserData is dispatched in Dashboard.js
@@ -12,9 +11,8 @@ import { CheckCircleIcon, ChevronRightIcon, PlayCircleIcon } from '@heroicons/re
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { track } from '../services/analyticsClient';
 
-function OnboardingChecklist({ compact = false }) {
+function OnboardingChecklist({ compact = false, showProfileModal, setShowProfileModal }) {
   const { user } = useSelector((state) => state.auth);
-  const navigate = useNavigate(); // Keep navigate
 
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [sandboxNotice, setSandboxNotice] = useState(false);
@@ -27,6 +25,8 @@ function OnboardingChecklist({ compact = false }) {
   const activeStepHeadingRef = useRef(null);
   const previousCompletionRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
+
+  // render
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -74,7 +74,10 @@ function OnboardingChecklist({ compact = false }) {
   };
 
   const handleCompleteProfileClick = () => {
-    navigate('/settings');
+    console.log('Complete button clicked, opening modal');
+    // Open full-screen profile completion modal
+    setShowProfileModal(true);
+    console.log('setShowProfileModal called with true');
   };
 
   // Helper to render a step item
@@ -233,6 +236,8 @@ function OnboardingChecklist({ compact = false }) {
       </ul>
     </div>
   );
+
+  // Render complete UI above; duplicate compact render removed to fix unreachable code warning
 }
 
 export default OnboardingChecklist;

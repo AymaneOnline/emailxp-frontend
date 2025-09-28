@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Eye, Code, Download, Save, Palette, FileText, File, Type } from 'lucide-react';
+import { X, Code, Download, Save, Palette, File, Type } from 'lucide-react';
 import { toast } from 'react-toastify';
 import UnlayerEmailEditor from './UnlayerEmailEditor';
 import unlayerTemplateService from '../services/unlayerTemplateService';

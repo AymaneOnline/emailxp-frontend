@@ -7,13 +7,11 @@ import {
   Edit,
   Copy,
   Download,
-  Share2,
   Monitor,
   Tablet,
   Smartphone,
   Eye,
-  Code,
-  Settings
+  Code
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import templateService from '../services/templateService';
@@ -42,7 +40,6 @@ const TemplatePreview = () => {
       const target = e.target.closest('a');
       if (target && target.closest('#template-preview-root')) {
         e.preventDefault();
-        console.log('Prevented navigation to:', target.href);
       }
     };
     
@@ -53,9 +50,7 @@ const TemplatePreview = () => {
   const loadTemplate = async () => {
     try {
       setLoading(true);
-      console.log('Loading template with ID:', id);
-      const templateData = await templateService.getTemplateById(id);
-      console.log('Template data loaded:', templateData);
+  const templateData = await templateService.getTemplateById(id);
       setTemplate(templateData);
     } catch (error) {
       console.error('Failed to load template:', error);

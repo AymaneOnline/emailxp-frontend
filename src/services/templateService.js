@@ -1,14 +1,14 @@
 // emailxp/frontend/src/services/templateService.js
 
-import axios from 'axios';
+import api from './api';
 
-const TEMPLATES_API_PATH = '/api/templates';
+const TEMPLATES_API_PATH = '/templates';
 
 const templateService = {
   // Get all templates
   getTemplates: async (params = {}) => {
     try {
-      const response = await axios.get(TEMPLATES_API_PATH, { params });
+      const response = await api.get(TEMPLATES_API_PATH, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -19,7 +19,7 @@ const templateService = {
   // Get popular templates
   getPopularTemplates: async (limit = 10) => {
     try {
-      const response = await axios.get(`${TEMPLATES_API_PATH}/popular`, { params: { limit } });
+      const response = await api.get(`${TEMPLATES_API_PATH}/popular`, { params: { limit } });
       return response.data;
     } catch (error) {
       console.error('Error fetching popular templates:', error);
@@ -30,7 +30,7 @@ const templateService = {
   // Get templates by category
   getTemplatesByCategory: async (category) => {
     try {
-      const response = await axios.get(`${TEMPLATES_API_PATH}/category/${category}`);
+      const response = await api.get(`${TEMPLATES_API_PATH}/category/${category}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching templates by category:', error);
@@ -41,7 +41,7 @@ const templateService = {
   // Get a specific template by ID
   getTemplateById: async (id) => {
     try {
-      const response = await axios.get(`${TEMPLATES_API_PATH}/${id}`);
+      const response = await api.get(`${TEMPLATES_API_PATH}/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching template:', error);
@@ -52,7 +52,7 @@ const templateService = {
   // Create a new template
   createTemplate: async (templateData) => {
     try {
-      const response = await axios.post(TEMPLATES_API_PATH, templateData);
+      const response = await api.post(TEMPLATES_API_PATH, templateData);
       return response.data;
     } catch (error) {
       console.error('Error creating template:', error);
@@ -63,7 +63,7 @@ const templateService = {
   // Update an existing template
   updateTemplate: async (id, templateData) => {
     try {
-      const response = await axios.put(`${TEMPLATES_API_PATH}/${id}`, templateData);
+      const response = await api.put(`${TEMPLATES_API_PATH}/${id}`, templateData);
       return response.data;
     } catch (error) {
       console.error('Error updating template:', error);
@@ -74,7 +74,7 @@ const templateService = {
   // Delete a template
   deleteTemplate: async (id) => {
     try {
-      const response = await axios.delete(`${TEMPLATES_API_PATH}/${id}`);
+      const response = await api.delete(`${TEMPLATES_API_PATH}/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting template:', error);
@@ -85,7 +85,7 @@ const templateService = {
   // Duplicate a template
   duplicateTemplate: async (id) => {
     try {
-      const response = await axios.post(`${TEMPLATES_API_PATH}/${id}/duplicate`);
+      const response = await api.post(`${TEMPLATES_API_PATH}/${id}/duplicate`);
       return response.data;
     } catch (error) {
       console.error('Error duplicating template:', error);
@@ -96,7 +96,7 @@ const templateService = {
   // Use a template (increment usage stats)
   useTemplate: async (id) => {
     try {
-      const response = await axios.post(`${TEMPLATES_API_PATH}/${id}/use`);
+      const response = await api.post(`${TEMPLATES_API_PATH}/${id}/use`);
       return response.data;
     } catch (error) {
       console.error('Error using template:', error);
@@ -112,7 +112,7 @@ const templateService = {
   // Export template
   exportTemplate: async (id) => {
     try {
-      const response = await axios.get(`${TEMPLATES_API_PATH}/${id}/export`);
+      const response = await api.get(`${TEMPLATES_API_PATH}/${id}/export`);
       return response.data;
     } catch (error) {
       console.error('Error exporting template:', error);
@@ -123,7 +123,7 @@ const templateService = {
   // Import template
   importTemplate: async (templateData) => {
     try {
-      const response = await axios.post(`${TEMPLATES_API_PATH}/import`, templateData);
+      const response = await api.post(`${TEMPLATES_API_PATH}/import`, templateData);
       return response.data;
     } catch (error) {
       console.error('Error importing template:', error);
@@ -134,7 +134,7 @@ const templateService = {
   // Get template categories
   getCategories: async () => {
     try {
-      const response = await axios.get(`${TEMPLATES_API_PATH}/meta/categories`);
+      const response = await api.get(`${TEMPLATES_API_PATH}/meta/categories`);
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -145,7 +145,7 @@ const templateService = {
   // Get recommended templates for a subscriber
   getRecommendedTemplates: async (subscriberId, limit = 10) => {
     try {
-      const response = await axios.get(`/api/recommendations/subscriber/${subscriberId}`, {
+      const response = await api.get(`/api/recommendations/subscriber/${subscriberId}`, {
         params: { limit, contentType: 'template' }
       });
       return response.data;
@@ -158,7 +158,7 @@ const templateService = {
   // Get personalized template for a subscriber
   getPersonalizedTemplate: async (subscriberId) => {
     try {
-      const response = await axios.get(`/api/recommendations/personalized/${subscriberId}`, {
+      const response = await api.get(`/api/recommendations/personalized/${subscriberId}`, {
         params: { contentType: 'template' }
       });
       return response.data;
@@ -171,7 +171,7 @@ const templateService = {
   // Record feedback for template recommendations
   recordTemplateFeedback: async (feedbackData) => {
     try {
-      const response = await axios.post('/api/recommendations/feedback', feedbackData);
+      const response = await api.post('/api/recommendations/feedback', feedbackData);
       return response.data;
     } catch (error) {
       console.error('Error recording template feedback:', error);

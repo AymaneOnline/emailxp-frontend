@@ -8,12 +8,7 @@ import {
   Play,
   Pause,
   BarChart,
-  Filter,
-  Clock,
-  Target,
-  Users,
-  Calendar,
-  AlertCircle
+  Target
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import behavioralTriggerService from '../services/behavioralTriggerService';

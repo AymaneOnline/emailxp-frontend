@@ -31,6 +31,18 @@ const SubscriberForm = () => {
 
   const addCustomField = () => { setFormData(prev => ({ ...prev, customFields: [...prev.customFields, { name: '', value: '' }] })); };
 
+  const handleCustomFieldChange = (index, key, value) => {
+    setFormData(prev => {
+      const next = Array.isArray(prev.customFields) ? [...prev.customFields] : [];
+      next[index] = { ...(next[index] || {}), [key]: value };
+      return { ...prev, customFields: next };
+    });
+  };
+
+  const removeCustomField = (index) => {
+    setFormData(prev => ({ ...prev, customFields: prev.customFields.filter((_, i) => i !== index) }));
+  };
+
   const handleAddExistingGroup = async (g) => { setFormData(prev => ({ ...prev, groupIds: [...new Set([...(prev.groupIds||[]), g._id])] })); setShowGroupDropdown(false); setGroupQuery(''); try { if (isEditing) await subscriberService.addSubscriberToGroup(id, g._id); await loadGroups(); } catch (e) { console.error(e); } };
   const handleCreateGroup = async (name) => { if (!name) return; try { const created = await groupService.createGroup({ name }); const cg = created && created._id ? created : (created?.group || created); setGroups(prev => [...prev, cg]); setFormData(prev => ({ ...prev, groupIds: [...new Set([...(prev.groupIds||[]), cg._id || cg.id])] })); setShowGroupDropdown(false); setGroupQuery(''); if (isEditing) await subscriberService.addSubscriberToGroup(id, cg._id || cg.id); } catch (e) { console.error(e); toast.error('Failed to create group'); } };
 
@@ -91,6 +103,38 @@ const SubscriberForm = () => {
                         placeholder="Enter first name"
                       />
                     </div>
+
+                    {/* Custom fields (dynamic) */}
+                    {Array.isArray(formData.customFields) && formData.customFields.length > 0 && (
+                      <div className="space-y-3">
+                        {formData.customFields.map((cf, idx) => (
+                          <div key={idx} className="grid grid-cols-12 gap-3 items-center">
+                            <input
+                              type="text"
+                              placeholder="Field name"
+                              value={cf.name || ''}
+                              onChange={e => handleCustomFieldChange(idx, 'name', e.target.value)}
+                              className="col-span-5 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Value"
+                              value={cf.value || ''}
+                              onChange={e => handleCustomFieldChange(idx, 'value', e.target.value)}
+                              className="col-span-6 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeCustomField(idx)}
+                              className="col-span-1 text-red-600 hover:text-red-800"
+                              aria-label={`Remove custom field ${idx}`}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <div>
                       <button

@@ -6,12 +6,9 @@ import {
   LayoutDashboard,
   Send,
   Users,
-  Globe,
   Bot,
   Settings,
-  Puzzle,
   Star,
-  BarChart,
   FileText,
   FolderOpen
 } from 'lucide-react';
@@ -33,17 +30,14 @@ function Sidebar() {
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Campaigns', to: '/campaigns', icon: Send },
     { name: 'Subscribers', to: '/subscribers', icon: Users },
-    { name: 'Forms', to: '/forms', icon: BarChart },
-    { name: 'Sites', to: '/sites', icon: Globe },
+    { name: 'Templates', to: '/templates', icon: FileText },
     { name: 'Automation', to: '/automation', icon: Bot },
   ];
 
   const bottomNavItems = [
-    { name: 'Templates', to: '/templates', icon: FileText },
     { name: 'Files', to: '/files', icon: FolderOpen },
     // Domains moved under settings
     { name: 'Settings', to: '/settings', icon: Settings },
-    { name: 'Integrations', to: '/integrations', icon: Puzzle },
   ];
 
   return (

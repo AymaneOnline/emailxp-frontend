@@ -262,10 +262,6 @@ const router = createBrowserRouter([
         path: '',
   element: <RequireOnboardingComplete><AutomationManagement /></RequireOnboardingComplete>,
       },
-      {
-        path: 'builder',
-  element: <RequireOnboardingComplete><AutomationBuilderPage /></RequireOnboardingComplete>,
-      },
     ],
   },
   {

@@ -1,6 +1,6 @@
 // emailxp/frontend/src/components/AutomationBuilder.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import {
   Plus,
   Mail,
@@ -29,8 +29,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import automationService from '../services/automationService';
+import templateService from '../services/templateService';
 
-const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
+const AutomationBuilder = forwardRef(({ automationId, onSave, onCancel, fullScreen = false }, ref) => {
   const navigate = useNavigate();
 
   const [automation, setAutomation] = useState({
@@ -42,10 +43,50 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showJsonEditor, setShowJsonEditor] = useState(false);
+  const [jsonText, setJsonText] = useState('');
+  const [jsonError, setJsonError] = useState('');
+  const [showVersions, setShowVersions] = useState(false);
+  const [versionApplying, setVersionApplying] = useState(false);
 
   const [showActionModal, setShowActionModal] = useState(false);
   const [editingAction, setEditingAction] = useState(null);
   const [selectedActionType, setSelectedActionType] = useState(null);
+
+  // Simple template selector used in action config
+  const TemplateSelector = ({ value, onChange }) => {
+    const [templates, setTemplates] = useState([]);
+
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        try {
+          const res = await templateService.getTemplates({ page: 1, limit: 200 });
+          if (!mounted) return;
+          // templateService returns { templates, total, page, pages } in many places
+          const list = res.templates || res;
+          setTemplates(list);
+        } catch (err) {
+          console.error('Failed to load templates for selector', err);
+        }
+      })();
+
+      return () => { mounted = false; };
+    }, []);
+
+    return (
+      <select
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+      >
+        <option value="">Choose a template...</option>
+        {templates.map(t => (
+          <option key={t._id || t.id} value={t._id || t.id}>{t.name || t.title || `Template ${t._id || t.id}`}</option>
+        ))}
+      </select>
+    );
+  };
 
   const TRIGGER_TYPES = [
     { id: 'subscriber_added', label: 'Subscriber Added', description: 'When someone subscribes to a list', icon: Users },
@@ -57,11 +98,22 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
 
   const ACTION_TYPES = [
     { id: 'send_email', label: 'Send Email', description: 'Send an email campaign', icon: Mail },
+    { id: 'send_template', label: 'Send Template (Triggered)', description: 'Send a template to the triggering subscriber', icon: Mail },
     { id: 'wait', label: 'Wait', description: 'Wait for a specified time', icon: Clock },
     { id: 'add_tag', label: 'Add Tag', description: 'Add a tag to subscriber', icon: Target },
     { id: 'remove_tag', label: 'Remove Tag', description: 'Remove a tag from subscriber', icon: Target },
     { id: 'condition', label: 'Condition', description: 'Branch based on conditions', icon: GitBranch }
   ];
+
+  // Icon fallback: if an icon import is missing, use a simple fallback
+  const FallbackIcon = ({ className = '' }) => (
+    <span className={`inline-block ${className}`}>🔧</span>
+  );
+
+  const getIcon = (Icon) => {
+    if (!Icon) return FallbackIcon;
+    return Icon;
+  };
 
   const saveAutomation = async () => {
     try {
@@ -99,11 +151,20 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
     }
   };
 
-  const addAction = (type, position = -1) => {
+  // expose save to parent modals so they can call Save from a top bar
+  useImperativeHandle(ref, () => ({
+    save: saveAutomation
+  }));
+
+  
+
+  // Allow adding action with a provided config (used by modal when creating new actions)
+  const addAction = (type, position = -1, providedConfig) => {
+    const cfg = providedConfig || getDefaultActionConfig(type);
     const newAction = {
       id: Date.now() + Math.random(),
       type,
-      config: getDefaultActionConfig(type),
+      config: cfg,
       position: position === -1 ? automation.actions.length : position
     };
 
@@ -127,6 +188,8 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
     switch (type) {
       case 'send_email':
         return { campaignId: null, template: null };
+      case 'send_template':
+        return { templateId: null, subjectOverride: '', fromEmail: '', fromName: '' };
       case 'wait':
         return { duration: 1, unit: 'days' };
       case 'add_tag':
@@ -191,8 +254,8 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {TRIGGER_TYPES.map(trigger => {
-          const TriggerIcon = trigger.icon;
+          {TRIGGER_TYPES.map(trigger => {
+          const TriggerIcon = getIcon(trigger.icon);
           const isSelected = automation.trigger?.type === trigger.id;
           
           return (
@@ -233,8 +296,8 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
   );
 
   const renderActionCard = (action, index) => {
-    const actionType = ACTION_TYPES.find(t => t.id === action.type);
-    const ActionIcon = actionType?.icon || Settings;
+  const actionType = ACTION_TYPES.find(t => t.id === action.type);
+  const ActionIcon = getIcon(actionType?.icon || Settings);
 
     return (
       <div key={action.id} className="relative">
@@ -307,6 +370,8 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
     switch (action.type) {
       case 'send_email':
         return action.config.campaignId ? 'Send selected email' : 'No email selected';
+      case 'send_template':
+        return action.config.templateId ? `Send template ${action.config.templateId}` : 'No template selected';
       case 'wait':
         return `Wait ${action.config.duration} ${action.config.unit}`;
       case 'add_tag':
@@ -324,7 +389,7 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
     if (!showActionModal) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -346,11 +411,15 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {ACTION_TYPES.map(actionType => {
-                    const ActionIcon = actionType.icon;
+                    const ActionIcon = getIcon(actionType.icon);
                     return (
                       <button
                         key={actionType.id}
-                        onClick={() => setSelectedActionType(actionType.id)}
+                        onClick={() => {
+                          setSelectedActionType(actionType.id);
+                          // create a temporary editingAction so the config form is editable
+                          setEditingAction({ id: `new-${Date.now()}`, type: actionType.id, config: getDefaultActionConfig(actionType.id) });
+                        }}
                         className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-left hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                       >
                         <div className="flex items-center space-x-3">
@@ -399,17 +468,190 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
               <button
                 onClick={() => {
                   if (editingAction) {
-                    // Update existing action
-                    updateAction(editingAction.id, editingAction.config);
+                    const exists = automation.actions.some(a => a.id === editingAction.id);
+                    if (exists) {
+                      // Update existing action
+                      updateAction(editingAction.id, editingAction.config);
+                    } else {
+                      // Add new action with the edited config
+                      addAction(selectedActionType, -1, editingAction.config);
+                    }
                   } else {
-                    // Add new action
+                    // Fallback: add default
                     addAction(selectedActionType);
                   }
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
               >
-                {editingAction ? 'Update Action' : 'Add Action'}
+                {editingAction ? (automation.actions.some(a => a.id === editingAction.id) ? 'Update Action' : 'Add Action') : 'Add Action'}
               </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderJsonEditor = () => {
+    if (!showJsonEditor) return null;
+
+    const applyJson = () => {
+      try {
+        const parsed = JSON.parse(jsonText);
+        // Basic validation
+        const errors = [];
+        if (!parsed.trigger) errors.push('Missing required field: trigger');
+        if (!Array.isArray(parsed.actions)) errors.push('Actions must be an array');
+        if (!parsed.name || typeof parsed.name !== 'string' || !parsed.name.trim()) errors.push('Automation must have a name');
+
+        if (errors.length > 0) {
+          setJsonError(errors.join('; '));
+          return;
+        }
+
+        setAutomation(parsed);
+        setShowJsonEditor(false);
+        setJsonError('');
+        toast.success('JSON applied to builder');
+      } catch (err) {
+        setJsonError(err.message || 'Invalid JSON');
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Automation JSON</h3>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowJsonEditor(false)}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Close
+              </button>
+              <button
+                onClick={applyJson}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                Apply JSON
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="flex items-center justify-end mb-2 space-x-2">
+              <button
+                onClick={() => {
+                  // copy to clipboard
+                  if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(jsonText).then(() => toast.success('Copied JSON to clipboard'))
+                      .catch(() => toast.error('Failed to copy'));
+                  } else {
+                    // fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = jsonText;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); toast.success('Copied JSON to clipboard'); } catch (e) { toast.error('Failed to copy'); }
+                    document.body.removeChild(ta);
+                  }
+                }}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+              >
+                Copy JSON
+              </button>
+            </div>
+
+            <textarea
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              className="w-full h-96 p-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm font-mono text-gray-900 dark:text-white"
+            />
+            {jsonError && <div className="text-red-600 mt-2">{jsonError}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderVersionsModal = () => {
+    if (!showVersions) return null;
+
+    const versions = automation.versions || [];
+
+    const restoreLocal = (ver) => {
+      try {
+        // Apply the saved snapshot locally
+        const snapshot = ver.changes;
+        setAutomation(prev => ({ ...prev, ...snapshot }));
+        setShowVersions(false);
+        toast.success(`Restored version ${ver.version} locally`);
+      } catch (err) {
+        toast.error('Failed to restore version');
+      }
+    };
+
+    const restoreAndSave = async (ver) => {
+      if (!automation.id && !automation._id) {
+        toast.error('Save the automation first before restoring to backend');
+        return;
+      }
+
+      setVersionApplying(true);
+      try {
+        const snapshot = ver.changes;
+        // Merge snapshot into current automation object and save
+        const merged = { ...automation, ...snapshot };
+        const id = automation._id || automation.id;
+        const result = id
+          ? await automationService.updateAutomation(id, merged)
+          : await automationService.createAutomation(merged);
+
+        setAutomation(result.automation || result);
+        setShowVersions(false);
+        toast.success(`Restored version ${ver.version} and saved`);
+      } catch (err) {
+        console.error('Failed to restore and save version', err);
+        toast.error('Failed to restore and save version');
+      } finally {
+        setVersionApplying(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-auto">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Automation History</h3>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowVersions(false)}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-3">
+            {versions.length === 0 ? (
+              <div className="text-center text-gray-500">No versions available</div>
+            ) : (
+              versions.slice().reverse().map((ver) => (
+                <div key={ver.version} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white">Version {ver.version}</div>
+                      <div className="text-sm text-gray-500">By: {ver.user || 'Unknown'} • {new Date(ver.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button onClick={() => restoreLocal(ver)} className="px-3 py-1 border rounded text-sm">Restore Locally</button>
+                      <button onClick={() => restoreAndSave(ver)} className="px-3 py-1 bg-red-600 text-white rounded text-sm">Restore & Save</button>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -439,6 +681,42 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
                 <option value="">Choose a campaign...</option>
                 {/* Add campaign options here */}
               </select>
+            </div>
+          </div>
+        );
+      case 'send_template':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Template
+              </label>
+              <TemplateSelector
+                value={config.templateId || ''}
+                onChange={(val) => {
+                  const newConfig = { ...config, templateId: val };
+                  if (editingAction) setEditingAction({ ...editingAction, config: newConfig });
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject override</label>
+                <input
+                  value={config.subjectOverride || ''}
+                  onChange={(e) => editingAction && setEditingAction({ ...editingAction, config: { ...config, subjectOverride: e.target.value } })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Email</label>
+                <input
+                  value={config.fromEmail || ''}
+                  onChange={(e) => editingAction && setEditingAction({ ...editingAction, config: { ...config, fromEmail: e.target.value } })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
             </div>
           </div>
         );
@@ -508,46 +786,46 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
     );
   }
 
+  const containerClass = fullScreen ? 'min-h-[calc(100vh-96px)] w-full space-y-6' : 'max-w-4xl mx-auto space-y-6';
+  const headerTitleClass = fullScreen ? 'text-3xl font-extrabold text-gray-900 dark:text-white' : 'text-2xl font-bold text-gray-900 dark:text-white';
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Notice about new visual builder */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <Eye className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Try our new Visual Automation Builder
-            </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              We've created a new visual workflow builder with drag-and-drop functionality. 
-              <button 
-                onClick={() => navigate('/automation')}
-                className="ml-1 font-medium text-blue-900 dark:text-blue-100 underline hover:text-blue-700 dark:hover:text-blue-300"
-              >
-                Try it now
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className={containerClass}>
+      {/* Visual builder promo removed; step-list builder is the default */}
       
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className={headerTitleClass}>
             {automationId ? 'Edit Automation' : 'Create Automation'}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Build automated email sequences that engage your subscribers
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <button
             onClick={onCancel}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            Cancel
+            Close
+          </button>
+          <button
+            onClick={() => {
+              setJsonText(JSON.stringify(automation, null, 2));
+              setJsonError('');
+              setShowJsonEditor(true);
+            }}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            View JSON
+          </button>
+          <button
+            onClick={() => setShowVersions(true)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            History
           </button>
           <button
             onClick={saveAutomation}
@@ -672,6 +950,6 @@ const AutomationBuilder = ({ automationId, onSave, onCancel }) => {
       {renderActionModal()}
     </div>
   );
-};
+});
 
 export default AutomationBuilder;
