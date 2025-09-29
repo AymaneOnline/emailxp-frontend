@@ -40,8 +40,11 @@ const SubscriberImport = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-            toast.error('Please select a CSV file');
+        // Accept common CSV mime types and be case-insensitive on extension
+        const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain', 'application/csv'];
+        const nameLower = file.name ? file.name.toLowerCase() : '';
+        if (!allowedMimeTypes.includes(file.type) && !nameLower.endsWith('.csv') && !nameLower.endsWith('.txt')) {
+            toast.error('Please select a CSV or TXT file');
             return;
         }
 
