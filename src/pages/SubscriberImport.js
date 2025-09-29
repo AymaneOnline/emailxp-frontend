@@ -37,7 +37,8 @@ const SubscriberImport = () => {
     };
 
     const handleFileUpload = (event) => {
-        const file = event.target.files[0];
+        console.debug('[SubscriberImport] handleFileUpload called', event);
+        const file = event.target.files && event.target.files[0];
         if (!file) return;
 
         // Accept common CSV mime types and be case-insensitive on extension
@@ -60,10 +61,12 @@ const SubscriberImport = () => {
             try {
                 const csvText = e.target.result;
                 const parsed = subscriberService.parseCSV(csvText);
+                console.debug('[SubscriberImport] parsed CSV result', parsed);
                 setCsvData(parsed);
                 setCsvFile(file);
                 setPreviewData(parsed.subscribers.slice(0, 10)); // Preview first 10
                 setStep(2);
+                toast.success(`Parsed ${parsed.subscribers.length} rows`);
             } catch (error) {
                 toast.error(error.message);
             }
@@ -232,7 +235,7 @@ const SubscriberImport = () => {
                                 </div>
                                 <input
                                     type="file"
-                                    accept=".csv"
+                                    accept=".csv,.txt"
                                     onChange={handleFileUpload}
                                     className="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
                                 />
