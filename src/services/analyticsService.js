@@ -29,7 +29,35 @@ const analyticsService = {
       const response = await analyticsAPI.get('/dashboard', {
         params: { timeframe }
       });
-      return response.data;
+      // Normalize server response to support both older and newer payload shapes.
+      const data = response.data || {};
+
+      // Ensure overview has both avg* and plain metric names used across UI
+      data.overview = data.overview || {};
+  // Ensure both legacy and newer field names exist
+  data.overview.openRate = data.overview.openRate || data.overview.avgOpenRate || 0;
+  data.overview.avgOpenRate = data.overview.avgOpenRate || data.overview.openRate || 0;
+  data.overview.clickRate = data.overview.clickRate || data.overview.avgClickRate || 0;
+  data.overview.avgClickRate = data.overview.avgClickRate || data.overview.clickRate || 0;
+  data.overview.unsubRate = data.overview.unsubRate || data.overview.avgUnsubscribeRate || 0;
+  data.overview.avgUnsubscribeRate = data.overview.avgUnsubscribeRate || data.overview.unsubRate || 0;
+      data.overview.totalSent = data.overview.totalSent || 0;
+      data.overview.totalDelivered = data.overview.totalDelivered || 0;
+
+      // Build a compatible `trend` object if server returned `trendData`
+      if (data.trendData && Array.isArray(data.trendData)) {
+        const trendItems = data.trendData;
+        const trend = {
+          openRates: trendItems.map(t => (t.rates?.openRate || 0)),
+          clickRates: trendItems.map(t => (t.rates?.clickRate || 0)),
+          unsubRates: trendItems.map(t => (t.rates?.unsubscribeRate || 0)),
+          deliveredCounts: trendItems.map(t => (t.metrics?.delivered || 0)),
+          dates: trendItems.map(t => t.periodStart || t._id || null)
+        };
+        data.trend = data.trend || trend;
+      }
+
+      return data;
     } catch (error) {
       if (error?.response?.status === 403) {
         // Suppress onboarding noise: unverified/incomplete profiles will 403
