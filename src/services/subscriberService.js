@@ -92,6 +92,27 @@ const bulkImportSubscribers = async ({ subscribers, groupIds = [], overwriteExis
     }
 };
 
+// Upload CSV file to server for import (multipart/form-data)
+const uploadCsvFile = async ({ file, overwriteExisting = false, groupIds = [], tagNames = [] }) => {
+    try {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('overwriteExisting', overwriteExisting);
+        // Append arrays as repeated fields
+        (groupIds || []).forEach(gid => form.append('groupIds', gid));
+        (tagNames || []).forEach(t => form.append('tagNames', t));
+
+        const response = await axios.post(`${API_URL}/import/csv`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        return response.data;
+    } catch (error) {
+        devLog('uploadCsvFile error:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
 // Get subscriber statistics
 const getSubscriberStats = async () => {
     try {
@@ -233,6 +254,7 @@ const subscriberService = {
     updateSubscriber,
     deleteSubscriber,
     bulkImportSubscribers,
+    uploadCsvFile,
     getSubscriberStats,
     exportSubscribers,
     parseCSV,

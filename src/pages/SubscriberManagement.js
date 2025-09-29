@@ -118,23 +118,9 @@ const SubscriberManagement = () => {
         setStats(null);
       }
 
-      // Load initial subscribers
-      (async () => {
-        setLoading(true);
-        try {
-          const params = { page: 1, limit: 20 };
-          const data = await subscriberService.getSubscribers(params);
-          setSubscribers(data.subscribers || data || []);
-          setPagination(data.pagination || null);
-        } catch (error) {
-          console.error('Failed to load initial subscribers:', error);
-          toast.error('Failed to load subscribers');
-          setSubscribers([]);
-          setPagination(null);
-        } finally {
-          setLoading(false);
-        }
-      })();
+      // Initial subscribers load is handled by the effect that listens
+      // to filter/currentPage changes. No need to fetch here to avoid
+      // duplicate requests on mount.
     })();
   }, []);
 

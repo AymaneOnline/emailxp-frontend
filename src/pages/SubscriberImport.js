@@ -13,6 +13,7 @@ const SubscriberImport = () => {
     const [groups, setGroups] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [csvData, setCsvData] = useState(null);
+    const [csvFile, setCsvFile] = useState(null);
     const [previewData, setPreviewData] = useState(null);
     const [importResults, setImportResults] = useState(null);
     const [overwriteExisting, setOverwriteExisting] = useState(false);
@@ -57,6 +58,7 @@ const SubscriberImport = () => {
                 const csvText = e.target.result;
                 const parsed = subscriberService.parseCSV(csvText);
                 setCsvData(parsed);
+                setCsvFile(file);
                 setPreviewData(parsed.subscribers.slice(0, 10)); // Preview first 10
                 setStep(2);
             } catch (error) {
@@ -80,14 +82,15 @@ const SubscriberImport = () => {
             });
             devLog('All tags from CSV:', Array.from(allTags));
 
-            const importData = {
-                subscribers: csvData.subscribers,
+            if (!csvFile) throw new Error('CSV file missing. Please re-select the file.');
+
+            // Upload file (server will parse and import)
+            const results = await subscriberService.uploadCsvFile({
+                file: csvFile,
                 overwriteExisting,
                 groupIds: selectedGroups,
-                tagNames: Array.from(allTags) // Send tag names instead of IDs
-            };
-            
-            const results = await subscriberService.bulkImportSubscribers(importData);
+                tagNames: Array.from(allTags)
+            });
             setImportResults(results);
             setStep(3);
             
