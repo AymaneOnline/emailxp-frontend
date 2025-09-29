@@ -58,11 +58,17 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
           <MetricCard title="Unsub Rate" value={`${unsubRate.toFixed(2)}%`} icon={Users} description="Avg unsub" loading={metricsLoading} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-unsub-rate" />
         )}
       </div>
+      {/* Replace small trend tiles with explicit Open/Click rate cards */}
       <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <TrendCard label="Open Trend" data={trendData.open} color="#DC2626" />
-        <TrendCard label="Click Trend" data={trendData.click} color="#2563EB" />
-        <TrendCard label="Unsub Trend" data={trendData.unsub} color="#6B7280" />
-        <TrendCard label="Delivered Trend" data={trendData.delivered} color="#16A34A" />
+        {openRate !== undefined && (
+          <MetricCard title="Open Rate" value={`${Number(openRate).toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="overview-open-rate" />
+        )}
+        {clickRate !== undefined && (
+          <MetricCard title="Click Rate" value={`${Number(clickRate).toFixed(1)}%`} icon={MousePointer} description="Avg clicks" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="overview-click-rate" />
+        )}
+        {/* Keep layout slots for symmetry when additional cards are added */}
+        <div />
+        <div />
       </div>
       <div className="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4" aria-label="engagement-funnel">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Engagement Funnel (30d)</h3>

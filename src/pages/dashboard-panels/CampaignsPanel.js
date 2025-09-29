@@ -7,14 +7,15 @@ import { MetricCard } from '../../components/dashboard/MetricCard';
 export default function CampaignsPanel({ overview, topCampaigns = [], recentActivity = [], metricsLoading, navigate, setActiveTab }) {
   // Move hooks before any early returns
   const computed = useMemo(()=>{
-    const sent = overview?.totalSent || 0;
-    const delivered = overview?.totalDelivered || 0;
-    const openRate = overview?.openRate || 0;
-    const clickRate = overview?.clickRate || 0;
-    const deliveryRate = sent ? (delivered / sent * 100).toFixed(1) : '0.0';
+    // Prefer overview metrics but fall back to aggregations from topCampaigns
+    const sent = overview?.totalSent || topCampaigns.reduce((s,c)=> s + (c.metrics?.sent || c.sent || c.emailsSuccessfullySent || 0), 0);
+    const delivered = overview?.totalDelivered || topCampaigns.reduce((s,c)=> s + (c.metrics?.delivered || c.delivered || c.stats?.delivered || 0), 0);
+    const openRate = overview?.openRate || (sent ? (topCampaigns.reduce((s,c)=> s + ((c.metrics?.openRate||c.openRate||0) * ((c.metrics?.delivered||c.delivered||c.sent||0)||0)),0) / Math.max(1, delivered)) : 0);
+    const clickRate = overview?.clickRate || (sent ? (topCampaigns.reduce((s,c)=> s + ((c.metrics?.clickRate||c.clickRate||0) * ((c.metrics?.delivered||c.delivered||c.sent||0)||0)),0) / Math.max(1, delivered)) : 0);
+    const deliveryRate = sent ? ((delivered / sent) * 100).toFixed(1) : '0.0';
     return { sent, delivered, openRate, clickRate, deliveryRate };
-  }, [overview]);
-  const barData = useMemo(() => topCampaigns.slice(0,8).map(c => ({ label: c.subject?.slice(0,8)||'–', value: c.openRate || 0 })), [topCampaigns]);
+  }, [overview, topCampaigns]);
+  const barData = useMemo(() => topCampaigns.slice(0,8).map(c => ({ label: c.subject?.slice(0,8)||'–', value: (c.metrics?.openRate || c.openRate || 0) })), [topCampaigns]);
   const topFive = useMemo(() => topCampaigns.slice(0,5), [topCampaigns]);
   const recentFive = useMemo(() => recentActivity.slice(0,5), [recentActivity]);
 
@@ -54,13 +55,13 @@ export default function CampaignsPanel({ overview, topCampaigns = [], recentActi
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{c.subject || 'Untitled Campaign'}</p>
                         <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                          <span>{c.openRate?.toFixed(1) || '0.0'}% open</span>
-                          <span>{c.clickRate?.toFixed(1) || '0.0'}% click</span>
+                          <span>{Number(c.metrics?.openRate || c.openRate || 0).toFixed(1)}% open</span>
+                          <span>{Number(c.metrics?.clickRate || c.clickRate || 0).toFixed(1)}% click</span>
                           {c.status && <StatusBadge status={c.status} size="sm" />}
                         </div>
                       </div>
                       <div className="text-right whitespace-nowrap">
-                        <p className="font-medium text-gray-800 dark:text-gray-100">{c.delivered || c.sent || 0}</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-100">{c.metrics?.delivered || c.delivered || c.sent || c.emailsSuccessfullySent || 0}</p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400">delivered</p>
                       </div>
                     </li>
