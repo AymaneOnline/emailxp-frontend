@@ -43,6 +43,8 @@ const analyticsService = {
   data.overview.avgUnsubscribeRate = data.overview.avgUnsubscribeRate || data.overview.unsubRate || 0;
       data.overview.totalSent = data.overview.totalSent || 0;
       data.overview.totalDelivered = data.overview.totalDelivered || 0;
+        // Newer backend returns sentCampaignsCount — ensure UI always has it
+        data.overview.sentCampaignsCount = data.overview.sentCampaignsCount || data.overview.sentCampaigns || 0;
 
       // Build a compatible `trend` object if server returned `trendData`
       if (data.trendData && Array.isArray(data.trendData)) {
