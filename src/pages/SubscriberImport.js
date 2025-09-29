@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ArrowLeft, Upload, Download, FileText, CheckCircle } from 'lucide-react';
@@ -14,6 +14,8 @@ const SubscriberImport = () => {
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [csvData, setCsvData] = useState(null);
     const [csvFile, setCsvFile] = useState(null);
+    const [selectedFileName, setSelectedFileName] = useState('');
+    const fileInputRef = useRef(null);
     const [previewData, setPreviewData] = useState(null);
     const [importResults, setImportResults] = useState(null);
     const [overwriteExisting, setOverwriteExisting] = useState(false);
@@ -37,7 +39,7 @@ const SubscriberImport = () => {
     };
 
     const handleFileUpload = (event) => {
-        console.debug('[SubscriberImport] handleFileUpload called', event);
+        console.log('[SubscriberImport] handleFileUpload called');
         const file = event.target.files && event.target.files[0];
         if (!file) return;
 
@@ -56,18 +58,20 @@ const SubscriberImport = () => {
 
         // File selected and validated
         
+        setSelectedFileName(file.name || '');
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const csvText = e.target.result;
                 const parsed = subscriberService.parseCSV(csvText);
-                console.debug('[SubscriberImport] parsed CSV result', parsed);
+                console.log('[SubscriberImport] parsed CSV result', parsed);
                 setCsvData(parsed);
                 setCsvFile(file);
                 setPreviewData(parsed.subscribers.slice(0, 10)); // Preview first 10
                 setStep(2);
                 toast.success(`Parsed ${parsed.subscribers.length} rows`);
             } catch (error) {
+                console.error('[SubscriberImport] parse error', error);
                 toast.error(error.message);
             }
         };
@@ -233,12 +237,24 @@ const SubscriberImport = () => {
                                         Maximum file size: 5MB
                                     </p>
                                 </div>
-                                <input
-                                    type="file"
-                                    accept=".csv,.txt"
-                                    onChange={handleFileUpload}
-                                    className="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
-                                />
+                                <div className="mt-4">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".csv,.txt"
+                                        onChange={handleFileUpload}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <div className="flex items-center justify-center gap-4">
+                                        <button
+                                            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                            className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                                        >
+                                            Choose file
+                                        </button>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">{selectedFileName || 'No file chosen'}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
