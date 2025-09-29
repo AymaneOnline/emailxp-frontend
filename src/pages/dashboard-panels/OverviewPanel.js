@@ -31,7 +31,9 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
   return (
     <div className="space-y-4" aria-label="overview-panel">
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
-        <MetricCard title="Sent" value={sent} icon={Mail} description="Emails" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent" />
+        {sent > 0 && (
+          <MetricCard title="Sent" value={sent} icon={Mail} description="Emails" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent" />
+        )}
         <MetricCard title="Delivered" value={delivered} icon={Mail} description="Successful" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-delivered" />
         <MetricCard title="Open Rate" value={`${openRate.toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-open-rate" />
         <MetricCard title="Click Rate" value={`${clickRate.toFixed(1)}%`} icon={MousePointer} description="Avg clicks" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-click-rate" />
