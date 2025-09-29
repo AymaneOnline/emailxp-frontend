@@ -31,15 +31,32 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
   return (
     <div className="space-y-4" aria-label="overview-panel">
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+        {/* Order: Sent Campaigns, Sent, Delivered, Subs, Open Rate, Click Rate, Unsub Rate */}
+        {sentCampaignsCount > 0 && (
+          <MetricCard title="Sent Campaigns" value={sentCampaignsCount} icon={Mail} description="Sent" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent-campaigns" />
+        )}
+
         {sent > 0 && (
           <MetricCard title="Sent" value={sent} icon={Mail} description="Emails" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent" />
         )}
-        <MetricCard title="Delivered" value={delivered} icon={Mail} description="Successful" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-delivered" />
-        <MetricCard title="Open Rate" value={`${openRate.toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-open-rate" />
-        <MetricCard title="Click Rate" value={`${clickRate.toFixed(1)}%`} icon={MousePointer} description="Avg clicks" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-click-rate" />
-  <MetricCard title="Unsub Rate" value={`${unsubRate.toFixed(2)}%`} icon={Users} description="Avg unsub" loading={metricsLoading} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-unsub-rate" />
-  <MetricCard title="Sent Campaigns" value={sentCampaignsCount} icon={Mail} description="Sent" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent-campaigns" />
-  <MetricCard title="Subs" value={subscriberStats?.total || subscriberStats?.totalSubscribers || 0} icon={Users} description="Total" loading={!subscriberStats} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-subs" />
+
+        {delivered > 0 && (
+          <MetricCard title="Delivered" value={delivered} icon={Mail} description="Successful" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-delivered" />
+        )}
+
+        <MetricCard title="Subs" value={subscriberStats?.total || subscriberStats?.totalSubscribers || 0} icon={Users} description="Total" loading={!subscriberStats} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-subs" />
+
+        {openRate > 0 && (
+          <MetricCard title="Open Rate" value={`${openRate.toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-open-rate" />
+        )}
+
+        {clickRate > 0 && (
+          <MetricCard title="Click Rate" value={`${clickRate.toFixed(1)}%`} icon={MousePointer} description="Avg clicks" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-click-rate" />
+        )}
+
+        {unsubRate > 0 && (
+          <MetricCard title="Unsub Rate" value={`${unsubRate.toFixed(2)}%`} icon={Users} description="Avg unsub" loading={metricsLoading} onClick={()=>setActiveTab('subscribers')} ariaLabel="stat-unsub-rate" />
+        )}
       </div>
       <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
         <TrendCard label="Open Trend" data={trendData.open} color="#DC2626" />
