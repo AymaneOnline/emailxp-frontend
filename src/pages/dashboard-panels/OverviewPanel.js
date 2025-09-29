@@ -23,14 +23,14 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
   const { data: funnelData, isLoading: funnelLoading } = useEngagementFunnel('30d');
 
   // Show 6-up layout only on very large (2xl) screens to avoid cramped cards at common laptop widths (~1366px)
-  if (metricsLoading) return <div aria-label="overview-loading" aria-live="polite" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 animate-pulse">{Array.from({length:6}).map((_,i)=><div key={i} className="h-32 rounded-xl bg-gray-100 dark:bg-gray-800" />)}</div>;
+  if (metricsLoading) return <div aria-label="overview-loading" aria-live="polite" className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-6 gap-4 animate-pulse">{Array.from({length:6}).map((_,i)=><div key={i} className="h-32 rounded-xl bg-gray-100 dark:bg-gray-800" />)}</div>;
   if (!overview) return <p className="text-sm text-gray-500" aria-live="polite">No data yet.</p>;
 
   const { sent, delivered, openRate, clickRate, unsubRate, sentCampaignsCount } = metrics;
 
   return (
     <div className="space-y-4" aria-label="overview-panel">
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-6 gap-4">
         {/* Order: Sent Campaigns, Sent, Delivered, Subs, Open Rate, Click Rate, Unsub Rate */}
         {sentCampaignsCount > 0 && (
           <MetricCard title="Sent Campaigns" value={sentCampaignsCount} icon={Mail} description="Sent" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent-campaigns" />
@@ -59,7 +59,7 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
         )}
       </div>
       {/* Replace small trend tiles with explicit Open/Click rate cards */}
-  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-6 gap-4">
         {openRate !== undefined && (
           <MetricCard title="Open Rate" value={`${Number(openRate).toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="overview-open-rate" />
         )}

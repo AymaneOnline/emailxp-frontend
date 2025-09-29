@@ -164,7 +164,7 @@ export default function DashboardNew() {
 // Panel skeleton component
 function PanelSkeleton(){
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-6 gap-4">
       {Array.from({length:6}).map((_,i)=>(
         <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 animate-pulse">
           <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-4" />

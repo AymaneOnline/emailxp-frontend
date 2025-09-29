@@ -34,8 +34,18 @@ const TemplateManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this template?')) return;
     try {
-      await templateService.deleteTemplate(id);
-      setTemplates(prev => prev.filter(t => t._id !== id && t.id !== id));
+      const res = await templateService.deleteTemplate(id);
+      // Expect backend to return template object with isActive flag
+      const deleted = res && (res.template || (res.template && res.template._id)) ? (res.template || res) : res;
+      // If backend confirms the record has been soft-deleted, remove from UI
+      if (deleted && (deleted.isActive === false || (deleted.template && deleted.template.isActive === false) || deleted.template === undefined)) {
+        setTemplates(prev => prev.filter(t => t._id !== id && t.id !== id));
+        toast?.success?.('Template deleted');
+      } else {
+        // Backend didn't confirm deletion; show error
+        console.warn('Delete response did not confirm deactivation', res);
+        toast?.error?.('Failed to delete template (server did not confirm)');
+      }
     } catch (err) {
       console.error('Delete failed', err);
       toast?.error?.('Failed to delete template');
