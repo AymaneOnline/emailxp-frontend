@@ -59,7 +59,7 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
         )}
       </div>
       {/* Replace small trend tiles with explicit Open/Click rate cards */}
-      <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div className="mt-2 grid grid-cols-2 gap-4">
         {openRate !== undefined && (
           <MetricCard title="Open Rate" value={`${Number(openRate).toFixed(1)}%`} icon={Eye} description="Avg opens" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="overview-open-rate" />
         )}
