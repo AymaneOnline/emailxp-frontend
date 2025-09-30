@@ -32,9 +32,7 @@ export default function OverviewPanel({ overview, subscriberStats, quickStats, m
     <div className="space-y-4" aria-label="overview-panel">
   <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-6 gap-4">
         {/* Order: Sent Campaigns, Sent, Delivered, Subs, Open Rate, Click Rate, Unsub Rate */}
-        {sentCampaignsCount > 0 && (
-          <MetricCard title="Sent Campaigns" value={sentCampaignsCount} icon={Mail} description="Sent" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent-campaigns" />
-        )}
+        <MetricCard title="Sent Campaigns" value={sentCampaignsCount} icon={Mail} description="Sent" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent-campaigns" />
 
         {sent > 0 && (
           <MetricCard title="Sent" value={sent} icon={Mail} description="Emails" loading={metricsLoading} onClick={()=>setActiveTab('campaigns')} ariaLabel="stat-sent" />
